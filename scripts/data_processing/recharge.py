@@ -150,23 +150,3 @@ for month in range(0,12):
     avgPrecip[month] = avgPrecip[month]/nprecip
     newfile1 = r'Simulation_Wrapper\data\Input\RCH\MTHLY\AVG_' + '{num:02d}'.format(num=month) + '.asc'
     np.savetxt(newfile1, avgPrecip[month], header=header, fmt="%1.5f",comments='')
-
-#%% Wells
-WEL_Dict = {}
-WEL_map = np.zeros((136,168))
-
-# Initialize dictionary with zero fluxes at layer 1, row 1, column 1
-for period in range(0,360):
-    WEL_Dict[period] = [[1,1,1,0]]
-
-WEL_Array = np.loadtxt(r'Data\Pumping Wells\20180430_Pumping_AllDatasets_InModel_WatershedClip.csv', delimiter=',', skiprows=1, usecols=[1,2,3,4,5])
-for w in range(0,WEL_Array.shape[0]):
-    c = int(np.ceil((WEL_Array[w,0] - xll)/cellsize))
-    r = int(np.ceil((yur - WEL_Array[w,1])/cellsize))
-    
-    for y in range(int(WEL_Array[w,3]-1984),int(WEL_Array[w,4]-1984)):
-        if(WEL_Array[w,3]-2005):
-            WEL_map[r-1,c-1] += WEL_Array[w,2]
-        
-        for m in range(0,12):
-            WEL_Dict[y*12+m].append([2,r,c,WEL_Array[w,2]])
