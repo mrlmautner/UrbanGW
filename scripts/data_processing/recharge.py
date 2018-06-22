@@ -8,16 +8,28 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from mpl_toolkits.basemap import Basemap
 from osgeo import gdal
 
-xll = 457000
-yll = 2108000
-xur = 506000
-yur = 2143000
+os.chdir(r'E:\Tlalpan Model')
+
+xll = 455000
+yll = 2107000
+xur = 539000
+yur = 2175000
 cellsize = 500
-ncols = int((506000-457000)/cellsize) # ncols
-nrows = int((2143000-2108000)/cellsize) # nrows
+ncols = int((xur-xll)/cellsize) # ncols
+nrows = int((yur-yll)/cellsize) # nrows
+
+def world2Pixel(gt, x, y):
+  ulX = gt[0]
+  ulY = gt[3]
+  xDist = gt[1]
+  yDist = gt[5]
+  rtnX = gt[2]
+  rtnY = gt[4]
+  row = int((x - ulX) / xDist)
+  col = int((ulY - y) / yDist)
+  return (row, col)
 
 def getHeader(ncols,nrows,xll,yll,cellsize,noData):
     header = "ncols        %s\n" % ncols
@@ -33,11 +45,12 @@ def openASC(filename):
     band = ds.GetRasterBand(1)
     dsAsArray = band.ReadAsArray()
     return dsAsArray
-    
+ 
+#%%
 LU = {}
-RCH_Par = [0,0.5,1]
+RCH_Par = [1,0.5,1]
 for year in [1984,1997,2003,2010,2012]:
-    filename = r'C:\Users\MM\Google Drive\Tlalpan\Simulation_Wrapper\data\ModelInput\LU_' + str(year) + '.asc'
+    filename = r'Simulation_Wrapper\data\ModelInput\LU_' + str(year) + '.asc'
     LU_Array = openASC(filename)
     LU[str(year)] = LU_Array
 
@@ -63,10 +76,25 @@ for year in range(1984,2014):
     
     for month in range(1,13):
         
-        filename = r'C:\Users\MM\Google Drive\Tlalpan\Simulation_Wrapper\data\ModelInput\Precip_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
+        filename = r'Simulation_Wrapper\data\ModelInput\Precip_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
         precip = openASC(filename)
         
         recharge = precipMult*precip/1000
         
-        newfile = r'C:\Users\MM\Google Drive\Tlalpan\Simulation_Wrapper\data\ModelInput\RCH_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
+        newfile = r'Simulation_Wrapper\data\ModelInput\75RCH_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
         np.savetxt(newfile, recharge, header=header, fmt="%1.5f",comments='')
+        
+#%% Wells
+WEL_Dict = {}
+
+# Initialize dictionary with zero fluxes at layer 1, row 1, column 1
+for period in range(0,360):
+    WEL_Dict[period] = [[1,1,1,0]]
+
+WEL_Array = np.loadtxt(r'Data\Pumping Wells\20180430_Pumping_AllDatasets_InModel_WatershedClip.csv', delimiter=',', skiprows=1, usecols=[1,2,3,4,5])
+for w in range(0,WEL_Array.shape[0]):
+    c = int(np.ceil((WEL_Array[w,0] - xll)/cellsize))
+    r = int(np.ceil((yur - WEL_Array[w,1])/cellsize))
+    for y in range(int(WEL_Array[w,3]-1984),int(WEL_Array[w,4]-1984)):
+        for m in range(0,12):
+            WEL_Dict[y*12+m].append([2,r,c,WEL_Array[w,2]])
