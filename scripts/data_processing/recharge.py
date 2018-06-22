@@ -10,7 +10,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from osgeo import gdal
 
-os.chdir(r'E:\Tlalpan Model')
+os.chdir(r'F:\Tlalpan Model')
 
 xll = 455000
 yll = 2107000
@@ -47,45 +47,113 @@ def openASC(filename):
     return dsAsArray
  
 #%%
+DAYS_M = [31,28,31,30,31,30,31,31,30,31,30,31]
 LU = {}
 RCH_Par = [1,0.5,1]
 for year in [1984,1997,2003,2010,2012]:
-    filename = r'Simulation_Wrapper\data\ModelInput\LU_' + str(year) + '.asc'
+    filename = r'Simulation_Wrapper\data\Input\LU_' + str(year) + '.asc'
     LU_Array = openASC(filename)
     LU[str(year)] = LU_Array
+    
+GEO = openASC(r'Simulation_Wrapper\data\Input\GEO_VM.asc')
 
+#%% 1% Multiplier for lacustrine clays and 100% for all others
+geoMult = 0.01*(GEO==1)+(GEO!=1)
+
+#%%
 header = getHeader(ncols,nrows,xll,yll,cellsize,-99999)
-recharge = np.zeros((ncols,nrows))
 for year in range(1984,2014):
-    if year <= 1990:
+    if year < 1991:
         landusetxt = '1984'
-    elif 1990 < year <= 2000:
+    elif 1991 <= year < 2001:
         landusetxt = '1997'
-    elif 2000 < year <= 2006:
+    elif 2001 <= year < 2005:
         landusetxt = '2003'
-    elif 2006 < year <= 2011:
+    elif 2005 <= year < 2011:
         landusetxt = '2010'
-    elif 2011 < year <= 2013:
+    elif 2011 <= year < 2014:
         landusetxt = '2012'
         
     # Set effective precipitation percentages
-    precipMult = np.zeros((LU[landusetxt].shape))
-    precipMult[LU[landusetxt]==1] = RCH_Par[0]
-    precipMult[LU[landusetxt]==2] = RCH_Par[1]
-    precipMult[LU[landusetxt]==3] = RCH_Par[2]
+    precipMult1 = np.zeros((LU[landusetxt].shape))
+    precipMult2 = np.zeros((LU[landusetxt].shape))
+    precipMult3 = np.zeros((LU[landusetxt].shape))
+    precipMult1[LU[landusetxt]==1] = 1
+    precipMult2[LU[landusetxt]==2] = 1
+    precipMult3[LU[landusetxt]==3] = 1
     
     for month in range(1,13):
         
-        filename = r'Simulation_Wrapper\data\ModelInput\Precip_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
+        filename = r'Simulation_Wrapper\data\Input\RCH\Precip_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
         precip = openASC(filename)
         
-        recharge = precipMult*precip/1000
+        # Apply 1% recharge rate on the clay layer and separate by Recharge potential by LU type
+        recharge1 = geoMult*precipMult1*precip/1000/DAYS_M[month-1]
+        recharge2 = geoMult*precipMult2*precip/1000/DAYS_M[month-1]
+        recharge3 = geoMult*precipMult3*precip/1000/DAYS_M[month-1]
         
-        newfile = r'Simulation_Wrapper\data\ModelInput\75RCH_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
-        np.savetxt(newfile, recharge, header=header, fmt="%1.5f",comments='')
-        
+        newfile1 = r'Simulation_Wrapper\data\Input\RCH\ClayMult\RCH1_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
+        newfile2 = r'Simulation_Wrapper\data\Input\RCH\ClayMult\RCH2_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
+        newfile3 = r'Simulation_Wrapper\data\Input\RCH\ClayMult\RCH3_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
+        np.savetxt(newfile1, recharge1, header=header, fmt="%1.5f",comments='')
+        np.savetxt(newfile2, recharge2, header=header, fmt="%1.5f",comments='')
+        np.savetxt(newfile3, recharge3, header=header, fmt="%1.5f",comments='')
+
+#%% Create Average Precipitation RCH file for first time step
+header = getHeader(ncols,nrows,xll,yll,cellsize,-99999)
+avgPrecip = np.zeros((nrows,ncols))
+nprecip = 0
+
+for year in range(1984,2014):
+    for month in range(1,13):
+        filename = r'Simulation_Wrapper\data\Input\RCH\Precip_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
+        precip = openASC(filename)
+        avgPrecip += precip
+        nprecip += 1
+
+avgPrecip = avgPrecip/nprecip
+
+precipMult1 = np.zeros((LU['1984'].shape))
+precipMult2 = np.zeros((LU['1984'].shape))
+precipMult3 = np.zeros((LU['1984'].shape))
+precipMult1[LU['1984']==1] = 1
+precipMult2[LU['1984']==2] = 1
+precipMult3[LU['1984']==3] = 1
+
+recharge1 = geoMult*precipMult1*avgPrecip/1000/31
+recharge2 = geoMult*precipMult2*avgPrecip/1000/31
+recharge3 = geoMult*precipMult3*avgPrecip/1000/31
+
+newfile1 = r'Simulation_Wrapper\data\Input\RCH\ClayMult\RCH1_AVG.asc'
+newfile2 = r'Simulation_Wrapper\data\Input\RCH\ClayMult\RCH2_AVG.asc'
+newfile3 = r'Simulation_Wrapper\data\Input\RCH\ClayMult\RCH3_AVG.asc'
+
+np.savetxt(newfile1, recharge1, header=header, fmt="%1.5f",comments='')
+np.savetxt(newfile2, recharge2, header=header, fmt="%1.5f",comments='')
+np.savetxt(newfile3, recharge3, header=header, fmt="%1.5f",comments='')
+
+#%% Create Average Precipitation RCH file for monthly
+header = getHeader(ncols,nrows,xll,yll,cellsize,-99999)
+avgPrecip = np.zeros((12,nrows,ncols))
+nprecip = 0
+
+for year in range(1984,2014):
+    
+    for month in range(1,13):
+        filename = r'Simulation_Wrapper\data\Input\RCH\Precip_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
+        precip = openASC(filename)
+        avgPrecip[month-1] += precip
+
+    nprecip += 1
+
+for month in range(0,12):
+    avgPrecip[month] = avgPrecip[month]/nprecip
+    newfile1 = r'Simulation_Wrapper\data\Input\RCH\MTHLY\AVG_' + '{num:02d}'.format(num=month) + '.asc'
+    np.savetxt(newfile1, avgPrecip[month], header=header, fmt="%1.5f",comments='')
+
 #%% Wells
 WEL_Dict = {}
+WEL_map = np.zeros((136,168))
 
 # Initialize dictionary with zero fluxes at layer 1, row 1, column 1
 for period in range(0,360):
@@ -95,6 +163,10 @@ WEL_Array = np.loadtxt(r'Data\Pumping Wells\20180430_Pumping_AllDatasets_InModel
 for w in range(0,WEL_Array.shape[0]):
     c = int(np.ceil((WEL_Array[w,0] - xll)/cellsize))
     r = int(np.ceil((yur - WEL_Array[w,1])/cellsize))
+    
     for y in range(int(WEL_Array[w,3]-1984),int(WEL_Array[w,4]-1984)):
+        if(WEL_Array[w,3]-2005):
+            WEL_map[r-1,c-1] += WEL_Array[w,2]
+        
         for m in range(0,12):
             WEL_Dict[y*12+m].append([2,r,c,WEL_Array[w,2]])
