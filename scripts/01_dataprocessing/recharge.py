@@ -8,7 +8,7 @@ import os
 import numpy as np
 from osgeo import gdal
 
-os.chdir('...\Tlalpan Model')
+os.chdir(r'C:\Users\MM\Google Drive\UrbanGW')
 
 xll = 455000
 yll = 2107000
@@ -17,17 +17,6 @@ yur = 2175000
 cellsize = 500
 ncols = int((xur-xll)/cellsize) # ncols
 nrows = int((yur-yll)/cellsize) # nrows
-
-def world2Pixel(gt, x, y):
-  ulX = gt[0]
-  ulY = gt[3]
-  xDist = gt[1]
-  yDist = gt[5]
-  rtnX = gt[2]
-  rtnY = gt[4]
-  row = int((x - ulX) / xDist)
-  col = int((ulY - y) / yDist)
-  return (row, col)
 
 headerFile = open('','r')
 header = headerFile.read()
@@ -43,11 +32,11 @@ DAYS_M = [31,28,31,30,31,30,31,31,30,31,30,31]
 LU = {}
 RCH_Par = [1,0.5,1]
 for year in [1984,1997,2003,2010,2012]:
-    filename = r'Simulation_Wrapper\data\Input\LU_' + str(year) + '.asc'
+    filename = r'UrbanGW\data_output\LU_' + str(year) + '.asc'
     LU_Array = openASC(filename)
     LU[str(year)] = LU_Array
     
-GEO = openASC(r'Simulation_Wrapper\data\Input\GEO_VM.asc')
+GEO = openASC(r'UrbanGW\data_output\GEO_VM.asc')
 
 #%% 1% Multiplier for lacustrine clays and 100% for all others
 geoMult = 0.01*(GEO==1)+(GEO!=1)
@@ -76,7 +65,7 @@ for year in range(1984,2014):
     
     for month in range(1,13):
         
-        filename = r'Simulation_Wrapper\data\Input\RCH\Precip_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
+        filename = r'UrbanGW\data_output\RCH\Precip_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
         precip = openASC(filename)
         
         # Apply 1% recharge rate on the clay layer and separate by Recharge potential by LU type
@@ -84,9 +73,9 @@ for year in range(1984,2014):
         recharge2 = geoMult*precipMult2*precip/1000/DAYS_M[month-1]
         recharge3 = geoMult*precipMult3*precip/1000/DAYS_M[month-1]
         
-        newfile1 = r'Simulation_Wrapper\data\Input\RCH\ClayMult\RCH1_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
-        newfile2 = r'Simulation_Wrapper\data\Input\RCH\ClayMult\RCH2_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
-        newfile3 = r'Simulation_Wrapper\data\Input\RCH\ClayMult\RCH3_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
+        newfile1 = r'UrbanGW\data_output\RCH\ClayMult\RCH1_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
+        newfile2 = r'UrbanGW\data_output\RCH\ClayMult\RCH2_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
+        newfile3 = r'UrbanGW\data_output\RCH\ClayMult\RCH3_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
         np.savetxt(newfile1, recharge1, header=header, fmt="%1.5f",comments='')
         np.savetxt(newfile2, recharge2, header=header, fmt="%1.5f",comments='')
         np.savetxt(newfile3, recharge3, header=header, fmt="%1.5f",comments='')
@@ -98,7 +87,7 @@ nprecip = 0
 
 for year in range(1984,2014):
     for month in range(1,13):
-        filename = r'Simulation_Wrapper\data\Input\RCH\Precip_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
+        filename = r'UrbanGW\data_output\RCH\Precip_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
         precip = openASC(filename)
         avgPrecip += precip
         nprecip += 1
@@ -116,9 +105,9 @@ recharge1 = geoMult*precipMult1*avgPrecip/1000/31
 recharge2 = geoMult*precipMult2*avgPrecip/1000/31
 recharge3 = geoMult*precipMult3*avgPrecip/1000/31
 
-newfile1 = r'Simulation_Wrapper\data\Input\RCH\ClayMult\RCH1_AVG.asc'
-newfile2 = r'Simulation_Wrapper\data\Input\RCH\ClayMult\RCH2_AVG.asc'
-newfile3 = r'Simulation_Wrapper\data\Input\RCH\ClayMult\RCH3_AVG.asc'
+newfile1 = r'UrbanGW\data_output\RCH\ClayMult\RCH1_AVG.asc'
+newfile2 = r'UrbanGW\data_output\RCH\ClayMult\RCH2_AVG.asc'
+newfile3 = r'UrbanGW\data_output\RCH\ClayMult\RCH3_AVG.asc'
 
 np.savetxt(newfile1, recharge1, header=header, fmt="%1.5f",comments='')
 np.savetxt(newfile2, recharge2, header=header, fmt="%1.5f",comments='')
@@ -132,7 +121,7 @@ nprecip = 0
 for year in range(1984,2014):
     
     for month in range(1,13):
-        filename = r'Simulation_Wrapper\data\Input\RCH\Precip_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
+        filename = r'UrbanGW\data_output\RCH\Precip_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
         precip = openASC(filename)
         avgPrecip[month-1] += precip
 
@@ -140,5 +129,5 @@ for year in range(1984,2014):
 
 for month in range(0,12):
     avgPrecip[month] = avgPrecip[month]/nprecip
-    newfile1 = r'Simulation_Wrapper\data\Input\RCH\MTHLY\AVG_' + '{num:02d}'.format(num=month) + '.asc'
+    newfile1 = r'UrbanGW\data_output\RCH\MTHLY\AVG_' + '{num:02d}'.format(num=month) + '.asc'
     np.savetxt(newfile1, avgPrecip[month], header=header, fmt="%1.5f",comments='')
