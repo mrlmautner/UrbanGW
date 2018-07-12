@@ -6,11 +6,9 @@ Created on Wed Mar 14 13:33:24 2018
 """
 import os
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
 from osgeo import gdal
 
-os.chdir(r'F:\Tlalpan Model')
+os.chdir('...\Tlalpan Model')
 
 xll = 455000
 yll = 2107000
@@ -31,14 +29,8 @@ def world2Pixel(gt, x, y):
   col = int((ulY - y) / yDist)
   return (row, col)
 
-def getHeader(ncols,nrows,xll,yll,cellsize,noData):
-    header = "ncols        %s\n" % ncols
-    header += "nrows        %s\n" % nrows
-    header += "xllcorner    %s\n" % xll
-    header += "yllcorner    %s\n" % yll
-    header += "cellsize     %s\n" % cellsize
-    header += "NODATA_value     %s" % noData
-    return header
+headerFile = open('','r')
+header = headerFile.read()
 
 def openASC(filename):
     ds = gdal.Open(filename)
