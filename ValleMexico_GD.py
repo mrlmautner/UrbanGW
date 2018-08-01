@@ -5,7 +5,7 @@ Created on Tue Jul 31 16:41:28 2018
 @author: MM
 """
 
-from scripts import generategriddata as gen
+from gwscripts import Generategriddata as gen
 
 ## Initialize model extent
 # Lower left corner: (455000, 2107000)
@@ -39,8 +39,8 @@ for year in [1985,1990,1995,2000,2005,2010,2015]:
 # Geology raster
 filename = r'data_raw\GEOLOGY_ZONES.asc'
 newfile = r'data_output\GEO_VM.asc'
-header = scripts.dataprocessing.generategriddata.getHeader(ncols,nrows,xll,yll,cellsize,-99999)
-dsAsArray = scripts.dataprocessing.generategriddata.sampleGD(filename,newfile,header,xll,yll,xur,yur,cellsize)
+header = getHeader(ncols,nrows,xll,yll,cellsize,-99999)
+dsAsArray = sampleGD(filename,newfile,header,xll,yll,xur,yur,cellsize)
 
 #%%
 # DEM raster
