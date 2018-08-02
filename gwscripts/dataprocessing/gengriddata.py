@@ -35,3 +35,8 @@ def averageGD(filename,newfile,header,xll,yll,xur,yur,cellsize):
     np.savetxt(newfile, dsAsArray, header=header, fmt="%1.2f",comments='')
     return dsAsArray
 
+def openASC(filename):
+    ds = gdal.Open(filename)
+    band = ds.GetRasterBand(1)
+    dsAsArray = band.ReadAsArray()
+    return dsAsArray
