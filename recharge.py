@@ -47,7 +47,6 @@ for year in range(1984,2014):
     elif 2013 <= year < 2014:
         landusetxt = '2015'
     
-        
     # Set effective precipitation percentages
     precipMult1 = np.zeros((LU[landusetxt].shape))
     precipMult2 = np.zeros((LU[landusetxt].shape))
