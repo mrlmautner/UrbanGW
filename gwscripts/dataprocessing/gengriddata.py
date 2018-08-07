@@ -18,25 +18,25 @@ def getHeader(ncols,nrows,xll,yll,cellsize,noData):
     header += "NODATA_value     %s" % noData
     return header
 
-def sampleGD(filename,newfile,header,xll,yll,xur,yur,cellsize):
+def openASC(filename,band=1):
+    ds = gdal.Open(filename)
+    band = ds.GetRasterBand(band)
+    dsAsArray = band.ReadAsArray()
+    return dsAsArray
+
+def sampleGD(filename,newfile,header,xll,yll,xur,yur,cellsize,band=1):
     ds = gdal.Warp(newfile,filename,outputBounds=[xll, yll, xur, yur],xRes=cellsize,yRes=cellsize,resampleAlg=gdal.GRA_Mode)
-    band = ds.GetRasterBand(1)
+    band = ds.GetRasterBand(band)
     dsAsArray = band.ReadAsArray()
     
     np.savetxt(newfile, dsAsArray, header=header, fmt="%d",comments='')
     return dsAsArray
 
-def averageGD(filename,newfile,header,xll,yll,xur,yur,cellsize):
+def averageGD(filename,newfile,header,xll,yll,xur,yur,cellsize,band=1):
     ds = gdal.Warp(newfile,filename,outputBounds=[xll, yll, xur, yur],xRes=cellsize,yRes=cellsize,resampleAlg=gdal.GRA_Average)
-    band = ds.GetRasterBand(1)
+    band = ds.GetRasterBand(band)
     dsAsArray = band.ReadAsArray()
     dsAsArray = np.clip(dsAsArray, 0, np.inf)
     
     np.savetxt(newfile, dsAsArray, header=header, fmt="%1.2f",comments='')
-    return dsAsArray
-
-def openASC(filename):
-    ds = gdal.Open(filename)
-    band = ds.GetRasterBand(1)
-    dsAsArray = band.ReadAsArray()
     return dsAsArray
