@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
-df = pd.read_csv('C:/Users/MM/Google Drive/ValleMexico/Data/Analysis/Pumping/PUMP_POP_INEGI_REPDA_20180320.csv')
+df = pd.read_csv('C:/Users/MM/Google Drive/ValleMexico/Data/Pumping/PUMP_POP_INEGI_REPDA_20180320.csv')
 df = df.set_index(pd.to_datetime(df.Year.apply(lambda x: str(x)+'/01/01')))
 
 PSeries = df.PopZMVM_Census.dropna()
@@ -24,9 +24,11 @@ t2 = np.array([2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,
 p2 = df.PopZMVM_Proj.dropna()
 
 # Fit population curve
+# Census
 g1 = np.polyfit(t1, p1, 2)
 f1 = np.poly1d(g1)
 
+# CONAPO
 g2 = np.polyfit(t2, p2, 2)
 f2 = np.poly1d(g2)
 
@@ -47,9 +49,9 @@ plt.ylabel('Population')
 plt.legend(['CONAPO 2014 Projections','1895 to 2010 Census Data', 'Census Model','CONAPO Projection Model'])
 
 #%%
-PM = pd.DataFrame(np.transpose(np.array([x,Pt2])),columns=['Year','P'])
+PM = pd.DataFrame(np.transpose(np.array([x,Pt1])),columns=['Year','P'])
 PM = PM.set_index(pd.to_datetime(PM.Year.apply(lambda x: str(int(x))+'/01/01')))
-PM.to_csv('C:/Users/MM/Google Drive/ValleMexico/Data/Analysis/Pumping/POP_CM.csv')
+PM.to_csv('C:/Users/MM/Google Drive/ValleMexico/Data/Pumping/POP_CM.csv')
 
 Pop = PM.P['2005-01-01':'2016-01-01']
 Pop['2011-01-01'] = np.nan
@@ -57,23 +59,33 @@ Pop = Pop.dropna().values
 Q = df.REPDA_m3d.dropna().values
 
 WEL = pd.DataFrame(np.transpose(np.array([Q,Pop])/10**6),index=df.REPDA_m3d.dropna().index,columns=['Q','P'])
+#
+##Population
+#g = np.polyfit(Pop, Q, 1)
+#f = np.poly1d(g)
 
-g = np.polyfit(Pop, Q, 1)
+#Time
+year = np.arange(2005,2017)
+year = np.delete(year,6)
+g = np.polyfit(year, Q, 1)
 f = np.poly1d(g)
 
-x = np.arange(19*10**6,23*10**6,10**5)
-Qx = np.zeros(len(x))
-for i in range(0,len(x)):
-    Qx[i] = g[0]*x[i] + g[1]
-    
-residuals = f(Pop) - Q
+#residuals = f(Pop) - Q
+residuals = f(year) - Q
 ss_res = np.sum(residuals**2)
 ss_tot = np.sum((Q-np.mean(Q))**2)
 r_squared = 1 - (ss_res / ss_tot)
-rmse = np.sqrt(ss_res/len(Pop))
+#rmse = np.sqrt(ss_res/len(Pop))
+rmse = np.sqrt(ss_res/len(year))
 
 plt.grid(True)
-sns.regplot(x='P', y='Q', data=WEL,marker='.',order=1)
-plt.xlabel('Population (millions)')
+plt.xlim(1980,2020)
+#sns.regplot(x=Pop, y='Q', data=WEL,marker='.',order=1)
+sns.regplot(x=year, y='Q', data=WEL,marker='.',order=1)
+#plt.xlabel('Population (millions)')
+plt.xlabel('Year')
 plt.ylabel('Groundwater Concessions (' r'$hm^3/d$' ')')
+print(rmse)
+print(r_squared)
 print(f)
+
