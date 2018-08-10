@@ -60,30 +60,31 @@ Q = df.REPDA_m3d.dropna().values
 
 WEL = pd.DataFrame(np.transpose(np.array([Q,Pop])/10**6),index=df.REPDA_m3d.dropna().index,columns=['Q','P'])
 #
-##Population
-#g = np.polyfit(Pop, Q, 1)
-#f = np.poly1d(g)
-
-#Time
-year = np.arange(2005,2017)
-year = np.delete(year,6)
-g = np.polyfit(year, Q, 1)
+#Population
+g = np.polyfit(Pop, Q, 1)
 f = np.poly1d(g)
 
-#residuals = f(Pop) - Q
-residuals = f(year) - Q
+##Time
+#year = np.arange(2005,2017)
+#year = np.delete(year,6)
+#g = np.polyfit(year, Q, 1)
+#f = np.poly1d(g)
+
+residuals = f(Pop) - Q
+#residuals = f(year) - Q
 ss_res = np.sum(residuals**2)
 ss_tot = np.sum((Q-np.mean(Q))**2)
 r_squared = 1 - (ss_res / ss_tot)
-#rmse = np.sqrt(ss_res/len(Pop))
-rmse = np.sqrt(ss_res/len(year))
+rmse = np.sqrt(ss_res/len(Pop))
+#rmse = np.sqrt(ss_res/len(year))
 
 plt.grid(True)
-plt.xlim(1980,2020)
-#sns.regplot(x=Pop, y='Q', data=WEL,marker='.',order=1)
-sns.regplot(x=year, y='Q', data=WEL,marker='.',order=1)
-#plt.xlabel('Population (millions)')
-plt.xlabel('Year')
+plt.xlim(1.4e7,2.2e7)
+#plt.xlim(1980,2020)
+sns.regplot(x=Pop, y='Q', data=WEL,marker='.',order=1)
+#sns.regplot(x=year, y='Q', data=WEL,marker='.',order=1)
+plt.xlabel('Population (millions)')
+#plt.xlabel('Year')
 plt.ylabel('Groundwater Concessions (' r'$hm^3/d$' ')')
 print(rmse)
 print(r_squared)
