@@ -9,14 +9,13 @@ import flopy
 import numpy as np
 import matplotlib.pyplot as plt
 import flopy.utils.binaryfile as bf
-from osgeo import gdal
 import calendar
 import time
 
 timestart = time.time()
 print('Processing data...')
 
-def initializeFM(modelname,xll,yll,xur,yur,cellsize,ACTIVE,GEO,DEM,PHASE_PER):
+def initializeFM(modelname,xll,yll,xur,yur,cellsize,STRT_YEAR,END_YEAR,ACTIVE,GEO,DEM,H_INIT,PhaseParams,ZoneParams):
     # modelname to set the file root 
 
     #mf = flopy.modflow.Modflow.load(r'ValleyMexico_zones.nam',exe_name=r'C:\WRDAPP\MF2005.1_12\bin\mf2005.exe')
@@ -34,102 +33,67 @@ def initializeFM(modelname,xll,yll,xur,yur,cellsize,ACTIVE,GEO,DEM,PHASE_PER):
     delr = cellsize # Row height
     delc = cellsize # Column height
     
-    #%% Process parameter data
-    
-    LU = [1984,1997,2003,2010,2012]
-    URBAN = {}
-    NATURAL = {}
-    IRRIG = {}
-    for n in range(0,5):
-        filename = r'data\Input\LU_' + str(LU[n]) + '.asc'
-        LU_Array = openASC(filename)
-        
-        i = 0
-        node = np.zeros((nrow*ncol,7),dtype=np.int)
-        node[:,0] = np.arange(0,nrow*ncol)
-        
-        for r in range(nrow):
-            for c in range(ncol):
-                node[i,1] = ACTIVE[r,c] # Determine if ACTIVE
-                node[i,2] = r
-                node[i,3] = c
-                node[i,4] = LU_Array[r,c] # Assign LU value
-                i+=1
-        
-        node = node[node[:,1]==1,:]
-        URBAN[n] = node[node[:,4]==1,:]
-        NATURAL[n] = node[node[:,4]==2,:]
-        IRRIG[n] = node[node[:,4]==3,:]
-    
-    VK_PAR = [1.0e2,1.0e2,1.0e-1,1.0e-1,1.0e1]
-    SS_PAR = [3.28E-03,6.56E-05,3.28E-05,3.28E-06,3.28E-07]
-    #SY_PAR = [0.06,0.15,0.15,0.01,0.01]
-    
-    WEL_PAR = [8.871e-1,8.626e-1,9.509e-1,8.48e-1,8.538e-1] # Well pumping multiplier
-    LEAK_PAR = [4.28E-02, 4.85E-02, 4.86E-02, 6.00E-02, 5.75E-02] # Distribution system multiplier
-    HK_PAR = [4.32E-03,2.592E+01,4.32E+00,8.64E-02,8.6400E-05]
-    VK_PAR = [1.0E+02,1.0E+02,0.1,0.1,1.0E+01]
-    RCH_PAR = [3.65E-03, 3.94E-01, 1.29E-01] # Recharge multiplier for urban, natural, and irrigated cover
-    
-    #%% Time discretization
-    nper = 360 # Number of stress periods
+    # Time discretization
+    nper = (END_YEAR - STRT_YEAR)*12 # Number of stress periods
     nstp  = []
-    for y in range(1984,2014):
+    for y in range(STRT_YEAR,END_YEAR):
         for m in range(1,13):
             nstp.append(calendar.monthrange(y,m)[1])
     nstp[0] = 1
     nstp = np.array(nstp)
-    steady = np.zeros((360),dtype=bool)
-    steady[359] = True
+    steady = np.zeros((nper+1),dtype=bool)
+    steady[0] = True
     
-    #%% Model Boundaries & initial conditions
-    
-    # Create the discretization object
     dis = flopy.modflow.ModflowDis(mf, nlay=nlay, nrow=nrow, ncol=ncol, nper=nper, delr=delr, delc=delc,
                                    top=ztop, botm=botm, perlen = nstp, nstp=nstp, steady=steady)
-    
+        
+    # Model Boundaries & initial conditions
     # Active areas
     ibound = np.ones((nlay, nrow, ncol), dtype=np.int32)
     for i in range(0,3): ibound[i,:,:] = ibound[i,:,:]*ACTIVE
-    ibound[0,:,:] *= (np.array(GEO==1)+np.array(GEO==2))*1
+    ibound[0,:,:] *= np.array(GEO==1)
     
     # Variables for the BAS package
     strt = np.zeros((nlay, nrow, ncol), dtype=np.float32)
-    IH = bf.HeadFile('data\Input\IH-from-SS.hds')
-    strt = IH.get_data(totim=1.0)
+    strt = H_INIT.get_data(totim=1.0)
     
     bas = flopy.modflow.ModflowBas(mf, ibound=ibound, strt=strt, ifrefm=True, ichflg=True, stoper=1)
-        
-    #%% Layer properties
+    
+    # Layer properties
     # Add LPF package to the MODFLOW model
     # Hydraulic conductivity
-    HK_LYR1 = (GEO==1)*HK_PAR[0] + (GEO==2)*HK_PAR[1]
-    HK_LYR2 = (GEO==1)*HK_PAR[1] + (GEO==2)*HK_PAR[1] + (GEO==3)*HK_PAR[2] + (GEO==4)*HK_PAR[3]
-    HK_LYR3 = HK_PAR[4]
+    HK_LYR1 = (GEO==1)*PhaseParams[0,0]
+    HK_LYR2 = (GEO==1)*PhaseParams[0,1] + (GEO==2)*PhaseParams[0,1] + (GEO==3)*PhaseParams[0,2] 
+                + (GEO==4)*PhaseParams[0,3] + (GEO==5)*PhaseParams[0,4]
+    HK_LYR3 = PhaseParams[0,5]
     HK = np.array([HK_LYR1,HK_LYR2,HK_LYR3])
     
     # Vertical anisotropy (H:V) of hydraulic conductivity
-    VK_LYR1 = (GEO==1)*VK_PAR[0] + (GEO==2)*VK_PAR[1]
-    VK_LYR2 = (GEO==1)*VK_PAR[0] + (GEO==2)*VK_PAR[1] + (GEO==3)*VK_PAR[2] + (GEO==4)*VK_PAR[3]
-    VK_LYR3 = VK_PAR[4]
+    VK_LYR1 = (GEO==1)*PhaseParams[1,0]
+    VK_LYR2 = (GEO==1)*PhaseParams[1,1] + (GEO==2)*PhaseParams[1,1] + (GEO==3)*PhaseParams[1,2] 
+                + (GEO==4)*PhaseParams[1,3] + (GEO==5)*PhaseParams[1,4]
+    VK_LYR3 = PhaseParams[1,5]
     VKA = np.array([VK_LYR1,VK_LYR2,VK_LYR3])
     
     # Specific storage
-    SS_LYR1 = (GEO==1)*SS_PAR[0] + (GEO==2)*SS_PAR[1]
-    SS_LYR2 = (GEO==1)*SS_PAR[0] + (GEO==2)*SS_PAR[1] + (GEO==3)*SS_PAR[2] + (GEO==4)*SS_PAR[3]
-    SS_LYR3 = SS_PAR[4]
+    SS_LYR1 = (GEO==1)*PhaseParams[2,0]
+    SS_LYR2 = (GEO==1)*PhaseParams[2,1] + (GEO==2)*PhaseParams[2,1] + (GEO==3)*PhaseParams[2,2] 
+                + (GEO==4)*PhaseParams[2,3] + (GEO==5)*PhaseParams[2,4]
+    SS_LYR3 = PhaseParams[2,5]
     SS = np.array([SS_LYR1,SS_LYR2,SS_LYR3])
     
     ## Specific yield
-    #SY_LYR1 = (GEO==1)*SY_PAR[0] + (GEO==2)*SY_PAR[1]
-    #SY_LYR2 = (GEO==1)*SY_PAR[0] + (GEO==2)*SY_PAR[1] + (GEO==3)*SY_PAR[2] + (GEO==4)*SY_PAR[3]
-    #SY_LYR3 = SY_PAR[4]
-    #SY = np.array([SY_LYR1,SY_LYR2,SY_LYR3])
+    SY_LYR1 = (GEO==1)*PhaseParams[3,0]
+    SY_LYR2 = (GEO==1)*PhaseParams[3,1] + (GEO==2)*PhaseParams[3,1] + (GEO==3)*PhaseParams[3,2] 
+                + (GEO==4)*PhaseParams[3,3] + (GEO==5)*PhaseParams[3,4]
+    SY_LYR3 = PhaseParams[3,5]
+    SY = np.array([SY_LYR1,SY_LYR2,SY_LYR3])
     
     lpf = flopy.modflow.mflpf.ModflowLpf(mf, ipakcb=9, hdry=-1e+20, laytyp=[0,0,0], layvka=[1,1,1], 
-                                         laywet=[0,0,0], hk=HK, vka=VKA, ss=SS)
-    #lpf = flopy.modflow.ModflowLpf.load(r'Tlalpan1.lpf', mf)
+                                         laywet=[0,0,0], hk=HK, vka=VKA, ss=SS, sy=SY)
     
+    return ncol, nrow, mf, dis, bas, lpf
+
     #%% Wells
     WEL_Dict = {}
     
@@ -226,24 +190,3 @@ def initializeFM(modelname,xll,yll,xur,yur,cellsize,ACTIVE,GEO,DEM,PHASE_PER):
     
     hds = bf.HeadFile(modelname+'.hds')
     h = hds.get_data(totim=1.0)
-    
-    #%% Plotting
-    
-    fig, axes = plt.subplots(2, 3, figsize=(11, 8.5))
-    axes = axes.flat
-    for i, hdslayer in enumerate(hds):
-        im = axes[i].imshow(hdslayer, vmin=0, vmax=hds.max())
-        axes[i].set_title('Layer {}'.format(i+1))
-        ctr = axes[i].contour(hdslayer, colors='k', linewidths=0.5)
-        
-        # export head rasters 
-        # (GeoTiff export requires the rasterio package; for ascii grids, just change the extention to *.asc)
-        mf.sr.export_array('data/heads{}.tif'.format(i+1), hdslayer)
-        
-        # export head contours to a shapefile
-        mf.sr.export_array_contours('data/heads{}.shp'.format(i+1), hdslayer)
-        
-    fig.delaxes(axes[-1])
-    fig.subplots_adjust(right=0.8)
-    cbar_ax = fig.add_axes([0.85, 0.15, 0.03, 0.7])
-    fig.colorbar(im, cax=cbar_ax, label='Head')
