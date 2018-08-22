@@ -13,6 +13,7 @@ import flopy.utils.binaryfile as bf
 import calendar
 import time
 from gwscripts.dataprocessing import gengriddata as gen
+from gwscripts.flopymodel import flomodelvm as mod
 
 xll = 455000
 yll = 2107000
@@ -20,142 +21,56 @@ xur = 539000
 yur = 2175000
 cellsize = 500
 
+STRT_YEAR = 1984
+END_YEAR = 2014
+
 # Load datasets
 ACTIVE = gen.openASC('data_output\ACTIVE_VM.asc')
 GEO = gen.openASC('data_output\GEO_VM.asc')
 DEM = gen.openASC('data_output\DEM_VM.asc')
 
+H_INIT = bf.HeadFile('data_output\IH-from-SS.hds')
+
 # Assign name and create modflow model object
 modelname = 'VM_Test'
-#mf = flopy.modflow.Modflow.load(r'ValleyMexico_zones.nam',exe_name=r'C:\WRDAPP\MF2005.1_12\bin\mf2005.exe')
-mf = flopy.modflow.Modflow(modelname, exe_name=r'C:\WRDAPP\MF2005.1_12\bin\mf2005.exe')
-
-# Model domain and grid definition
-ztop = DEM # Model top elevation (Digital Elevation Model)
-L1botm = ztop - 50 # Layer 1 bottom elevation
-L2botm = L1botm - 350 # Layer 2 bottom elevation
-L3botm = L2botm - 1500 # Layer 3 bottom elevation
-botm = [L1botm,L2botm,L3botm] # Model bottom elevation
-nlay = 3 # Number of layers
-Lx = xur - xll # Model width (X length)
-Ly = yur - yll # Model height (Y length)
-ncol = int((xur-xll)/cellsize) # Number of rows
-nrow = int((yur-yll)/cellsize) # Number of columns
-delr = cellsize # Row height
-delc = cellsize # Column height
 
 #%% Process parameter data
+# COL1: Phase period starting stress period
+PHASE_PER = [2, 121, 241, 361]
+# COL2 : Phase year
+LU_PAR = [1985, 1990, 2000, 2010]
+# COL3 : Phase well pumping multiplier 
+WEL_PAR = [0.64, 1.42, 1.49, 2.00]
+#COL3 : Phase distribution system leak multiplier
+LEAK_PAR = np.array([40.94, 40.94, 40.94, 40.94])
+# COL4 : Phase LID increase multiplier
+LID_PAR = [1, 1, 1, 1]
+# COL5 :  
+PhaseParams = np.array([PHASE_PER,LU_PAR,WEL_PAR,LEAK_PAR,LID_PAR])
 
-#PhaseParams = np.zeros((7,))
-# COL1 : Phase year
-LU = [1985,1990,1995,2000,2005,2010,2015]
-# COL2 : Phase period starting stress period
-PHASE_PER = [1, 48, 204, 252, 324, 360]
-#***** COL3 : Phase well pumping multiplier
-WEL_PAR = [8.871e-1,8.626e-1,9.509e-1,8.48e-1,8.538e-1]
-# COL4 : Phase distribution system leak multiplier
-LEAK_Q = 60.3*86400 # m3/d
-LEAK_PAR = np.array([4.28E-02, 4.85E-02, 4.86E-02, 6.00E-02, 5.75E-02])*LEAK_Q
-# COL5 : Phase LID increase multiplier
-LID_PAR = [1, 1, 1, 1, 1, 1, 1]
-# COL : 
-#ZoneParams = np.zeros((6,))
 # COL1 : Zone hydraulic conductivity vertical anisotropy
-VK_PAR = [1.0e2,1.0e2,1.0e-1,1.0e-1,1.0e1]
+VK_PAR = [100,100,10,0.1,0.01,10]
 # COL2 : Zone specific storage
-SS_PAR = [3.28E-03,6.56E-05,3.28E-05,3.28E-06,3.28E-07]
+SS_PAR = [6.56E-02,3.28E-04,3.28E-04,1.64E-05,1.64E-05,3.28E-06]
 # COL3 : Zone hydraulic conductivity
-HK_PAR = [4.32E-03,2.592E+01,4.32E+00,8.64E-02,8.6400E-05] # m/d
+HK_PAR = [4.32E-03,43.20,0.432,4.32,0.0432,8.64E-05] # m/d
 # COL4 : Zone specific yield
-#SY_PAR = [0.06,0.15,0.15,0.01,0.01]
+SY_PAR = [0.06,0.15,0.15,0.30,0.01,0.01]
+ZoneParams = np.array([HK_PAR,VK_PAR,SS_PAR,SY_PAR])
 
-RCH_PAR = [3.65E-03, 3.94E-01, 1.29E-01] # Recharge multiplier for urban, natural, and irrigated cover
+RCH_PAR = [1.00E-02, 25.00E-02, 50.00E-02] # Recharge multiplier for urban, natural, and water cover
 
+ncol, nrow, mf, dis, bas, lpf = mod.initializeFM(modelname,xll,yll,xur,yur,cellsize,
+                                                 STRT_YEAR,END_YEAR,ACTIVE,GEO,DEM,H_INIT,
+                                                 PhaseParams,ZoneParams)
 #%% Assign Land Use Types
-URBAN = {}
-NATURAL = {}
-WATER = {}
-for n in range(0,7):
-    filename = r'data_output\LU\LU_' + str(LU[n]) + '.asc'
-    for band, LUtype in enumerate([URBAN,NATURAL,WATER]):
-        LU_Array = gen.openASC(filename,band)
-        LUtype[LU[n]][0] = LU_Array
-        
-        i = 0
-        node = np.zeros((nrow*ncol,7),dtype=np.int)
-        node[:,0] = np.arange(0,nrow*ncol)
-        
-        for r in range(nrow):
-            for c in range(ncol):
-                node[i,1] = ACTIVE[r,c] # Determine if ACTIVE
-                node[i,2] = r
-                node[i,3] = c
-                node[i,4] = LU_Array[r,c] # Assign LU value
-                i+=1
-        
-        node = node[node[:,1]==1,:]
-        LUtype[LU[n]][1] = node[node[:,4]==band,:]
+LU = {'0':{},'1':{},'2':{}}
+LU_PAR = [1985, 1990, 2000, 2010]
+for n in range(0,4):
+    for l, LUtype in enumerate(['URBAN','NATURAL','WATER']):
+        filename = r'C:\Users\MM\Google Drive\UrbanGW\data_output\landuse\LU-' + str(LU_PAR[n]) + '-' + LUtype + '.asc'
+        LU[str(l)][str(LU_PAR[n])] = gen.openASC(filename)
 
-
-##%% Time discretization
-#nper = 360 # Number of stress periods
-#nstp  = []
-#for y in range(1984,2014):
-#    for m in range(1,13):
-#        nstp.append(calendar.monthrange(y,m)[1])
-#nstp[0] = 1
-#nstp = np.array(nstp)
-#steady = np.zeros((360),dtype=bool)
-#steady[359] = True
-#
-##%% Model Boundaries & initial conditions
-#
-## Create the discretization object
-#dis = flopy.modflow.ModflowDis(mf, nlay=nlay, nrow=nrow, ncol=ncol, nper=nper, delr=delr, delc=delc,
-#                               top=ztop, botm=botm, perlen = nstp, nstp=nstp, steady=steady)
-#
-## Active areas
-#ibound = np.ones((nlay, nrow, ncol), dtype=np.int32)
-#for i in range(0,3): ibound[i,:,:] = ibound[i,:,:]*ACTIVE
-#ibound[0,:,:] *= (np.array(GEO==1)+np.array(GEO==2))*1
-#
-## Variables for the BAS package
-#strt = np.zeros((nlay, nrow, ncol), dtype=np.float32)
-#IH = bf.HeadFile('data\Input\IH-from-SS.hds')
-#strt = IH.get_data(totim=1.0)
-#
-#bas = flopy.modflow.ModflowBas(mf, ibound=ibound, strt=strt, ifrefm=True, ichflg=True, stoper=1)
-#    
-##%% Layer properties
-## Add LPF package to the MODFLOW model
-## Hydraulic conductivity
-#HK_LYR1 = (GEO==1)*HK_PAR[0] + (GEO==2)*HK_PAR[1]
-#HK_LYR2 = (GEO==1)*HK_PAR[1] + (GEO==2)*HK_PAR[1] + (GEO==3)*HK_PAR[2] + (GEO==4)*HK_PAR[3]
-#HK_LYR3 = HK_PAR[4]
-#HK = np.array([HK_LYR1,HK_LYR2,HK_LYR3])
-#
-## Vertical anisotropy (H:V) of hydraulic conductivity
-#VK_LYR1 = (GEO==1)*VK_PAR[0] + (GEO==2)*VK_PAR[1]
-#VK_LYR2 = (GEO==1)*VK_PAR[0] + (GEO==2)*VK_PAR[1] + (GEO==3)*VK_PAR[2] + (GEO==4)*VK_PAR[3]
-#VK_LYR3 = VK_PAR[4]
-#VKA = np.array([VK_LYR1,VK_LYR2,VK_LYR3])
-#
-## Specific storage
-#SS_LYR1 = (GEO==1)*SS_PAR[0] + (GEO==2)*SS_PAR[1]
-#SS_LYR2 = (GEO==1)*SS_PAR[0] + (GEO==2)*SS_PAR[1] + (GEO==3)*SS_PAR[2] + (GEO==4)*SS_PAR[3]
-#SS_LYR3 = SS_PAR[4]
-#SS = np.array([SS_LYR1,SS_LYR2,SS_LYR3])
-#
-### Specific yield
-##SY_LYR1 = (GEO==1)*SY_PAR[0] + (GEO==2)*SY_PAR[1]
-##SY_LYR2 = (GEO==1)*SY_PAR[0] + (GEO==2)*SY_PAR[1] + (GEO==3)*SY_PAR[2] + (GEO==4)*SY_PAR[3]
-##SY_LYR3 = SY_PAR[4]
-##SY = np.array([SY_LYR1,SY_LYR2,SY_LYR3])
-#
-#lpf = flopy.modflow.mflpf.ModflowLpf(mf, ipakcb=9, hdry=-1e+20, laytyp=[0,0,0], layvka=[1,1,1], 
-#                                     laywet=[0,0,0], hk=HK, vka=VKA, ss=SS)
-##lpf = flopy.modflow.ModflowLpf.load(r'Tlalpan1.lpf', mf)
-#
 ##%% Wells
 #WEL_Dict = {}
 #WEL_map = np.zeros((136,168))
@@ -253,24 +168,3 @@ for n in range(0,7):
 #
 #hds = bf.HeadFile(modelname+'.hds')
 #h = hds.get_data(totim=1.0)
-#
-##%% Plotting
-#
-#fig, axes = plt.subplots(2, 3, figsize=(11, 8.5))
-#axes = axes.flat
-#for i, hdslayer in enumerate(hds):
-#    im = axes[i].imshow(hdslayer, vmin=0, vmax=hds.max())
-#    axes[i].set_title('Layer {}'.format(i+1))
-#    ctr = axes[i].contour(hdslayer, colors='k', linewidths=0.5)
-#    
-#    # export head rasters 
-#    # (GeoTiff export requires the rasterio package; for ascii grids, just change the extention to *.asc)
-#    mf.sr.export_array('data/heads{}.tif'.format(i+1), hdslayer)
-#    
-#    # export head contours to a shapefile
-#    mf.sr.export_array_contours('data/heads{}.shp'.format(i+1), hdslayer)
-#    
-#fig.delaxes(axes[-1])
-#fig.subplots_adjust(right=0.8)
-#cbar_ax = fig.add_axes([0.85, 0.15, 0.03, 0.7])
-#fig.colorbar(im, cax=cbar_ax, label='Head')
