@@ -15,6 +15,8 @@ import time
 from gwscripts.dataprocessing import gengriddata as gen
 from gwscripts.flopymodel import flomodelvm as mod
 
+timestart = time.time()
+
 xll = 455000
 yll = 2107000
 xur = 539000
@@ -29,8 +31,6 @@ ACTIVE = gen.openASC('data_output\ACTIVE_VM.asc')
 GEO = gen.openASC('data_output\GEO_VM.asc')
 DEM = gen.openASC('data_output\DEM_VM.asc')
 
-H_INIT = bf.HeadFile('data_output\IH-from-SS.hds')
-
 # Assign name and create modflow model object
 modelname = 'VM_Test'
 
@@ -40,7 +40,7 @@ PHASE_PER = [2, 121, 241, 361]
 # COL2 : Phase year
 LU_PAR = [1985, 1990, 2000, 2010]
 # COL3 : Phase well pumping multiplier 
-WEL_PAR = [0.64, 1.42, 1.49, 2.00]
+WEL_PAR = [0.58, 1.33,1.446,1.687]
 #COL3 : Phase distribution system leak multiplier
 LEAK_PAR = np.array([40.94, 40.94, 40.94, 40.94])
 # COL4 : Phase LID increase multiplier
@@ -51,120 +51,133 @@ PhaseParams = np.array([PHASE_PER,LU_PAR,WEL_PAR,LEAK_PAR,LID_PAR])
 # COL1 : Zone hydraulic conductivity vertical anisotropy
 VK_PAR = [100,100,10,0.1,0.01,10]
 # COL2 : Zone specific storage
-SS_PAR = [6.56E-02,3.28E-04,3.28E-04,1.64E-05,1.64E-05,3.28E-06]
+SS_PAR = [0.0656,0.000328,0.000328,0.0000164,0.0000164,0.00000328]#[6.56E-02,3.28E-04,3.28E-04,1.64E-05,1.64E-05,3.28E-06]
 # COL3 : Zone hydraulic conductivity
-HK_PAR = [4.32E-03,43.20,0.432,4.32,0.0432,8.64E-05] # m/d
+HK_PAR = [0.00432,8121,12.83,3.99,0.0432,0.0000864]#[4.32E-03,43.20,0.432,4.32,0.0432,8.64E-05] # m/d
 # COL4 : Zone specific yield
 SY_PAR = [0.06,0.15,0.15,0.30,0.01,0.01]
 ZoneParams = np.array([HK_PAR,VK_PAR,SS_PAR,SY_PAR])
 
-RCH_PAR = [1.00E-02, 25.00E-02, 50.00E-02] # Recharge multiplier for urban, natural, and water cover
+RCH_PAR = [1.00E-02, 0.7051, 50.00E-02] # Recharge multiplier for urban, natural, and water cover
 
 ncol, nrow, mf, dis, bas, lpf = mod.initializeFM(modelname,xll,yll,xur,yur,cellsize,
-                                                 STRT_YEAR,END_YEAR,ACTIVE,GEO,DEM,H_INIT,
-                                                 PhaseParams,ZoneParams)
-#%% Assign Land Use Types
-LU = {'0':{},'1':{},'2':{}}
-LU_PAR = [1985, 1990, 2000, 2010]
-for n in range(0,4):
-    for l, LUtype in enumerate(['URBAN','NATURAL','WATER']):
-        filename = r'C:\Users\MM\Google Drive\UrbanGW\data_output\landuse\LU-' + str(LU_PAR[n]) + '-' + LUtype + '.asc'
-        LU[str(l)][str(LU_PAR[n])] = gen.openASC(filename)
+                                                 STRT_YEAR,END_YEAR,ACTIVE,GEO,DEM,
+                                                 ZoneParams)
 
-##%% Wells
-#WEL_Dict = {}
-#WEL_map = np.zeros((136,168))
-#
-## Initialize dictionary with zero fluxes at layer 1, row 1, column 1
-#for period in range(0,360):
-#    WEL_Dict[period] = [[0,1,1,0]]
-#
-## Add pumping wells for all years in the study period (extend datasets backwards)
-#WEL_Array = np.loadtxt(r'data\RawFiles\PumpingWells\20180430_Pumping_AllDatasets_InModel_WatershedClip_Abridged.csv',
-#                                              delimiter=',', skiprows=1, usecols=[1,2,6,9,10]) # pumping in m3 per day
-#for w in range(0,WEL_Array.shape[0]):
-#    c = int(np.floor((WEL_Array[w,0] - xll)/cellsize))
-#    r = int(np.floor((yur - WEL_Array[w,1])/cellsize))
+print('Basic, Discretization, and Layer packages generated in',str(time.time()-timestart),'seconds')
+
+#%% Assign Land Use Types
+#LU = {'0':{},'1':{},'2':{}}
+#LU_PAR = [1985, 1990, 2000, 2010]
+#for n in range(0,4):
+#    for l, LUtype in enumerate(['URBAN','NATURAL','WATER']):
+#        filename = r'C:\Users\MM\Google Drive\UrbanGW\data_output\landuse\LU-' + str(LU_PAR[n]) + '-' + LUtype + '.asc'
+#        LU[str(l)][str(LU_PAR[n])] = gen.openASC(filename)
+
+
+#%% Well objects: supply wells, distribution leaks, injection wells, wastewater reuse, recharge basins
+newtime = time.time()
+
+PUMP_PARAM = [1,WEL_PAR[0],WEL_PAR[1],WEL_PAR[2],WEL_PAR[0],WEL_PAR[1],WEL_PAR[2],WEL_PAR[3]]
+start = [1984-1/12,1984-1/12,1984,1995,1984-1/12,1984,1995,2005]
+end = [1984,1984,1995,2005,1984,1995,2005,2014]
+
+PUMP_array = np.loadtxt(r'C:\Users\MM\Google Drive\UrbanGW\data_output\wells\PUMP_CS.csv',
+                                              delimiter=',', skiprows=1, usecols=[1,2,4,5,11]) # pumping in m3 per day
+WEL_DICT = mod.addNewWells(PUMP_array,LYR=1)
+
+# Add supply wells
+for i, wellset in enumerate(['PUMP_C1984','PUMP_S05_Q','PUMP_S05_Q','PUMP_S05_Q','PUMP_RC_Q','PUMP_RC_Q','PUMP_RC_Q','PUMP_RC_Q']):
+    PUMP_array = np.loadtxt(r'C:\Users\MM\Google Drive\UrbanGW\data_output\wells\\' + wellset + '.csv',
+                                              delimiter=',', skiprows=1, usecols=[1,2,4,5,11]) # pumping in m3 per day
+    
+    WEL_DICT = mod.addNewWells(New_WEL=PUMP_array,LYR=1,WEL_Dict=WEL_DICT,WEL_mult=PUMP_PARAM[i],S_YR=start[i],E_YR=end[i])
+
+# Add leak wells
+start = [1984-1/12,1984,1995,2005]
+end = [1984,1995,2005,2014]
+for i, leakset in enumerate(['1985','1990','2000','2010']):
+    LEAK_array = np.loadtxt(r'C:\Users\MM\Google Drive\UrbanGW\data_output\leak\LEAK_' + leakset + '.csv',
+                                              delimiter=',', skiprows=1, usecols=[2,1,7]) # pumping in m3 per day
+    LEAK_array = np.insert(LEAK_array, 2, start[i], axis=1)
+    LEAK_array = np.insert(LEAK_array, 3, end[i], axis=1)
+    WEL_DICT = mod.addNewWells(LEAK_array,LYR=1,WEL_Dict=WEL_DICT,WEL_mult=LEAK_PAR[i],coordType='rc')
+
+## Add the difference between the installed WWTP minus the actual treatment quantity (m3/s)
+#WWTP_array = np.loadtxt(r'data_output\scenarios\WWTP.csv', delimiter=',', skiprows=1, usecols=[9,8,5,6])
+#WWTP_array[:,3] = WWTP_array[:,2] - WWTP_array[:,3]
+#WWTP_array = np.insert(WWTP_array, 2, 1984, axis=1)
+#WWTP_array[WWTP_array[:,3]<0.1,2] = 1984+5
+#WWTP_array[WWTP_array[:,3]>=0.1,2] = 1984+10
+#WWTP_array[:,3] = np.ones(WWTP_array.shape[0])*2014
+#WEL_DICT = mod.addNewWells(WWTP_array,LYR=1,WEL_Dict=WEL_DICT,WEL_mult=60*60*24) # Mult used to convert to m3/d
+
+#%% Recharge Basins
+#Basin_Array = np.loadtxt(r'data\Input\Scenarios\RechargeBasins_Elevation.csv', delimiter=',', skiprows=1, usecols=[13,15,16])
+#bLoc = [[22,121],[48,122],[54,92],[66,125],[84,120]]
+#for b in range(0,5):
+##    randBasin = np.random.randint(0,Basin_Array.shape[0])
+##    c = int(np.floor((Basin_Array[randBasin,1] - xll)/cellsize))
+##    r = int(np.floor((yur - Basin_Array[randBasin,2])/cellsize))
+#    r = bLoc[b][0]
+#    c = bLoc[b][1]
 #    
-#    for per in range(int(WEL_Array[w,3]),int(WEL_Array[w,4])):
-#        # Assign pumping multiplier for each parameter period
-#        if per < PAR_LIM[0]:
-#            param = 0
-#        else:
-#            if PAR_LIM[0] <= per < PAR_LIM[1]:
-#                param = 0
-#            elif PAR_LIM[1] <= per < PAR_LIM[2]:
-#                param = 1
-#            elif PAR_LIM[2] <= per < PAR_LIM[3]:
-#                param = 2
-#            elif PAR_LIM[3] <= per < PAR_LIM[4]:
-#                param = 3
-#            elif PAR_LIM[4] <= per:
-#                param = 4
-#            
-#            WEL_Dict[per].append([1,r,c,WEL_Array[w,2]*WEL_PAR[param]])
-#
-## Add leak wells for all years in the study period
-#for param in range(0,4):
-#    for n in range(0,URBAN[param].shape[0]):
-#        for per in range(PAR_LIM[param],PAR_LIM[param+1]):
-#            WEL_Dict[per].append([1,URBAN[param][n,2],URBAN[param][n,3],LEAK_PAR[param]/URBAN[param].shape[0]])
-#
-#wel = flopy.modflow.ModflowWel(mf, stress_period_data=WEL_Dict)
-#
-##%% Recharge
-#RCH_Dict = {}
-#precip = []
-#
-#for year in range(1984,2014):
-#    for month in range(0,12):
-#        
-#        per = (year-1984)*12+month
-#        RCH_Array = np.zeros((nrow,ncol))
-#        
-#        for lu in range(0,3):
-#            filename = r'data\Input\RCH\ClayMult\RCH' + str(lu+1) + '_' + str(year) + '_' + '{num:02d}'.format(num=month+1) + '.asc'
-#            precip = gen.openASC(filename)
-#            RCH_Array += precip*RCH_PAR[lu]
-#        
-#        RCH_Dict[per] = RCH_Array
-#        
-#for lu in range(0,3):
-#    filename = r'data\Input\RCH\RCH' + str(lu+1) + '_AVG.asc'
-#    precip = gen.openASC(filename)
-#    RCH_Array += precip*RCH_PAR[lu]
-#    
-#    RCH_Dict[0] = RCH_Array
-#    
-#rch = flopy.modflow.ModflowRch(mf, nrchop=3,  ipakcb=9, rech=RCH_Dict)
-#
-##%% Output Control and Solver
-## Add OC package to the MODFLOW model
-#spd = {}
-#data2record = ['save head', 'save drawdown', 'save budget', 'print budget']
-#spd[0,30] = ['save head', 'save drawdown', 'save budget', 'print budget', 'ddreference' ]
-#for m in range(0,12):
-#    for d in range(0,calendar.monthrange(1984,m+1)[1]):
-#        spd[m,d] = data2record.copy()
-#for y in range(0,30):
-#    for m in range(1,12):
-#        spd[y*12+m,(calendar.monthrange(1984+y,m+1)[1]-1)] = data2record.copy()
-#for p in [6,20,32,41,54,78,90,102,114,128,138,150,162,175,187,198,213,225,235]:
-#    spd[p,0] = data2record.copy()
-#oc = flopy.modflow.ModflowOc(mf, stress_period_data=spd, compact=True)
-#
-## Add PCG package to the MODFLOW model
-#pcg = flopy.modflow.ModflowPcg(mf)
-#
-##%% Run Model and post processing
-## Write the MODFLOW model input files
-#print('Data processed in',str(time.time()-timestart),'seconds')
-#print('Writing input file...')
-#mf.write_input()
-#print('Input file written in',str(time.time()-timestart),'seconds')
-#
-## Run the MODFLOW model
-#success, buff = mf.run_model()
-#
-#hds = bf.HeadFile(modelname+'.hds')
-#h = hds.get_data(totim=1.0)
+#    for per in range(5*12,360):
+#        # Add injection equal to treatment capacity for each parameter period
+#        WEL_Dict[per].append([0,r,c,0.9648*86400]) # 1 m3/s recharge basins (35 cfs)
+
+wel = flopy.modflow.ModflowWel(mf, stress_period_data=WEL_DICT)
+
+print('WEL_Dict generated in',str(time.time()-newtime),'seconds')
+
+#%% Recharge
+newtime = time.time()
+
+start = [0,1984,1995,2005]
+end = [0,1995,2005,2014]
+rch = {0:[0.01,0.267,0.5],1:RCH_PAR,2:RCH_PAR,3:RCH_PAR}
+
+RCH_DICT = {}
+Precip_Dict = {}
+
+filename = r'data_output\recharge\claymult\PrecipCM_AVG.asc'
+Precip_Dict[0] = gen.openASC(filename)
+
+for year in range(int(STRT_YEAR),int(END_YEAR)):
+    for month in range(1,13):
+        per = (year-1984)*12+month
+    
+        filename = r'data_output\recharge\claymult\PrecipCM_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
+        Precip_Dict[per] = gen.openASC(filename)
+        
+for i, LUset in enumerate(['1985','1990','2000','2010']):
+    LU = [0]*3
+    
+    for l, LUtype in enumerate(['URBAN','NATURAL','WATER']):
+        filename = r'data_output\landuse\LU-' + LUset + '-' + LUtype + '.asc'
+        LU[l] = gen.openASC(filename)
+    
+    RCH_DICT = mod.addRecharge(LU_arrays=LU,PRECIP=Precip_Dict,S_YR=start[i],E_YR=end[i],RCH_Dict=RCH_DICT,RCH_mult=rch[i])
+
+rch = flopy.modflow.ModflowRch(mf, nrchop=3,  ipakcb=9, rech=RCH_DICT)
+
+print('RCH_Dict generated in',str(time.time()-newtime),'seconds')
+
+oc, pcg = mod.outputControl(mf)
+
+# Run Model and post processing
+# Write the MODFLOW model input files
+
+print('Data processed in',str(time.time()-timestart),'seconds')
+
+newtime = time.time()
+print('Writing input file...')
+
+mf.write_input()
+print('Input file written in',str(time.time()-newtime),'seconds')
+
+# Run the MODFLOW model
+success, buff = mf.run_model()
+
+hds = bf.HeadFile(modelname+'.hds')
+h = hds.get_data(totim=1.0)
