@@ -36,7 +36,7 @@ nrows = int((yur-yll)/cellsize) # nrows
 
 #%%
 # Geology raster
-filename = r'data_raw\GEOLOGY_ZONES.asc'
+filename = r'data_raw\GEOLOGY_ZONES_EXP-BASALT.asc'
 newfile = r'data_output\GEO_VM.asc'
 header = gen.getHeader(ncols,nrows,xll,yll,cellsize,-99999)
 dsAsArray = gen.sampleGD(filename,newfile,header,xll,yll,xur,yur,cellsize)
@@ -48,9 +48,9 @@ dsAsArray = gen.sampleGD(filename,newfile,header,xll,yll,xur,yur,cellsize)
 #header = gen.getHeader(ncols,nrows,xll,yll,cellsize,-99999)
 #dsAsArray = gen.averageGD(filename,newfile,header,xll,yll,xur,yur,cellsize)
 
-#%%
-# Active raster 
-filename = r'data_raw\MODEL_ACTIVE.asc'
-newfile = r'data_output\ACTIVE_VM.asc'
-header = gen.getHeader(ncols,nrows,xll,yll,cellsize,-99999)
-dsAsArray = gen.sampleGD(filename,newfile,header,xll,yll,xur,yur,cellsize)
+##%%
+## Active raster 
+#filename = r'data_raw\MODEL_ACTIVE.asc'
+#newfile = r'data_output\ACTIVE_VM.asc'
+#header = gen.getHeader(ncols,nrows,xll,yll,cellsize,-99999)
+#dsAsArray = gen.sampleGD(filename,newfile,header,xll,yll,xur,yur,cellsize)
