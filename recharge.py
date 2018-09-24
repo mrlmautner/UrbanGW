@@ -82,8 +82,8 @@ Wper = gen.openASC(r'data_output\landuse\LU-1985-WATER.asc')*Precip
 
 Precip *= 500**2
 Uper *= 0.01*500**2
-Nper *= 0.30*500**2
-Wper *= 0.5*500**2
+Nper *= 0.25*500**2
+Wper *= 0.2*500**2
 
 P = np.sum(np.sum(Precip))
 U = np.sum(np.sum(Uper))
