@@ -12,13 +12,8 @@ import flopy.utils.binaryfile as bf
 import calendar
 import time
 
-timestart = time.time()
-print('Processing data...')
-
-def initializeFM(modelname,xll,yll,xur,yur,cellsize,STRT_YEAR,END_YEAR,ACTIVE,GEO,DEM,ZoneParams):
+def initializeFM(modelname,xll,yll,xur,yur,cellsize,STRT_YEAR,END_YEAR,ACTIVE,GEO,DEM,IH_SS,ZoneParams):
     # modelname to set the file root 
-
-    #mf = flopy.modflow.Modflow.load(r'ValleyMexico_zones.nam',exe_name=r'C:\WRDAPP\MF2005.1_12\bin\mf2005.exe')
     mf = flopy.modflow.Modflow(modelname, exe_name=r'C:\WRDAPP\MF2005.1_12\bin\mf2005.exe')
     
     # Model domain and grid definition
@@ -41,7 +36,6 @@ def initializeFM(modelname,xll,yll,xur,yur,cellsize,STRT_YEAR,END_YEAR,ACTIVE,GE
             nstp.append(calendar.monthrange(y,m)[1])
     nstp = np.array(nstp)
     steady = np.zeros((nper),dtype=bool)
-    steady[0] = True
     
     dis = flopy.modflow.ModflowDis(mf, nlay=nlay, nrow=nrow, ncol=ncol, nper=nper, delr=delr, delc=delc,
                                    top=ztop, botm=botm, perlen=nstp, nstp=nstp, steady=steady, start_datetime='12/31/1983')
@@ -55,7 +49,8 @@ def initializeFM(modelname,xll,yll,xur,yur,cellsize,STRT_YEAR,END_YEAR,ACTIVE,GE
     # Variables for the BAS package
 #    strt = np.zeros((nlay, nrow, ncol), dtype=np.float32)
 #    strt = H_INIT.get_data(totim=1.0)
-    strt = DEM
+#    strt = DEM
+    strt = np.array([IH_SS]*3)
     
     bas = flopy.modflow.ModflowBas(mf, ibound=ibound, strt=strt, ifrefm=True, ichflg=True, stoper=3)
     
@@ -132,25 +127,35 @@ def addNewWells(New_WEL,LYR,WEL_Dict=0,WEL_mult=1,S_YR=0,E_YR=0,coordType='xy',x
     return WEL_Dict
 
 def addRecharge(LU_arrays,PRECIP,S_YR=0,E_YR=0,RCH_Dict=0,RCH_mult=[1,1,1]):
-    # Comments**
+    # LU_arrays: dictionary with 3 eantries, one for each land use type which
+    #   contains gridded percent amounts for each land use type
+    # PRECIP: dictionary with 361 entries, one for each stress period which
+    #   contains gridded precipitation
+    # RCH_Dict: existing dictionary holding recharge data or 0 if the dictionary
+    #   must be initialized
     
-    # Initialize dictionary    
+    # Initialize dictionary: if there is no exisiting dictionary, create dictionary with no entries
     if RCH_Dict == 0:
         RCH_Dict = {}
     
+    # If the recharge is for the first time step, apply only to the first time step
     if S_YR == 0:
         for l, LU in enumerate(['URBAN','NATURAL','WATER']):
+            # If there is not already an entry for the selected stress period, create a new array
             try:
                 RCH_Dict[0] += PRECIP[0]*LU_arrays[l]*RCH_mult[l]
             except:
                 RCH_Dict[0] = PRECIP[0]*LU_arrays[l]*RCH_mult[l]
+    # Loop through all stress periods between S_YR and E_YR
     else:
         for year in range(int(S_YR),int(E_YR)):
             for month in range(1,13):
                 
                 per = (year-1984)*12+month
                 
-                for l, LU in enumerate(['URBAN','NATURAL','WATER']):
+                # Apply recharge amounts for each land use type                
+                for l, LU in enumerate(['URBAN','NATURAL','WATER']):                    
+                    # If there is not already an entry for the selected stress period, create a new array
                     try:
                         RCH_Dict[per] += PRECIP[per]*LU_arrays[l]*RCH_mult[l]
                     except:
@@ -163,21 +168,16 @@ def outputControl(mf):
     # Add OC package to the MODFLOW model
     spd = {}
     data2record = ['save head', 'save drawdown', 'save budget', 'print budget']
-    spd[0,30] = ['save head', 'save drawdown', 'save budget', 'print budget', 'ddreference' ]
-    for m in range(0,12):
-        for d in range(0,calendar.monthrange(1984,m+1)[1]):
-            spd[m,d] = data2record.copy()
     for y in range(0,30):
-        for m in range(1,12):
-            spd[y*12+m,(calendar.monthrange(1984+y,m+1)[1]-1)] = data2record.copy()
+        for m in range(1,13):
+            spd[y*12+m,(calendar.monthrange(1984+y,m)[1]-1)] = data2record.copy()
+    spd[14,30] = ['save head', 'save drawdown', 'save budget', 'print budget', 'ddreference']
 #    for p in [6,20,32,41,54,78,90,102,114,128,138,150,162,175,187,198,213,225,235]:
 #        spd[p,0] = data2record.copy()
     oc = flopy.modflow.ModflowOc(mf, stress_period_data=spd, compact=True)
+#    oc = flopy.modflow.ModflowOc.load('VM_Test.oc', mf,ext_unit_dict=ext_unit_dict)
     
     # Add PCG package to the MODFLOW model
     pcg = flopy.modflow.ModflowPcg(mf,mxiter=20, iter1=20)
     
     return oc, pcg
-
-def measureEnergy(hds,WEL_DICT):
-    
