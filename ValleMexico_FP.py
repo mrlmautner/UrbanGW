@@ -16,6 +16,7 @@ from gwscripts.dataprocessing import gengriddata as gen
 from gwscripts.flopymodel import flomodelvm as mod
 
 timestart = time.time()
+print('Processing data...')
 
 xll = 455000
 yll = 2107000
@@ -30,6 +31,7 @@ END_YEAR = 2014
 ACTIVE = gen.openASC('data_output\ACTIVE_VM.asc')
 GEO = gen.openASC('data_output\GEO_VM.asc')
 DEM = gen.openASC('data_output\DEM_VM.asc')
+IH = gen.openASC('data_output\IH_1984.asc')
 
 # Assign name and create modflow model object
 modelname = 'VM_Test'
@@ -51,9 +53,9 @@ PhaseParams = np.array([PHASE_PER,LU_PAR,WEL_PAR,LEAK_PAR,LID_PAR])
 # COL1 : Zone hydraulic conductivity vertical anisotropy
 VK_PAR = [100,100,10,0.1,0.01,10]
 # COL2 : Zone specific storage
-SS_PAR = [0.0656,0.000328,0.000328,0.0000164,0.0000164,0.00000328]#[6.56E-02,3.28E-04,3.28E-04,1.64E-05,1.64E-05,3.28E-06]
+SS_PAR = [6.56E-02,3.28E-04,3.28E-04,1.64E-05,1.64E-05,3.28E-06]
 # COL3 : Zone hydraulic conductivity
-HK_PAR = [0.00432,8121,12.83,3.99,0.0432,0.0000864]#[4.32E-03,43.20,0.432,4.32,0.0432,8.64E-05] # m/d
+HK_PAR = [4.32E-03,43.20,0.432,4.32,0.0432,8.64E-05] # m/d
 # COL4 : Zone specific yield
 SY_PAR = [0.06,0.15,0.15,0.30,0.01,0.01]
 ZoneParams = np.array([HK_PAR,VK_PAR,SS_PAR,SY_PAR])
@@ -61,7 +63,7 @@ ZoneParams = np.array([HK_PAR,VK_PAR,SS_PAR,SY_PAR])
 RCH_PAR = [1.00E-02, 0.7051, 50.00E-02] # Recharge multiplier for urban, natural, and water cover
 
 ncol, nrow, mf, dis, bas, lpf = mod.initializeFM(modelname,xll,yll,xur,yur,cellsize,
-                                                 STRT_YEAR,END_YEAR,ACTIVE,GEO,DEM,
+                                                 STRT_YEAR,END_YEAR,ACTIVE,GEO,DEM,IH,
                                                  ZoneParams)
 
 print('Basic, Discretization, and Layer packages generated in',str(time.time()-timestart),'seconds')
@@ -82,13 +84,13 @@ PUMP_PARAM = [1,WEL_PAR[0],WEL_PAR[1],WEL_PAR[2],WEL_PAR[0],WEL_PAR[1],WEL_PAR[2
 start = [1984-1/12,1984-1/12,1984,1995,1984-1/12,1984,1995,2005]
 end = [1984,1984,1995,2005,1984,1995,2005,2014]
 
-PUMP_array = np.loadtxt(r'C:\Users\MM\Google Drive\UrbanGW\data_output\wells\PUMP_CS.csv',
+PUMP_array = np.loadtxt(r'data_output\wells\PUMP_CS.csv',
                                               delimiter=',', skiprows=1, usecols=[1,2,4,5,11]) # pumping in m3 per day
 WEL_DICT = mod.addNewWells(PUMP_array,LYR=1)
 
 # Add supply wells
 for i, wellset in enumerate(['PUMP_C1984','PUMP_S05_Q','PUMP_S05_Q','PUMP_S05_Q','PUMP_RC_Q','PUMP_RC_Q','PUMP_RC_Q','PUMP_RC_Q']):
-    PUMP_array = np.loadtxt(r'C:\Users\MM\Google Drive\UrbanGW\data_output\wells\\' + wellset + '.csv',
+    PUMP_array = np.loadtxt(r'data_output\wells\\' + wellset + '.csv',
                                               delimiter=',', skiprows=1, usecols=[1,2,4,5,11]) # pumping in m3 per day
     
     WEL_DICT = mod.addNewWells(New_WEL=PUMP_array,LYR=1,WEL_Dict=WEL_DICT,WEL_mult=PUMP_PARAM[i],S_YR=start[i],E_YR=end[i])
@@ -97,7 +99,7 @@ for i, wellset in enumerate(['PUMP_C1984','PUMP_S05_Q','PUMP_S05_Q','PUMP_S05_Q'
 start = [1984-1/12,1984,1995,2005]
 end = [1984,1995,2005,2014]
 for i, leakset in enumerate(['1985','1990','2000','2010']):
-    LEAK_array = np.loadtxt(r'C:\Users\MM\Google Drive\UrbanGW\data_output\leak\LEAK_' + leakset + '.csv',
+    LEAK_array = np.loadtxt(r'data_output\leak\LEAK_' + leakset + '.csv',
                                               delimiter=',', skiprows=1, usecols=[2,1,7]) # pumping in m3 per day
     LEAK_array = np.insert(LEAK_array, 2, start[i], axis=1)
     LEAK_array = np.insert(LEAK_array, 3, end[i], axis=1)
@@ -164,6 +166,7 @@ rch = flopy.modflow.ModflowRch(mf, nrchop=3,  ipakcb=9, rech=RCH_DICT)
 print('RCH_Dict generated in',str(time.time()-newtime),'seconds')
 
 oc, pcg = mod.outputControl(mf)
+#oc = flopy.modflow.ModflowOc.load('ValleMexicoTRC.oc', mf)
 
 # Run Model and post processing
 # Write the MODFLOW model input files
@@ -178,6 +181,3 @@ print('Input file written in',str(time.time()-newtime),'seconds')
 
 # Run the MODFLOW model
 success, buff = mf.run_model()
-
-hds = bf.HeadFile(modelname+'.hds')
-h = hds.get_data(totim=1.0)
