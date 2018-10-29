@@ -20,10 +20,10 @@ rchFolder = 'data_output\\recharge\\'
 #%%
 DAYS_M = [31,28,31,30,31,30,31,31,30,31,30,31]
     
-GEO = gen.openASC('data_output\GEO_VM.asc',1)
+ACTIVE1 = gen.openASC('data_output\ACTIVE_VM_LYR1.asc',1)
 
 #%% 1% Multiplier for lacustrine clays and 100% for all others
-geoMult = 0.01*(GEO==1)+(GEO!=1)
+geoMult = 0.01*(ACTIVE1==1)+(ACTIVE1!=1)
 
 ##%%
 #header = gen.getHeader(ncols,nrows,xll,yll,cellsize,-99999)
@@ -55,6 +55,12 @@ newfile = rchFolder + 'claymult\\PrecipCM_AVGyr.asc'
 
 np.savetxt(newfile, avgPrecip, header=header, fmt="%1.5f",comments='')
 
+avgDPrecip = avgPrecip/365 # recharge divided by mm, 30 years, 365 days/year
+
+newfile = rchFolder + 'claymult\\PrecipCM_AVG.asc'
+
+np.savetxt(newfile, avgDPrecip, header=header, fmt="%1.5f",comments='')
+
 ##%% Create Average Precipitation RCH file for monthly
 #header = gen.getHeader(ncols,nrows,xll,yll,cellsize,-99999)
 #avgPrecip = np.zeros((12,nrows,ncols))
@@ -74,20 +80,20 @@ np.savetxt(newfile, avgPrecip, header=header, fmt="%1.5f",comments='')
 #    newfile1 = rchFolder + 'mthly\\AVG_' + '{num:02d}'.format(num=month) + '.asc'
 #    np.savetxt(newfile1, avgPrecip[month], header=header, fmt="%1.5f",comments='')
 
-#%% Determine precipitation and recharge for SS assumptions
-Precip = gen.openASC(r'data_output\recharge\claymult\PrecipCM_AVG.asc')
-Uper = gen.openASC(r'data_output\landuse\LU-1985-URBAN.asc')*Precip
-Nper = gen.openASC(r'data_output\landuse\LU-1985-NATURAL.asc')*Precip
-Wper = gen.openASC(r'data_output\landuse\LU-1985-WATER.asc')*Precip
-
-Precip *= 500**2
-Uper *= 0.01*500**2
-Nper *= 0.25*500**2
-Wper *= 0.2*500**2
-
-P = np.sum(np.sum(Precip))
-U = np.sum(np.sum(Uper))
-N = np.sum(np.sum(Nper))
-W = np.sum(np.sum(Wper))
-R = U+N+W
-ratio = R/P
+##%% Determine precipitation and recharge for SS assumptions
+#Precip = gen.openASC(r'data_output\recharge\claymult\PrecipCM_AVG.asc')
+#Uper = gen.openASC(r'data_output\landuse\LU-1985-URBAN.asc')*Precip
+#Nper = gen.openASC(r'data_output\landuse\LU-1985-NATURAL.asc')*Precip
+#Wper = gen.openASC(r'data_output\landuse\LU-1985-WATER.asc')*Precip
+#
+#Precip *= 500**2
+#Uper *= 0.01*500**2
+#Nper *= 0.25*500**2
+#Wper *= 0.2*500**2
+#
+#P = np.sum(np.sum(Precip))
+#U = np.sum(np.sum(Uper))
+#N = np.sum(np.sum(Nper))
+#W = np.sum(np.sum(Wper))
+#R = U+N+W
+#ratio = R/P
