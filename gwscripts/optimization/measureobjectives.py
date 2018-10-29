@@ -5,29 +5,54 @@ Created on Thu May 24 18:59:47 2018
 @author: MM
 """
 
-import os
 import flopy
 import numpy as np
 import matplotlib.pyplot as plt
 import flopy.utils.binaryfile as bf
-import time
-from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
-import calendar
 import pandas as pd
+import math
+import calendar
 
-xll = 455000
-yll = 2107000
-xur = 539000
-yur = 2175000
-cellsize = 500
+modelname = r'C:\Users\MM\Google Drive\UrbanGW\VM_Test'
+heads = bf.HeadFile(modelname+'.hds')
 
-ncol = int((xur-xll)/cellsize) # Number of rows
-nrow = int((yur-yll)/cellsize) # Number of columns
+def measureEnergy(modelname,SUPPLY_DICT,DEM):
+    efficiency = 0.7
+    MJc = 9.81 # MegaJoules to lift 1 MegaLiter 1 meter
+    kWhc = 3.6 # MegaJoules per kWh
+    
+    pd.DatetimeIndex(freq='M',start='01/31/1985',end='12/31/2013')
+    E = 0
+    coords = np.zeros(2)
+    for i, p in SUPPLY_DICT.items():
+        if i > 12:
+            d = calendar.monthrange(1984+math.floor((i-1)/12),((i-1)%12)+1)[1] # number of days in stress period
+            h = heads.get_data(kstpkper=((d-1),i),mflay=1) # heads binary file for dth day of stress period
+        
+            for n in p:
+                if n[3] < 0:
+                    coords[0] = n[1]
+                    coords[1] = n[2]
+                    wellHead = h[int(coords[0]),int(coords[1])]
+                    surface = DEM[int(coords[0]),int(coords[1])]
+                    depthtowater = max(surface-wellHead,0)
+                    pumping = n[3] * (-1) * 0.001 # m3/d --> ML/d
+                    E += (efficiency * depthtowater * pumping * MJc / kWhc)*d # kWh per month (stress period) of pumping
+                    
+h = heads.get_data(mflay=[0,1],kstpkper=(30,24))
+plt.set_cmap('coolwarm_r')
 
-os.chdir(r'C:\Users\MM\Google Drive\Tlalpan\Simulation_Wrapper\Results')
-# Assign name and create modflow model object
-modelname = 'VM_Basin'
+HNEW = np.ones(h.shape)*np.nan#min(h[h>0])
+for i, head in enumerate(h):
+    HNEW[i][head>-900] = head[head>-900]
+
+for i, hdslayer in enumerate(HNEW):
+    im = plt.imshow(hdslayer, vmin=2100)
+    ctr = plt.contour(hdslayer, colors='k', linewidths=0.5)
+
+plt.colorbar(im, label='Groundwater Drawdown (m)')
+
 #%% Head Dictionary
 S_heads = {}
 for s_name in ['Historical','WWTP','Leak','Basin']:
