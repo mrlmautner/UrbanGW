@@ -40,3 +40,10 @@ VM_Test.wel
 *.pickle
 *.svg
 *.png
+MPATH6.LOG
+*.chk
+*.mpbas
+mp6.exe
+*.mplst
+*.mpnam
+*.mpsim
