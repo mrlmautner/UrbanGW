@@ -65,7 +65,6 @@ SY_PAR = [0.06,0.15,0.15,0.30,0.01]
 ZoneParams = np.array([HK_PAR,VK_PAR,SS_PAR,SY_PAR])
 
 municipalities = np.unique(MUN)[1:]
-#municipalities = dict.fromkeys(municipalities,{'UAREA':{'1990':{},'2000':{},'2010':{}},'OBJECTIVES':np.zeros(3)})
 
 RCH_PAR = [1.00E-02, 1.949E-01, 50.00E-02] # Recharge multiplier for urban, natural, and water cover
 
