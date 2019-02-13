@@ -38,51 +38,86 @@ ACTIVE_LYR1 = gen.openASC('data_output\ACTIVE_VM_LYR1.asc')
 ACTIVE_LYR2 = gen.openASC('data_output\ACTIVE_VM_LYR2.asc')
 TH1 = gen.openASC('data_output\THICK1_VM.asc')
 DEM = gen.openASC('data_output\DEM_VM.asc')
+GEO = gen.openASC('data_output\GEO_VM.asc')
 
+# Plotting defaults
+l = [4,2,2,2]
+c = ['k','goldenrod','blue','darkgreen']
+mark = ['-','-','-','--']
+
+scenario_list = ['Historical','WWTP','Leak','Basin']
 #%% Head Dictionary
 S_heads = {}
-for s_name in ['Historical','WWTP','Leak','Basin']:
+for s_name in scenario_list:
     S_heads[s_name] = bf.HeadFile('model_output\VM_'+s_name+'.hds')
     
 #%% Heads Contour
 fig, axes = plt.subplots(2, 2, figsize=(7,6.3))
 a=0
 mapTitle = ['Historical','Increased WW Reuse','Repair Leaks','Recharge Basins']
-plt.set_cmap('coolwarm_r')
+plt.set_cmap('rainbow_r')
 axes = axes.flat
+cbar_ax = fig.add_axes([0.85, 0.15, 0.03, 0.7])
 
-for s_name in ['Historical','WWTP','Leak','Basin']:
+hds = S_heads['Historical']
+hist_i = hds.get_data(mflay=1,kstpkper=(30,0))
+hist_e = hds.get_data(mflay=1,kstpkper=(30,359))
+
+new_hist_i = np.ones(hist_i.shape)*np.nan#min(h[h>0])
+new_hist_i[GEO==2] = hist_i[GEO==2]
+#new_hist_i[GEO==3] = hist_i[GEO==3]
+new_hist_i[GEO==4] = hist_i[GEO==4]
+#new_hist_i[GEO==5] = hist_i[GEO==5]
+new_hist_i[ACTIVE_LYR2!=1] = np.nan
+new_hist_e = np.ones(hist_e.shape)*np.nan#min(h[h>0])
+new_hist_e[GEO==2] = hist_e[GEO==2]
+#new_hist_e[GEO==3] = hist_e[GEO==3]
+new_hist_e[GEO==4] = hist_e[GEO==4]
+#new_hist_e[GEO==5] = hist_e[GEO==5]
+new_hist_e[ACTIVE_LYR2!=1] = np.nan
+
+hist_change = new_hist_e-new_hist_i
+
+for i,s_name in enumerate(scenario_list):
     hds = S_heads[s_name]
-    h = hds.get_data(mflay=1,kstpkper=(30,0))
-    h2 = hds.get_data(mflay=1,kstpkper=(30,359))
+    h_i = hds.get_data(mflay=1,kstpkper=(30,0))
+    h_e = hds.get_data(mflay=1,kstpkper=(30,359))
     
-    hnew = np.ones(h.shape)*np.nan#min(h[h>0])
-    hnew[h>-900] = h[h>-900]
-    hnew[h>2400] = np.nan
-    h2new = np.ones(h2.shape)*np.nan#min(h[h>0])
-    h2new[h>-900] = h2[h>-900]
-    h2new[h>2400] = np.nan
+    new_h_i = np.ones(h_i.shape)*np.nan#min(h[h>0])
+    new_h_i[GEO==2] = h_i[GEO==2]
+#    new_h_i[GEO==3] = h_i[GEO==3]
+    new_h_i[GEO==4] = h_i[GEO==4]
+#    new_h_i[GEO==5] = h_i[GEO==5]
+    new_h_i[ACTIVE_LYR2!=1] = np.nan
+    new_h_e = np.ones(h_e.shape)*np.nan#min(h[h>0])
+    new_h_e[GEO==2] = h_e[GEO==2]
+#    new_h_e[GEO==3] = h_e[GEO==3]
+    new_h_e[GEO==4] = h_e[GEO==4]
+#    new_h_e[GEO==5] = h_e[GEO==5]
+    new_h_e[ACTIVE_LYR2!=1] = np.nan
     
-    HNEW = h2new-hnew
+    h_change = new_h_e-new_h_i
+    hist_compare = h_change - hist_change
     
-    im = axes[a].imshow(HNEW, vmin=-15, vmax=15)
+    im = axes[a].imshow(hist_compare,vmin=0,vmax=20)
+    CS = axes[a].contour(ACTIVE_LYR1, colors='k', linewidths=2)
+    axes[a].xaxis.set_visible(False)
+    axes[a].yaxis.set_visible(False)
     axes[a].set_title(mapTitle[a].format(i+1))
-    ctr = axes[a].contour(HNEW, colors='k', linewidths=0)
     
     a+=1
     
 fig.subplots_adjust(right=0.8)
-cbar_ax = fig.add_axes([0.85, 0.15, 0.03, 0.7])
 fig.colorbar(im, cax=cbar_ax, label='Change in Groundwater Head (m)')
-plt.savefig('model_output\plots\HDS_Contour_All.svg')
-plt.savefig('model_output\plots\HDS_Contour_All.png')
+plt.savefig('model_output\plots\Hist_change_all.svg')
+plt.savefig('model_output\plots\Hist_change_all.png', dpi=600)
 plt.show()
 
 #%% Budget
 df_1Bdget = {}
 df_extra = {}
 
-for s_name in ['Historical','WWTP','Leak','Basin']:
+for s_name in scenario_list:
     mf_list = flopy.utils.MfListBudget('model_output\VM_'+s_name+".list")
     incremental, cumulative = mf_list.get_budget()
 
@@ -110,12 +145,9 @@ for s_name in ['Historical','WWTP','Leak','Basin']:
 
 
 #%% Cumulative overdraft
-l = [4,1,1,1]
-c = ['lightblue','r','g','k']
-mark = ['-','-','-','--']
 i = 0
 
-for s_name in ['Historical','WWTP','Leak','Basin']:
+for s_name in scenario_list:
 
     df_extra[s_name]['IN'] = df_extra[s_name]['RECHARGE_IN'].divide(1000000) + df_extra[s_name]['WELLS_IN'].divide(1000000)
     df_extra[s_name]['OUT'] = df_extra[s_name]['WELLS_OUT'].divide(1000000)
@@ -129,7 +161,7 @@ plt.ylabel(r'Volume ($hm^3$)')
 #plt.title('Cumulative In - Out')
 plt.legend(['Historical','Increase WW Reuse','Repair Leaks','Recharge Basins'])
 
-plt.savefig('model_output\plots\INOUTCumSum.png')
+plt.savefig('model_output\plots\INOUTCumSum.png', dpi=600)
 plt.savefig('model_output\plots\INOUTCumSum.svg')
 plt.show()
 
@@ -137,15 +169,11 @@ plt.show()
 t = pd.DatetimeIndex(freq='M',start='01/30/1985',end='12/31/2013')
 coords = [52,61] # subs, [29,77] # pump, [90,25] # mtn, [59,54] #
 
-i = 0
 hTimeS = np.zeros((348,4))
 
-l = [4,1,1,1]
-mark = ['-','-^','-*','-s']
-c = ['lightblue','r','g','k']
 z = [0,1,1,1]
 
-for s_name in ['Historical','WWTP','Leak','Basin']:
+for i,s_name in enumerate(scenario_list):
     j = 0
     for y in range(1,30):
         for m in range(0,12):
@@ -154,7 +182,6 @@ for s_name in ['Historical','WWTP','Leak','Basin']:
             j+=1
     
     plt.plot(t, hTimeS[:,i],linewidth=l[i],color=c[i])#,mark[i],zorder=z[i],markersize=5)
-    i+=1
     
 plt.xlabel('Year')
 plt.ylabel('Head Elevation')
@@ -190,7 +217,7 @@ plt.xlabel('Easting')
 plt.ylabel('Northing')
 plt.show()
 
-#%%
+#%% Calculate Objectives
 WEL_INFO = {}
 
 n_scenario = 4
@@ -199,7 +226,7 @@ energy_array = np.zeros((n_scenario,2))
 subs_array = np.zeros((n_scenario,2))
 mound_array = np.zeros((n_scenario,3))
 
-for s, s_name in enumerate(['Historical','WWTP','Leak','Basin']):
+for s, s_name in enumerate(scenario_list):
     
     with open('model_output\objective_data\WEL_INFO_'+s_name+'.pickle', 'rb') as handle:
         WEL_INFO = pickle.load(handle)
@@ -209,19 +236,19 @@ for s, s_name in enumerate(['Historical','WWTP','Leak','Basin']):
     
     energy_array[s,:] = mo.measureEnergy(heads,WEL_INFO,DEM)
     subs_array[s,:] = mo.measureSubidence(heads,DEM,ACTIVE_LYR1,TH1)
-    mound_array[s,:] = mo.measureMound(heads,DEM,ACTIVE_LYR2,LU,[132,252])
+    mound_array[s,:] = mo.measureMound(heads,DEM,ACTIVE_LYR1,LU,[132,252])
 
 #%%
 energy = energy_array[:,0]
 subs = subs_array[:,0]/subs_array[:,1]
-mound = mound_array[:,0]#/mound_array[:,1]
+mound = mound_array[:,0]/min(mound_array[:,0])
 cells = (360-14)*np.sum(np.sum(ACTIVE_LYR2)) # Number of cells in Model Area over periods 15-360
 
 barWidth = 0.5
 r = np.arange(n_scenario)*0.5 # bar position
-colors = ['lightblue','r','g','k']
-y_label = ['Kilowatt Hours','Average Head above Bottom of Clay Layer','Average Meters above Surface']
+y_label = ['Kilowatt Hours','Average Head Below top of Clay Layer','Ratio to Historical Mounding']
 obj_title = ['Energy Use','Subsidence Avoidance','Mounding']
+ylims = [[4.5E9,6E9],[36,41],[0.9,1.25]]
 
 normalized_o = np.zeros((n_scenario,n_obj))
 
@@ -230,15 +257,17 @@ fig, axes = plt.subplots(nrows=1, ncols=3,figsize=(10,6))
 for o, obj in enumerate([energy,subs,mound]):
     normalized_o[:,o] = obj / (obj.max(axis=0) - obj.min(axis=0))
     plt.subplot(1,n_obj,o+1)
-    plt.bar(r, obj, width=barWidth, edgecolor='white', color=colors)
+    plt.bar(r, obj, width=barWidth, edgecolor='white', color=c)
     plt.xticks(r, ['Historical','WWTP','Leak','Basin'],rotation='vertical')
     plt.ylabel(y_label[o])
+    plt.ylim(ylims[o])
     plt.title(obj_title[o])
 
 fig.tight_layout()
 # Flip subsidence measure to be minimizing
 #normalized_o[:,1] = 1 - normalized_o[:,1]
-
+plt.savefig('model_output\plots\Objectives.svg')
+plt.savefig('model_output\plots\Objectives.png', dpi=600)
 plt.show()
 
 ##%%
