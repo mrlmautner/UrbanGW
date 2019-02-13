@@ -43,9 +43,6 @@ def initializeFM(modelname,xll,yll,xur,yur,cellsize,STRT_YEAR,END_YEAR,ACTIVE1,A
     ibound[1,:,:] = ibound[1,:,:]*ACTIVE2
     
     # Variables for the BAS package
-#    strt = np.zeros((nlay, nrow, ncol), dtype=np.float32)
-#    strt = H_INIT.get_data(totim=1.0)
-#    strt = DEM
     strt = np.array([IH_SS]*2)
     
     bas = flopy.modflow.ModflowBas(mf, ibound=ibound, strt=strt, ifrefm=True, ichflg=True, stoper=3)
@@ -170,12 +167,12 @@ def addRecharge(LU_arrays,PRECIP,start=0,end=0,RCH_Dict=0,RCH_mult=[1,1,1],dateT
     
     # Convert data in year format to stress period format (months)
     if dateType == 'yr':
-        start = (start-1984)*12
-        end = (end-1984)*12
+        start = (start-1984)*12+1
+        end = (end-1984)*12+1
     
     # Loop through all stress periods between S_YR and E_YR
     else:
-        for per in range(int(start),int(end)):
+        for per in range(int(start-1),int(end-1)):
             
             # Apply recharge amounts for each land use type                
             for l, landuse in enumerate(['URBAN','NATURAL','WATER']):                    

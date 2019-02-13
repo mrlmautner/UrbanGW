@@ -8,8 +8,6 @@ Created on Thu Apr  5 15:23:15 2018
 import flopy
 import flopy.utils.binaryfile as bf
 import numpy as np
-import matplotlib.pyplot as plt
-import calendar
 import time
 from gwscripts.dataprocessing import gengriddata as gen
 from gwscripts.flopymodel import flomodelvm as mod
@@ -56,7 +54,7 @@ def run_scenario_model(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
     S_per = PHASE_PER[0:len(PHASE_PER)-1]
     E_per = PHASE_PER[1:len(PHASE_PER)]
     # Phase land use dataset year
-    LU_PAR = [1990, 2000, 2010]
+    LU_PAR = ['1990', '2000', '2010']
     # Phase well pumping multiplier 
     WEL_PAR = np.array([2.671E+00,2.581E+00,2.558E+00])
     # Phase distribution system leak multiplier
@@ -92,7 +90,7 @@ def run_scenario_model(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
     # Fill a land use dictionary with the ARRAYs that represent the % of each land use cover in each cell
     # and the LISTs that contain all the cells and percentages of each land use type
     LU = {}
-    for i, LUset in enumerate(str(LU_PAR)):
+    for i, LUset in enumerate(LU_PAR):
         LU[LUset] = {'ARRAY':{},'LIST':{}}
         
         for l, LUtype in enumerate(['URBAN','NATURAL','WATER']):
@@ -128,8 +126,8 @@ def run_scenario_model(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
             filename = r'data_output\recharge\claymult\PrecipCM_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
             Precip_Dict[per] = gen.openASC(filename)
     
-    for i, LUset in enumerate(str(LU_PAR)):
-        RCH_DICT = mod.addRecharge(LU_arrays=LU[LUset]['ARRAY'],PRECIP=Precip_Dict,start=S_per[i],end=E_per[i],RCH_Dict=RCH_DICT,RCH_mult=RCH_PAR)
+    for i, LUset in enumerate(LU_PAR):
+        RCH_DICT = mod.addRecharge(LU_arrays=LU[LUset]['ARRAY'],PRECIP=Precip_Dict,start=S_per[i]+1,end=E_per[i]+1,RCH_Dict=RCH_DICT,RCH_mult=RCH_PAR)
     
     # Create MODFLOW RCH package
     rch = flopy.modflow.ModflowRch(mf, nrchop=3,  ipakcb=9, rech=RCH_DICT)
@@ -166,7 +164,7 @@ def run_scenario_model(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
         PUMP_array = np.loadtxt(r'data_output\wells\PUMP_RC_Q.csv',
                                                   delimiter=',', skiprows=1, usecols=[1,2,4,5,11]) # pumping in m3 per day
         
-        WEL_DICT, WEL_INFO = mod.addNewWells(New_WEL=PUMP_array,LYR=1,WEL_Dict=WEL_DICT,INFO_Dict=WEL_INFO,WEL_mult=PUMP_PARAM[i],start=S_per[i],end=E_per[i],mun=MUN,munleak=LEAK_MUN,F=fixleak,G=gval)
+        WEL_DICT, WEL_INFO = mod.addNewWells(New_WEL=PUMP_array,LYR=1,WEL_Dict=WEL_DICT,INFO_Dict=WEL_INFO,WEL_mult=PUMP_PARAM[i],start=S_per[i]+1,end=E_per[i]+1,mun=MUN,munleak=LEAK_MUN,F=fixleak,G=gval)
     
     # Sum total pumping
     total_mthly_pumping = np.zeros(PHASE_PER[phases])
@@ -179,7 +177,7 @@ def run_scenario_model(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
     mun = np.delete(mun,21)
     
     LEAK_arrays = {}
-    for i, leakset in enumerate(str(LU_PAR)):
+    for i, leakset in enumerate(LU_PAR):
         LEAK_arrays[leakset] = np.zeros((LU[leakset]['LIST']['URBAN'].shape[0]*(PHASE_PER[i+1]-PHASE_PER[i]),5))
         j = 0
         
@@ -213,7 +211,7 @@ def run_scenario_model(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
     # Add WWTP: compute the difference between the installed WWTP minus the actual treatment quantity (m3/s)
     if num_WWTP>0:
         WWTPs[:,3] = WWTPs[:,2] - WWTPs[:,3] # Colmn 2 is installed treatment capacity and column 3 is actual treatment quantity
-        WWTPs = np.insert(WWTPs, 2, PHASE_PER[0], axis=1) # Insert starting period
+        WWTPs = np.insert(WWTPs, 2, PHASE_PER[0]+1, axis=1) # Insert starting period
         WWTPs[:,3] = np.ones(WWTPs.shape[0])*PHASE_PER[phases] # Insert ending period
         WWTPs[WWTPs[:,4]<0.01,4] = 0.01 # For any WWTPs with a difference of less than 0.01 m3/s in capacity, assign an injection of 0.01 m3/s
         
@@ -255,7 +253,7 @@ def run_scenario_model(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
     print('Input file written in',str(time.time()-newtime),'seconds')
     
     # Run the MODFLOW model
-    success, buff = mf.run_model()
+    #success, buff = mf.run_model()
     
     return WWTPs, Basins, total_mthly_leak
 
