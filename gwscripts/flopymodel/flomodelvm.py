@@ -81,7 +81,7 @@ def initializeFM(modelname,xll,yll,xur,yur,cellsize,STRT_YEAR,END_YEAR,ACTIVE1,A
     
     return ncol, nrow, mf, dis, bas, lpf
 
-def addNewWells(New_WEL,LYR,mun,WEL_Dict=0,INFO_Dict=0,WEL_mult=1,S_YR=0,E_YR=0,dateType='yr',coordType='xy',xll=455000,yur=2175000,cellsize=500,wellType=0,munleak=1,F=1):
+def addNewWells(New_WEL,LYR,mun,WEL_Dict=0,INFO_Dict=0,WEL_mult=1,S_YR=0,E_YR=0,dateType='yr',coordType='xy',xll=455000,yur=2175000,cellsize=500,wellType=0,munleak=1,F=1,G=1):
     # New_WEL is an np array of the following format: X (or C), Y (or R), Start Year, End Year, Flow (m3/d)
     # WEL_PAR is a scalar multiplier to be applied to all wells in the data set New_WEL
     # WEL_Dict is a dictionary that contains dictionary for each stress period, each dictionary contains an entry for
@@ -125,15 +125,18 @@ def addNewWells(New_WEL,LYR,mun,WEL_Dict=0,INFO_Dict=0,WEL_mult=1,S_YR=0,E_YR=0,
         r = New_WEL[w,1]
         c = New_WEL[w,0]
         wellmun = mun[int(r),int(c)]
-        LEAK_mult = 1
-        
+                
         # Reduce the pumping amount by the amount saved by fixing leaks
         if type(munleak) is not int:
-            P = float(munleak[np.where(munleak==wellmun)[0],2]) # the percent of the total pumping that is made up of leaks
-            LEAK_mult *= (1 - P*(1 - F))
-    
+            P = float(munleak[np.where(munleak==wellmun)[0],4]) # the percent of the total usage that is made up of leaks
+                            
         # Assign flow rate for each well to all stress periods indicated by start and end years
         for per in range(int(New_WEL[w,2]-1),int(New_WEL[w,3]-1)):
+            if type(munleak) is not int:
+                LEAK_mult = 1 - (1/G[per])*P*(1-F) # Apply a multiplier that subtracts the leak averted from the total water use from the groundwater pumping
+            else:
+                LEAK_mult = 1
+            
             try:
                 WEL_Dict[per].append([LYR,r,c,New_WEL[w,4]*WEL_mult*LEAK_mult])
                 INFO_Dict[per].append([LYR,r,c,New_WEL[w,4]*WEL_mult*LEAK_mult,wellmun,wellType]) # layer, row, column, volume (m3/d), municipality, well type
