@@ -59,7 +59,7 @@ def measureSubidence(heads,DEM,ACTIVE_LYR1,THICK1):
     
     return sub,cells
 
-def measureMound(heads,DEM,LU,PhasePer):
+def measureMound(heads,DEM,ACTIVE_LYR1,LU,PhasePer):
     mound = 0 # cumulative head above DEM during model period
     maxmound = 0
     cells = 0
@@ -78,14 +78,12 @@ def measureMound(heads,DEM,LU,PhasePer):
         # loop through all cells
         for i in range(int(DEM.shape[0])):    
             for j in range(int(DEM.shape[1])):
-                # Only evaluate cells where the head is above ground level
-                if DEM[i,j] < h[i,j]:
-                    # Only evaluate urban cells
-                    if LU[LUset]['ARRAY']['URBAN'][i,j] > 0:
-                        mound += h[i,j] - DEM[i,j]
-                        cells += 1
-                        if (h[i,j] - DEM[i,j]) > maxmound:
-                            maxmound = h[i,j] - DEM[i,j]
+                # Only evaluate cells where the head is above ground level, urban cell, and not under clay layer
+                if (DEM[i,j] < h[i,j]) and (LU[LUset]['ARRAY']['URBAN'][i,j] > 0) and (1-ACTIVE_LYR1[i,j]):
+                    mound += h[i,j] - DEM[i,j]
+                    cells += 1
+                    if (h[i,j] - DEM[i,j]) > maxmound:
+                        maxmound = h[i,j] - DEM[i,j]
     
     return mound,cells,maxmound
 
