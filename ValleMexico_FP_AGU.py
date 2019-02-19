@@ -299,7 +299,7 @@ def runscenariomodel(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
 
 
 #%% 289 Project
-def my_scenarios(x):
+def objective_function(x):
     num_WWTP = x[0]
     num_Basin = x[1]
     fix_leak = x[2]

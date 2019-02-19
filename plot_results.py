@@ -286,3 +286,16 @@ plt.show()
 #    ctr = plt.contour(hdslayer, colors='k', linewidths=0.5)
 #
 #plt.colorbar(im, label='Groundwater Head (m)')
+
+def parallel_axis(nondom_results,obj_labels,filename):
+    # Plots a normalized parallel axis
+    plt.figure()
+    for ppoint in nondom_results:
+        ppoint = (ppoint - nondom_results.min(axis=0)) / (nondom_results.max(axis=0) - nondom_results.min(axis=0))
+        plt.plot(range(len(obj_labels)), ppoint, 'steelblue')
+    
+    plt.gca().set_xticks(range(len(obj_labels)))
+    plt.gca().set_xticklabels(obj_labels)
+    plt.show()
+    plt.savefig(filename)
+    

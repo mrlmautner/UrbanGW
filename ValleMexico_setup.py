@@ -11,6 +11,8 @@ import numpy as np
 import time
 from gwscripts.dataprocessing import gengriddata as gen
 from gwscripts.flopymodel import flomodelvm as mod
+from gwscripts.optimization import measureobjectives as mo
+import pickle
 
 def run_scenario_model(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
     '''
@@ -111,6 +113,11 @@ def run_scenario_model(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
                     LU[LUset]['LIST'][LUtype][l,4] = MUN[row,col]
                     l += 1
             LU[LUset]['LIST'][LUtype] = LU[LUset]['LIST'][LUtype][LU[LUset]['LIST'][LUtype][:,2]>0,:]
+
+#    ### Save land use database for use in mounding objective
+#    winfofile = 'model_output\objective_data\LU_'+scenario+'.pickle'
+#    with open(winfofile, 'wb') as handle:
+#        pickle.dump(LU, handle, protocol=pickle.HIGHEST_PROTOCOL)
     
     ### Recharge
     # Create recharge dictionary for MODFLOW RCH package based on land use multipliers and interpolated precipitation rasters
@@ -236,6 +243,13 @@ def run_scenario_model(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
     wel = flopy.modflow.ModflowWel(mf, stress_period_data=WEL_DICT)
         
     print('WEL_Dict generated in',str(time.time()-newtime),'seconds')
+
+    ### Create pickle file of Well Data to be available for post processing of well energy use objective
+    winfofile = 'model_output\objective_data\WEL_INFO_'+scenario+'.pickle'
+    with open(winfofile, 'wb') as handle:
+        pickle.dump(WEL_INFO, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    
+    print('WEL_Dict saved in',str(time.time()-newtime),'seconds')
     
     ### Generate output control and solver MODFLOW packages 
     oc, pcg = mod.outputControl(mf)
@@ -252,22 +266,30 @@ def run_scenario_model(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
     mf.write_input()
     print('Input file written in',str(time.time()-newtime),'seconds')
     
+    newtime = time.time()
+    print('Running MODFLOW model...')
     # Run the MODFLOW model
-    #success, buff = mf.run_model()
+    success, buff = mf.run_model(silent=True)
     
+    print('MODFLOW model completed run in',str(time.time()-newtime),'seconds')
     return WWTPs, Basins, total_mthly_leak
 
-# AGU Model Runs
-WWTPs, Basins, total_pump_leak = run_scenario_model('Test',0,0,1)
-
-#numscenarios = 4
-#scenarioList = ['WWTP','Historical','Leak','Basin'] 
-#fixleak = [1,1,0.8,1]
-#num_WWTP = [74,0,0,0] # 74
-#num_RCHBASIN = [0,0,0,5] # 5
-#w = [0]*numscenarios
-#b = [0]*numscenarios
-#l = [0]*numscenarios
-#
-#for i in range(numscenarios):
-#    w[i],b[i],l[i] = run_scenario_model(scenarioList[i],num_WWTP[i],num_RCHBASIN[i],fixleak[i])
+def objective_function(x):
+    num_WWTP = x[0]
+    num_Basin = x[1]
+    fix_leak = x[2]
+    
+    ACTIVE_LYR1 = gen.openASC('data_output\ACTIVE_VM_LYR1.asc')
+    TH1 = gen.openASC('data_output\THICK1_VM.asc')
+    DEM = gen.openASC('data_output\DEM_VM.asc')
+    
+    WWTPs, Basins, total_pump_leak, cost, WEL_INFO, LU = run_scenario_model('Opt',num_WWTP,num_Basin,fix_leak)
+    heads = bf.HeadFile('model_output\VM_Opt.hds')
+    
+    energy = mo.measureEnergy(heads,WEL_INFO,DEM)
+    subs_array = mo.measureSubidence(heads,DEM,ACTIVE_LYR1,TH1)
+    mound_array = mo.measureMound(heads,DEM,ACTIVE_LYR1,LU,[132,252])
+    subs = subs_array[0]/subs_array[1]
+    mound = mound_array[0]
+    
+    return [energy,subs,mound,cost]
