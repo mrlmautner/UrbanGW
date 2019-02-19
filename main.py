@@ -9,15 +9,35 @@ import ValleMexico_setup as vmmodel
 import plot_results as pltvm
 from gwscripts.optimization import opttools as opt
 from platypus import Problem, Integer, Real, NSGAII
+import numpy as np
+import pickle
 
+# Scenario Mode
+scenario_mode = True
 
 # Optimization parameters
 optimize = False
+plot_opt = True
 recharge_decisions = 3
 recharge_objectives = 4
 max_nfes = 200
 
 WWTPs, Basins, total_pump_leak = vmmodel.run_scenario_model('Test',0,0,100)
+
+if scenario_mode:
+    # AGU Model Runs
+    numscenarios = 4
+    scenarioList = ['WWTP','Historical','Leak','Basin'] 
+    fixleak = [1,1,0.8,1]
+    num_WWTP = [74,0,0,0] # 74
+    num_RCHBASIN = [0,0,0,5] # 5
+    w = [0]*numscenarios
+    b = [0]*numscenarios
+    l = [0]*numscenarios
+    
+    for i in range(numscenarios):
+        w[i],b[i],l[i] = vmmodel.run_scenario_model(scenarioList[i],num_WWTP[i],num_RCHBASIN[i],fixleak[i])
+
 
 if optimize:
     ''' The optimize option runs an optimization problem with the model using the
@@ -35,18 +55,6 @@ if optimize:
     algorithm = NSGAII(problem)
     algorithm.run(max_nfes)
 
-    first_variable = algorithm.result[0].variables[0]
-    second_variable = algorithm.result[0].variables[1]
-    third_variable = algorithm.result[0].variables[2]
-    
-    print(wwtp_int.decode(first_variable))
-    print(basin_int.decode(second_variable))
-    print(leak_int.decode(third_variable))
-    
-    #%%
-    print(algorithm.result.variables)
-    
-    #%%
     results_list = []
     variable_list = []
     int_list = [wwtp_int, basin_int, leak_int]
@@ -58,8 +66,18 @@ if optimize:
             var_list.append(int_list[v].decode(var))
         variable_list.append(var_list)
     
-    pltvm.parallel_axis(nondom_results,filename = 'parallelaxis_200.png',
-                        obj_labels = ['Energy Use\n(kWh)','Subsidence Avoidance\n(mbgs)','Urban Mounding\n(m)', 'Cost'])
-    
     pickle.dump(results_list, open(r'model_output\opt\objectives_200nfe.pkl', "wb" ))
     pickle.dump(variable_list, open(r'model_output\opt\dvariables_200nfe.pkl', "wb" ))
+else:
+    with open(r'model_output\opt\objectives_200nfe.pkl', 'rb') as handle:
+        results_list = pickle.load(handle)
+    with open(r'model_output\opt\dvariables_200nfe.pkl', 'rb') as handle:
+        variable_list = pickle.load(handle)
+
+if plot_opt:
+    nondom_VM = opt.nondom_sort(results_list)
+    npresults = np.array(results_list)
+    nondom_results = npresults[nondom_VM]
+    
+    pltvm.parallel_axis(nondom_results,filename = 'parallelaxis'+str(max_nfes)+'.png',
+                        obj_labels = ['Energy Use\n(kWh)','Subsidence Avoidance\n(mbgs)','Urban Mounding\n(m)', 'Cost'])

@@ -66,6 +66,8 @@ def run_scenario_model(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
     GW_to_WU = [0.7131,0.644,0.574966] 
     # Phase LID increase multiplier
     LID_PAR = [1, 1, 1]
+    # Initial cost
+    cost = 0
     
     # Geologic zone specific parameters translated into an array to input into the model
     # COL1 : Zone hydraulic conductivity vertical anisotropy
@@ -215,6 +217,9 @@ def run_scenario_model(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
     for i in range(total_mthly_leak.shape[0]):
         total_mthly_leak[i] = np.sum(list(zip(*WEL_INFO[i]))[3])
     total_mthly_leak = (total_mthly_leak - total_mthly_pumping)
+    ### Cost attributed to fixing leaks
+    average_leak = total_mthly_leak.sum()/(360*24*60*60) # convert to m3/s
+    cost += np.round(2.0030-average_leak,2)*200
     
     # Add WWTP: compute the difference between the installed WWTP minus the actual treatment quantity (m3/s)
     if num_WWTP>0:
@@ -226,6 +231,20 @@ def run_scenario_model(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
         # Randomly select num_WWTP of WWTPs to improve for recharge
         WWTPs = WWTPs[np.random.choice(WWTPs.shape[0],size=num_WWTP,replace=False),:]
         WEL_DICT, WEL_INFO = mod.addNewWells(WWTPs,LYR=1,WEL_Dict=WEL_DICT,INFO_Dict=WEL_INFO,WEL_mult=60*60*24,mun=MUN,wellType=-1) # Mult used to convert to m3/d
+        
+        ### Cost attributed to each exapanded WWTPs
+        for i in range(WWTPs.shape[0]):
+            if WWTPs[i,5] == 3:
+                WWTPs[i,5] = 30
+            elif WWTPs[i,5] == 2:
+                if np.round(WWTPs[i,4],3) >= 0.1:
+                    WWTPs[i,5] = 20
+                else:
+                    WWTPs[i,5] = 4
+            else:
+                WWTPs[i,5] = 2
+                
+        cost += WWTPs[:,5].sum()
         
     ### Recharge Basins
     Basin_Array = np.loadtxt(r'data_output\scenarios\RCH_BASIN.csv', delimiter=',', skiprows=1)
@@ -241,16 +260,19 @@ def run_scenario_model(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
             WEL_DICT[per].append([1,r,c,1*86400]) # 1 m3/s recharge basins (35 cfs)
             WEL_INFO[per].append([1,r,c,1*86400,MUN[r,c],1])
     
+    ### Cost attributed to building recharge basins
+    cost += num_RCHBASIN*20
+    
     wel = flopy.modflow.ModflowWel(mf, stress_period_data=WEL_DICT)
         
     print('WEL_Dict generated in',str(time.time()-newtime),'seconds')
 
-    ### Create pickle file of Well Data to be available for post processing of well energy use objective
-    winfofile = 'model_output\objective_data\WEL_INFO_'+scenario+'.pickle'
-    with open(winfofile, 'wb') as handle:
-        pickle.dump(WEL_INFO, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    
-    print('WEL_Dict saved in',str(time.time()-newtime),'seconds')
+#    ### Create pickle file of Well Data to be available for post processing of well energy use objective
+#    winfofile = 'model_output\objective_data\WEL_INFO_'+scenario+'.pickle'
+#    with open(winfofile, 'wb') as handle:
+#        pickle.dump(WEL_INFO, handle, protocol=pickle.HIGHEST_PROTOCOL)
+#    
+#    print('WEL_Dict saved in',str(time.time()-newtime),'seconds')
     
     ### Generate output control and solver MODFLOW packages 
     oc, pcg = mod.outputControl(mf)
@@ -273,7 +295,7 @@ def run_scenario_model(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
     success, buff = mf.run_model(silent=True)
     
     print('MODFLOW model completed run in',str(time.time()-newtime),'seconds')
-    return WWTPs, Basins, total_mthly_leak
+    return WWTPs, Basins, total_mthly_leak, cost, WEL_INFO, LU
 
 def objective_function(x):
     num_WWTP = x[0]
