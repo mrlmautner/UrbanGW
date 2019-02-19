@@ -27,16 +27,16 @@ WWTPs, Basins, total_pump_leak = vmmodel.run_scenario_model('Test',0,0,100)
 if scenario_mode:
     # AGU Model Runs
     numscenarios = 4
-    scenarioList = ['WWTP','Historical','Leak','Basin'] 
+    scenarioList = ['Historical','WWTP','Leak','Basin'] 
     fixleak = [1,1,0.8,1]
-    num_WWTP = [74,0,0,0] # 74
-    num_RCHBASIN = [0,0,0,5] # 5
+    num_WWTP = [0,74,0,0]
+    num_RCHBASIN = [0,0,0,5]
     w = [0]*numscenarios
     b = [0]*numscenarios
     l = [0]*numscenarios
     
     for i in range(numscenarios):
-        w[i],b[i],l[i] = vmmodel.run_scenario_model(scenarioList[i],num_WWTP[i],num_RCHBASIN[i],fixleak[i])
+        w[i], b[i], l[i], cost, WEL_INFO, LU = vmmodel.run_scenario_model(scenarioList[i],num_WWTP[i],num_RCHBASIN[i],fixleak[i])
 
 
 if optimize:
