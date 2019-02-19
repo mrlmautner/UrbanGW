@@ -18,7 +18,7 @@ def run_scenario_model(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
     '''
     num_WWTP is the number of WWTPs to rehabilitate
     num_RCHBASIN is the number of recharge basins to install
-    fixleak is the ratio of fixed leaks to historical leaks, 1 indicates same level as historical leaks and 0 indicates all leaks are fixed
+    fixleak is the percent of fixed leaks to historical leaks, 0 indicates same level as historical leaks and 100 indicates all leaks are fixed
     '''
     
     timestart = time.time()
@@ -61,6 +61,7 @@ def run_scenario_model(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
     WEL_PAR = np.array([2.671E+00,2.581E+00,2.558E+00])
     # Phase distribution system leak multiplier
     LEAK_PAR = np.array([1,1,1])
+    fixleak = fixleak/100 # convert from integer to decimal
     # Percentage of groundwater pumping as ratio of total water use
     GW_to_WU = [0.7131,0.644,0.574966] 
     # Phase LID increase multiplier
@@ -196,7 +197,7 @@ def run_scenario_model(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
                 u_area = tempLeak[:,2].sum()
                 
                 # Use total pumping for each stress period to determine leak quantities
-                LperArea = (-1*total_mthly_pumping[p]/GW_to_WU[i])*fixleak*LEAK_MUN[n,i+1]/u_area # Divide total pumping by GW ratio to get total usage, multiply by leak status percent, multiply by % recharge by municipality (FIX)
+                LperArea = (-1*total_mthly_pumping[p]/GW_to_WU[i])*(1-fixleak)*LEAK_MUN[n,i+1]/u_area # Divide total pumping by GW ratio to get total usage, multiply by leak status percent, multiply by % recharge by municipality (FIX)
                 tempLeak[:,2] *= LperArea
                 tempLeak[tempLeak[:,3]==1,2] *= 0.1 # apply 90% returns to sewer under clay layer (Geologic formation 1)
                 LEAK_arrays[leakset][j:(j+tempLeak.shape[0]),0] = tempLeak[:,0] # Get rows of all cells of urban land use type from list

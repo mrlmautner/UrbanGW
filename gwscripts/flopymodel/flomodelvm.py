@@ -86,7 +86,7 @@ def addNewWells(New_WEL,LYR,mun,WEL_Dict=0,INFO_Dict=0,WEL_mult=1,start=0,end=0,
     dateType is a marker that should be either 'yr' or 'per' depending on whether a value of year or stress period is passed in the Start and End time columns
     wellType is a marker that corresponds to the well source/sink type as follows: 0=pumping, 1=good quality (recharge basin,LID surface,WWTP injection), -1=poor quality(leak,LID deep,WWTP surface)
     munleak is an array with leak % by municipality if the data set is pumping wells and 1 otherwise
-    F is the percentage of leak that remains afer the fix (ie 1 means there have been no fixes)'''
+    F is the percentage of leak that has been fixed (ie 1 means all leaks are fixed)'''
     
     # Initialize dictionary    
     if WEL_Dict == 0:
@@ -131,7 +131,7 @@ def addNewWells(New_WEL,LYR,mun,WEL_Dict=0,INFO_Dict=0,WEL_mult=1,start=0,end=0,
         for per in range(int(New_WEL[w,2]-1),int(New_WEL[w,3]-1)):
             # Determine whether the dataset is a pumping set or any other type
             if type(munleak) is not int:
-                LEAK_mult = 1 - (1/G[per])*P*(1-F) # Apply a multiplier that subtracts the leak averted from the total water use from the groundwater pumping
+                LEAK_mult = 1 - (1/G[per])*P*F # Apply a multiplier that subtracts the leak averted from the total water use from the groundwater pumping
             else:
                 LEAK_mult = 1
             
