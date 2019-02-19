@@ -1,6 +1,0 @@
-STATE,MUNI,CVE_LOC,LOC,NAME,INSTALLED,CURRENT,R,X,Y,TREATMENT,USE,USE_TYPE,COMMENTS
-DF,Iztapalapa,7,Iztapalapa,Cerro de la Estrella,4,2.19,1,1500,2500,Activated Sludge,Unlined Canals,Infiltrating,"IT, Xochimilco"
-DF,Gustavo A. Madero,5,Gustavo A. Madero,San Juan de Aragon,0.5,0.167,1,5000,2500,Activated Sludge,Lake,Evaporative,Lago de San Juan de Aragon
-Mexico,Atenco,11,Santa Isabel Ixtapan,Santa Isabel Ixtapan,0.14,0.01,,3000,4500,Anaerobic Digestion,NA,Drainage,
-Mexico,Cocotitlan,22,Cocotitlan,Cabecera Municipal,0.024,0.014,,3000,1000,Activated Sludge,River,Drainage,Rio Amecameca
-Mexico,Naucalpan de Juarez,57,Naucalpan de Juarez,Conjunto Hab. La Cuspide,0.004,0.0016,1,4500,1500,Activated Sludge,NA,Drainage,
