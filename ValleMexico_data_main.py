@@ -35,13 +35,13 @@ nrows = int((yur-yll)/cellsize) # nrows
 #    newfile = r'data\Input\LU_' + str(year) + '.asc'
 #    header = gen.getHeader(ncols,nrows,xll,yll,cellsize,-99999)
 #    dsAsArray = gen.sampleGD(filename,newfile,header,xll,yll,xur,yur,cellsize)
-
-#%%
-# Geology raster
-filename = r'data_raw\GEO_VM_INEGI-TR.asc'
-newfile = r'data_output\GEO_VM.asc'
-header = gen.getHeader(ncols,nrows,xll,yll,cellsize,-99999)
-dsAsArray = gen.sampleGD(filename,newfile,header,xll,yll,xur,yur,cellsize)
+#
+##%%
+## Geology raster
+#filename = r'data_raw\GEO_VM_INEGI-TR.asc'
+#newfile = r'data_output\GEO_VM.asc'
+#header = gen.getHeader(ncols,nrows,xll,yll,cellsize,-99999)
+#dsAsArray = gen.sampleGD(filename,newfile,header,xll,yll,xur,yur,cellsize)
 
 ##%%
 ## Municipality raster
@@ -50,12 +50,12 @@ dsAsArray = gen.sampleGD(filename,newfile,header,xll,yll,xur,yur,cellsize)
 #header = gen.getHeader(ncols,nrows,xll,yll,cellsize,-99999)
 #dsAsArray = gen.sampleGD(filename,newfile,header,xll,yll,xur,yur,cellsize)
 #
-##%%
-## IH raster
-#filename = r'data_raw\IH_OK_Combined_1984.asc'
-#newfile = r'data_output\IH_1984.asc'
-#header = gen.getHeader(ncols,nrows,xll,yll,cellsize,-99999)
-#dsAsArray = gen.averageGD(filename,newfile,header,xll,yll,xur,yur,cellsize)
+#%%
+# IH raster
+filename = r'data_raw\IH-OK-Combo-DEM_1984.asc'
+newfile = r'data_output\IH_1984.asc'
+header = gen.getHeader(ncols,nrows,xll,yll,cellsize,-99999)
+dsAsArray = gen.averageGD(filename,newfile,header,xll,yll,xur,yur,cellsize)
 
 ##%%
 ## DEM raster
