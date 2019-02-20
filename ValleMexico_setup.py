@@ -16,9 +16,13 @@ import pickle
 
 def run_scenario_model(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
     '''
-    num_WWTP is the number of WWTPs to rehabilitate
-    num_RCHBASIN is the number of recharge basins to install
-    fixleak is the percent of fixed leaks to historical leaks, 0 indicates same level as historical leaks and 100 indicates all leaks are fixed
+    scenario is the name of the model for the MODFLOW input and output files
+    num_WWTP is the number of wastewater treatment plants to rehabilitate for
+    wastewater injection into the aquifer
+    num_RCHBASIN is the number of infiltration basins that will recharge the
+    aquifer using imported water
+    fixleak is the percent of fixed leaks to historical leaks, 0 indicates the
+    same level as historical leaks and 100 indicates all leaks are fixed
     '''
     
     timestart = time.time()
@@ -91,9 +95,13 @@ def run_scenario_model(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
     
     print('Basic, Discretization, and Layer packages generated in',str(time.time()-timestart),'seconds')
     
-    ### Land Use Type
-    # Fill a land use dictionary with the ARRAYs that represent the % of each land use cover in each cell
-    # and the LISTs that contain all the cells and percentages of each land use type
+    '''
+    Land Use Type
+
+    Fill a land use dictionary with the ARRAYs that represent the % of each
+    land use cover in each cell and the LISTs that contain all the cells and
+    percentages of each land use type
+    '''
     LU = {}
     for i, LUset in enumerate(LU_PAR):
         LU[LUset] = {'ARRAY':{},'LIST':{}}
@@ -122,8 +130,12 @@ def run_scenario_model(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
 #    with open(winfofile, 'wb') as handle:
 #        pickle.dump(LU, handle, protocol=pickle.HIGHEST_PROTOCOL)
     
-    ### Recharge
-    # Create recharge dictionary for MODFLOW RCH package based on land use multipliers and interpolated precipitation rasters
+    '''
+    Recharge
+    
+    Create recharge dictionary for MODFLOW RCH package based on land use
+    multipliers and interpolated precipitation rasters
+    '''
     newtime = time.time()
         
     RCH_DICT = {}
@@ -147,7 +159,6 @@ def run_scenario_model(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
     ### Well objects: supply wells, distribution leaks, injection wells, wastewater reuse, recharge basins
     newtime = time.time()
     LEAK_MUN = np.loadtxt('data_output\leak\LEAK_TOT_MUN.csv',delimiter=',',skiprows=1) # Total recharge percent per municipality: equal to percent of total water use (1997 values) x percent leak (~35%) x recharge percent (15%)
-    WWTPs = np.loadtxt(r'data_output\scenarios\WWTP.csv', delimiter=',', skiprows=1, usecols=[9,8,5,6,11])
     
     # Get groundwater percentage of total based on time period
     gval = np.zeros(360)
@@ -186,12 +197,25 @@ def run_scenario_model(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
     mun = np.delete(mun,29)
     mun = np.delete(mun,21)
     
+    '''
+    Leak Repair
+    
+    Create a well dictionary for all the leak cells. The leak cells will be treated
+    as an injection well at each cell in which there is urban land cover. MODFLOW
+    distributes injection wells evenly across the area of the cell. The leak
+    percentage is based on the leak percentage determined by municipality. Then
+    the leak amount determined for each cell is multiplied by the percent of
+    urban land cover in that cell. Finally, leaks in cells that are located in the
+    lacustrine zone are reduced by 90% assuming that the low hydraulic
+    conductivity does not allow for high levels of infiltration and the sewer
+    provides a preferential flow path out of the basin
+    '''
     LEAK_arrays = {}
     for i, leakset in enumerate(LU_PAR):
         LEAK_arrays[leakset] = np.zeros((LU[leakset]['LIST']['URBAN'].shape[0]*(PHASE_PER[i+1]-PHASE_PER[i]),5))
         j = 0
         
-        # Add leak wells for each period
+        # Loop through each period model period
         for p in range(PHASE_PER[i],PHASE_PER[i+1]):
             for n,m in enumerate(mun):
                 # Calculate the total urban area in normalized cell area (1 cell = 1) per municipality
@@ -201,13 +225,27 @@ def run_scenario_model(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
                 # Use total pumping for each stress period to determine leak quantities
                 LperArea = (-1*total_mthly_pumping[p]/GW_to_WU[i])*(1-fixleak)*LEAK_MUN[n,i+1]/u_area # Divide total pumping by GW ratio to get total usage, multiply by leak status percent, multiply by % recharge by municipality (FIX)
                 tempLeak[:,2] *= LperArea
-                tempLeak[tempLeak[:,3]==1,2] *= 0.1 # apply 90% returns to sewer under clay layer (Geologic formation 1)
-                LEAK_arrays[leakset][j:(j+tempLeak.shape[0]),0] = tempLeak[:,0] # Get rows of all cells of urban land use type from list
-                LEAK_arrays[leakset][j:(j+tempLeak.shape[0]),1] = tempLeak[:,1] # Get columns of all cells of urban land use type from list
-                LEAK_arrays[leakset][j:(j+tempLeak.shape[0]),2] = p # Set the period to the current stress period for all urban cells
-                LEAK_arrays[leakset][j:(j+tempLeak.shape[0]),3] = p+1 # Set the end of the period to the next stress period
-                LEAK_arrays[leakset][j:(j+tempLeak.shape[0]),4] = tempLeak[:,2] # Set the multiplier to the percentage of urban land use type stored in list
-                j += tempLeak.shape[0] # Set the new index to the previous index plus the number of cells added
+                
+                # apply 90% returns to sewer under clay layer (Geologic formation 1)
+                tempLeak[tempLeak[:,3]==1,2] *= 0.1
+                
+                # Get rows of all cells of urban land use type from list
+                LEAK_arrays[leakset][j:(j+tempLeak.shape[0]),0] = tempLeak[:,0]
+                
+                # Get columns of all cells of urban land use type from list
+                LEAK_arrays[leakset][j:(j+tempLeak.shape[0]),1] = tempLeak[:,1]
+                
+                # Set the period to the current stress period for all urban cells
+                LEAK_arrays[leakset][j:(j+tempLeak.shape[0]),2] = p
+                
+                # Set the end of the period to the next stress period
+                LEAK_arrays[leakset][j:(j+tempLeak.shape[0]),3] = p+1
+                
+                # Set the multiplier to the percentage of urban land use type stored in list
+                LEAK_arrays[leakset][j:(j+tempLeak.shape[0]),4] = tempLeak[:,2]
+                
+                # Set the new index to the previous index plus the number of cells added
+                j += tempLeak.shape[0]
             
         LEAK_arrays[leakset] = LEAK_arrays[leakset][(LEAK_arrays[leakset][:,4]>5),:] # Only include cells that contribute at least 5 m3/day
             
@@ -221,14 +259,26 @@ def run_scenario_model(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
     average_leak = total_mthly_leak.sum()/(360*24*60*60) # convert to m3/s
     cost += np.round(2.0030-average_leak,2)*200
     
-    # Add WWTP: compute the difference between the installed WWTP minus the actual treatment quantity (m3/s)
+    '''
+    Wastewater Treatment Reuse
+    
+    WWTP is imported from a csv that has the following columns:(m3/s)
+    The difference between the installed capacity and the actual treatment
+    quantity is computed as the injection quantity
+    The wastewater treatment plants chosen for rehabilitation are randomly
+    selected from the list based on the number of plants indicated
+    At the end of the data processing WWTP has the following columns: X, Y, 
+    start year, end year, difference between installed and actual capacity
+    '''
+    WWTPs = np.loadtxt(r'data_output\scenarios\WWTP.csv', delimiter=',', skiprows=1, usecols=[9,8,5,6,11])
+    
     if num_WWTP>0:
-        WWTPs[:,3] = WWTPs[:,2] - WWTPs[:,3] # Colmn 2 is installed treatment capacity and column 3 is actual treatment quantity
+        WWTPs[:,3] = WWTPs[:,2] - WWTPs[:,3] # Col 2 is installed treatment capacity and Col 3 is actual treatment quantity
         WWTPs = np.insert(WWTPs, 2, PHASE_PER[0]+1, axis=1) # Insert starting period
-        WWTPs[:,3] = np.ones(WWTPs.shape[0])*PHASE_PER[phases] # Insert ending period
-        WWTPs[WWTPs[:,4]<0.01,4] = 0.01 # For any WWTPs with a difference of less than 0.01 m3/s in capacity, assign an injection of 0.01 m3/s
+        WWTPs[:,3] = np.ones(WWTPs.shape[0])*PHASE_PER[phases] # Replace Col 3 with ending period
+        WWTPs[WWTPs[:,4]<0.01,4] = 0.01 # For any WWTPs with a difference of
+        # less than 0.01 m3/s in capacity, assign an injection of 0.01 m3/s
         
-        # Randomly select num_WWTP of WWTPs to improve for recharge
         WWTPs = WWTPs[np.random.choice(WWTPs.shape[0],size=num_WWTP,replace=False),:]
         WEL_DICT, WEL_INFO = mod.addNewWells(WWTPs,LYR=1,WEL_Dict=WEL_DICT,INFO_Dict=WEL_INFO,WEL_mult=60*60*24,mun=MUN,wellType=-1) # Mult used to convert to m3/d
         
@@ -245,8 +295,10 @@ def run_scenario_model(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
                 WWTPs[i,5] = 2
                 
         cost += WWTPs[:,5].sum()
-        
-    ### Recharge Basins
+    
+    '''
+    Recharge Basins
+    '''
     Basin_Array = np.loadtxt(r'data_output\scenarios\RCH_BASIN.csv', delimiter=',', skiprows=1)
     Basins = np.zeros((num_RCHBASIN,2))
     for b in range(0,num_RCHBASIN):

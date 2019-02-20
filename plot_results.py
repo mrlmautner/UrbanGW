@@ -239,6 +239,7 @@ for s, s_name in enumerate(scenario_list):
     mound_array[s,:] = mo.measureMound(heads,DEM,ACTIVE_LYR1,LU,[132,252])
 
 #%%
+    
 energy = energy_array[:,0]
 subs = subs_array[:,0]/subs_array[:,1]
 mound = mound_array[:,0]/min(mound_array[:,0])
