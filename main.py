@@ -45,43 +45,38 @@ LU is the dictionary that contains a raster and list of the percentage of land
 use type per model cell for each model phase    
 '''
 
-WWTPs, Basins, total_pump_leak = vmmodel.run_scenario_model('Test',0,0,0)
+wwtp, basin, leak, cost, well_info, land_use = vmmodel.run_scenario_model('Test',0,0,0)
 
 if plt_scen:
+    '''
+    Scenario mode allows the user to compare predetermined scenarios defined
+    above by the quantity of each recharge intervention
+    '''
+    num_scenarios = len(scenario_names)
+    wwtp, basin, leak, cost, well_info, land_use = ([0]*num_scenarios for i in range(6))
+    
     if run_scenarios:
-        '''
-        Scenario mode allows the user to compare predetermined scenarios defined
-        above by the quantity of each recharge intervention
-        '''
-        num_scenarios = len(scenario_names)
-        
-        w = [0]*num_scenarios
-        b = [0]*num_scenarios
-        l = [0]*num_scenarios
-        cost = [0]*num_scenarios
-        WEL_INFO = [0]*num_scenarios
-        LU = [0]*num_scenarios
-        
         # Execute the MODFLOW model for each scenario and collect results
-        for s, s_name in enumerate(scenario_names):
-            w[s], b[s], l[s], cost[s], WEL_INFO[s], LU[s] = vmmodel.run_scenario_model(s_name,
-                                                             num_wwplants[s],num_infbasins[s],leak_repair[s])
+        for i, s_name in enumerate(scenario_names):
+            wwtp[i], basin[i], leak[i], cost[i], well_info[i], land_use[i] = vmmodel.run_scenario_model(s_name,
+                                                             num_wwplants[i],num_infbasins[i],leak_repair[i])
+
     else:
-        
-        WEL_INFO = {}
-        for s, s_name in enumerate(scenario_names):
+        # If the results have already been generated, open results from saved files
+        for i, s_name in enumerate(scenario_names):
             
             with open('model_output\objective_data\WEL_INFO_'+s_name+'.pickle', 'rb') as handle:
-                WEL_INFO = pickle.load(handle)
+                well_info[i] = pickle.load(handle)
             with open('model_output\objective_data\LU_'+s_name+'.pickle', 'rb') as handle:
-                LU = pickle.load(handle)
+                land_use[i] = pickle.load(handle)
             
-            ### Generalize
-            heads = S_heads[s_name]
-            
-            energy_array[s,:] = mo.measureEnergy(heads,WEL_INFO,DEM)
-            subs_array[s,:] = mo.measureSubidence(heads,DEM,ACTIVE_LYR1,TH1)
-            mound_array[s,:] = mo.measureMound(heads,DEM,ACTIVE_LYR1,LU,[132,252])
+    s_heads = pltvm.get_heads(scenario_names)
+    ### Generalize
+    heads = S_heads[s_name]
+    
+    energy_array[s,:] = mo.measureEnergy(heads,well_info,DEM)
+    subs_array[s,:] = mo.measureSubidence(heads,DEM,ACTIVE_LYR1,TH1)
+    mound_array[s,:] = mo.measureMound(heads,DEM,ACTIVE_LYR1,land_use,[132,252])
 
 if plot_opt:
     
