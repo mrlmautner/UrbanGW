@@ -3,7 +3,7 @@ This repository takes raster and csv input data for a groundwater model of the V
 
 ## Data Inputs
 
-![Data](/images/data_processing.png)
+![GitHub Logo](/images/data_processing.png)
 Format: ![Alt Text](url)
 
 ### Ensure rasters are at the model grid resolution
