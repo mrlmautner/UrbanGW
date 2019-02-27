@@ -44,9 +44,7 @@ import seaborn as sns
 #l = [4,2,2,2]
 #c = ['k','goldenrod','blue','darkgreen']
 #mark = ['-','-','-','--']
-#
-#scenario_list = ['Historical','WWTP','Leak','Basin']
-#%% Head Dictionary
+
 def get_heads(scenario_list):
     S_heads = {}
     for s_name in scenario_list:
@@ -54,8 +52,27 @@ def get_heads(scenario_list):
         
     return S_heads
     
-#%% Heads Contour
-def plt_head_change(s_heads, n=(30,0), m=(30,359)):
+def calc_head_change(hds, GEO, ACTIVE, n, m, g_units, lyr):
+    # Get head values at the nth and mth time steps
+    h_i = hds.get_data(mflay=lyr,kstpkper=n)
+    h_e = hds.get_data(mflay=lyr,kstpkper=m)
+    
+    # Create array of heads only for geologic units g_units
+    new_h_i = np.ones(h_i.shape)*np.nan
+    for g in g_units:
+        new_h_i[GEO==g] = h_i[GEO==g]
+    new_h_i[ACTIVE!=1] = np.nan # Set cells outside model area to NaN
+    
+    new_h_e = np.ones(h_e.shape)*np.nan
+    for g in g_units:
+        new_h_e[GEO==g] = h_e[GEO==g]
+    new_h_e[ACTIVE!=1] = np.nan # Set cells outside model area to NaN
+    
+    # Find difference between nth and mth time steps
+    head_change = new_h_e - new_h_i
+    return head_change
+
+def plt_head_change(scenario_list, mapTitles, s_heads, GEO, ACTIVE, n = (30,0), m = (30,359), g_units = [2,3,4], lyr = 1):
     '''
     Calculates the raster of the change in head from the nth time step to the
     mth time step for each model in S_heads. Then plots the difference between
@@ -63,63 +80,77 @@ def plt_head_change(s_heads, n=(30,0), m=(30,359)):
     other models in S_heads. Plots the heads for the geologic units g_units and
     in the active area .
     '''
-    fig, axes = plt.subplots(2, 2, figsize=(7,6.3))
-    mapTitle = ['Historical','Increased WW Reuse','Repair Leaks','Recharge Basins']
     plt.set_cmap('rainbow_r')
-    axes = axes.flat
-    cbar_ax = fig.add_axes([0.85, 0.15, 0.03, 0.7])
     
-    hds = s_heads[s_heads.keys()[0]]
-    hist_i = hds.get_data(mflay=1,kstpkper=(30,0))
-    hist_e = hds.get_data(mflay=1,kstpkper=(30,359))
+    # Get head values at the nth and mth time steps
+    first_heads = s_heads[s_heads.keys()[0]]
+   
+    first_change = calc_head_change(first_heads, GEO, ACTIVE, n, m, g_units, lyr)
     
-    new_hist_i = np.ones(hist_i.shape)*np.nan#min(h[h>0])
-    new_hist_i[GEO==2] = hist_i[GEO==2]
-    #new_hist_i[GEO==3] = hist_i[GEO==3]
-    new_hist_i[GEO==4] = hist_i[GEO==4]
-    #new_hist_i[GEO==5] = hist_i[GEO==5]
-    new_hist_i[ACTIVE_LYR2!=1] = np.nan
-    new_hist_e = np.ones(hist_e.shape)*np.nan#min(h[h>0])
-    new_hist_e[GEO==2] = hist_e[GEO==2]
-    #new_hist_e[GEO==3] = hist_e[GEO==3]
-    new_hist_e[GEO==4] = hist_e[GEO==4]
-    #new_hist_e[GEO==5] = hist_e[GEO==5]
-    new_hist_e[ACTIVE_LYR2!=1] = np.nan
+    for i, s_name in enumerate(scenario_list):
+        scen_heads = s_heads[s_name]
+        
+        scen_change = calc_head_change(scen_heads, GEO, ACTIVE, n, m, g_units, lyr)
+        
+        change_compare = scen_change - first_change
+        
+        fig, axes = plt.subplots()
+        cbar_ax = fig.add_axes()
+        
+        im = axes.imshow(change_compare,vmin=0,vmax=20)
+        CS = axes.contour(ACTIVE, colors='k', linewidths=2)
+        
+        axes.xaxis.set_visible(False)
+        axes.yaxis.set_visible(False)
+        axes.set_title(mapTitles[i].format(i+1))
+        
+        fig.colorbar(im, cax=cbar_ax, label='Change in Groundwater Head (m)')
+        plt.savefig('model_output\plots\head_change'+s_name+'-'+scenario_list[0]+'.svg')
+        plt.savefig('model_output\plots\head_change'+s_name+'-'+scenario_list[0]+'.png', dpi=600)
+        plt.close()
+
+def plt_scen_objectives(scenario_names, num_scen, objectives):
+    '''
+    objectives is a list with an array of length number of scenarios for each objective
+    '''
+    barWidth = 0.25
+    r = np.arange(num_scen)*0.25 # bar position
+    y_label = ['Kilowatt Hours','Average Head Below top of Clay Layer','Ratio to Historical Mounding']
+    obj_title = ['Energy Use','Subsidence Avoidance','Urban Mounding']
+    ylims = [[4.5E9,6E9],[36,41],[0.9,1.25]]
     
-    hist_change = new_hist_e-new_hist_i
+    normalized_o = np.zeros((num_scen, len(objectives)))
     
-    for i,s_name in enumerate(scenario_list):
-        hds = S_heads[s_name]
-        h_i = hds.get_data(mflay=1,kstpkper=(30,0))
-        h_e = hds.get_data(mflay=1,kstpkper=(30,359))
-        
-        new_h_i = np.ones(h_i.shape)*np.nan#min(h[h>0])
-        new_h_i[GEO==2] = h_i[GEO==2]
-    #    new_h_i[GEO==3] = h_i[GEO==3]
-        new_h_i[GEO==4] = h_i[GEO==4]
-    #    new_h_i[GEO==5] = h_i[GEO==5]
-        new_h_i[ACTIVE_LYR2!=1] = np.nan
-        new_h_e = np.ones(h_e.shape)*np.nan#min(h[h>0])
-        new_h_e[GEO==2] = h_e[GEO==2]
-    #    new_h_e[GEO==3] = h_e[GEO==3]
-        new_h_e[GEO==4] = h_e[GEO==4]
-    #    new_h_e[GEO==5] = h_e[GEO==5]
-        new_h_e[ACTIVE_LYR2!=1] = np.nan
-        
-        h_change = new_h_e-new_h_i
-        hist_compare = h_change - hist_change
-        
-        im = axes[i].imshow(hist_compare,vmin=0,vmax=20)
-        CS = axes[i].contour(ACTIVE_LYR1, colors='k', linewidths=2)
-        axes[i].xaxis.set_visible(False)
-        axes[i].yaxis.set_visible(False)
-        axes[i].set_title(mapTitle[a].format(i+1))
-        
-    fig.subplots_adjust(right=0.8)
-    fig.colorbar(im, cax=cbar_ax, label='Change in Groundwater Head (m)')
-    plt.savefig('model_output\plots\Hist_change_all.svg')
-    plt.savefig('model_output\plots\Hist_change_all.png', dpi=600)
+    fig, axes = plt.subplots(nrows=1, ncols=3,figsize=(10,6))
+    
+    for o, obj in enumerate(objectives):
+        normalized_o[:,o] = obj / (obj.max(axis=0) - obj.min(axis=0))
+        plt.subplot(1,len(objectives),o+1)
+        plt.bar(r, obj, width=barWidth, edgecolor='white', color=c)
+        plt.xticks(r, scenario_names, rotation='vertical')
+        plt.ylabel(y_label[o])
+        plt.ylim(ylims[o])
+        plt.title(obj_title[o])
+    
+    fig.tight_layout()
+    # Flip subsidence measure to be minimizing
+    #normalized_o[:,1] = 1 - normalized_o[:,1]
+    plt.savefig('model_output\plots\Objectives.svg')
+    plt.savefig('model_output\plots\Objectives.png', dpi=600)
     plt.show()
+
+def parallel_axis(nondom_results,obj_labels,filename):
+    # Plots a normalized parallel axis
+    plt.figure()
+    for ppoint in nondom_results:
+        ppoint = (ppoint - nondom_results.min(axis=0)) / (nondom_results.max(axis=0) - nondom_results.min(axis=0))
+        plt.plot(range(len(obj_labels)), ppoint, 'steelblue')
+    
+    plt.gca().set_xticks(range(len(obj_labels)))
+    plt.gca().set_xticklabels(obj_labels)
+    plt.show()
+    plt.savefig(filename)
+
 
 ##%% Budget
 #df_1Bdget = {}
@@ -225,59 +256,6 @@ def plt_head_change(s_heads, n=(30,0), m=(30,359)):
 #plt.ylabel('Northing')
 #plt.show()
 #
-##%% Calculate Objectives
-#WEL_INFO = {}
-#
-#n_scenario = 4
-#n_obj = 3
-#energy_array = np.zeros((n_scenario,2))
-#subs_array = np.zeros((n_scenario,2))
-#mound_array = np.zeros((n_scenario,3))
-#
-#for s, s_name in enumerate(scenario_list):
-#    
-#    with open('model_output\objective_data\WEL_INFO_'+s_name+'.pickle', 'rb') as handle:
-#        WEL_INFO = pickle.load(handle)
-#    with open('model_output\objective_data\LU_'+s_name+'.pickle', 'rb') as handle:
-#        LU = pickle.load(handle)
-#    heads = S_heads[s_name]
-#    
-#    energy_array[s,:] = mo.measureEnergy(heads,WEL_INFO,DEM)
-#    subs_array[s,:] = mo.measureSubidence(heads,DEM,ACTIVE_LYR1,TH1)
-#    mound_array[s,:] = mo.measureMound(heads,DEM,ACTIVE_LYR1,LU,[132,252])
-#
-##%%
-#    
-#energy = energy_array[:,0]
-#subs = subs_array[:,0]/subs_array[:,1]
-#mound = mound_array[:,0]/min(mound_array[:,0])
-#cells = (360-14)*np.sum(np.sum(ACTIVE_LYR2)) # Number of cells in Model Area over periods 15-360
-#
-#barWidth = 0.5
-#r = np.arange(n_scenario)*0.5 # bar position
-#y_label = ['Kilowatt Hours','Average Head Below top of Clay Layer','Ratio to Historical Mounding']
-#obj_title = ['Energy Use','Subsidence Avoidance','Mounding']
-#ylims = [[4.5E9,6E9],[36,41],[0.9,1.25]]
-#
-#normalized_o = np.zeros((n_scenario,n_obj))
-#
-#fig, axes = plt.subplots(nrows=1, ncols=3,figsize=(10,6))
-#
-#for o, obj in enumerate([energy,subs,mound]):
-#    normalized_o[:,o] = obj / (obj.max(axis=0) - obj.min(axis=0))
-#    plt.subplot(1,n_obj,o+1)
-#    plt.bar(r, obj, width=barWidth, edgecolor='white', color=c)
-#    plt.xticks(r, ['Historical','WWTP','Leak','Basin'],rotation='vertical')
-#    plt.ylabel(y_label[o])
-#    plt.ylim(ylims[o])
-#    plt.title(obj_title[o])
-#
-#fig.tight_layout()
-## Flip subsidence measure to be minimizing
-##normalized_o[:,1] = 1 - normalized_o[:,1]
-#plt.savefig('model_output\plots\Objectives.svg')
-#plt.savefig('model_output\plots\Objectives.png', dpi=600)
-#plt.show()
 
 ##%%
 #modelname = 'model_output\VM_WWTP'
@@ -295,16 +273,3 @@ def plt_head_change(s_heads, n=(30,0), m=(30,359)):
 #    ctr = plt.contour(hdslayer, colors='k', linewidths=0.5)
 #
 #plt.colorbar(im, label='Groundwater Head (m)')
-
-def parallel_axis(nondom_results,obj_labels,filename):
-    # Plots a normalized parallel axis
-    plt.figure()
-    for ppoint in nondom_results:
-        ppoint = (ppoint - nondom_results.min(axis=0)) / (nondom_results.max(axis=0) - nondom_results.min(axis=0))
-        plt.plot(range(len(obj_labels)), ppoint, 'steelblue')
-    
-    plt.gca().set_xticks(range(len(obj_labels)))
-    plt.gca().set_xticklabels(obj_labels)
-    plt.show()
-    plt.savefig(filename)
-    

@@ -86,3 +86,11 @@ def measureMound(heads,DEM,ACTIVE_LYR1,LU,PhasePer):
                         maxmound = h[i,j] - DEM[i,j]
     
     return mound,cells,maxmound
+
+def get_objectives(heads, wellinfo, landuse, dem, active, thickness):
+    
+    energy = measureEnergy(heads, wellinfo, dem)
+    sub, sub_cells = measureSubidence(heads, dem, active, thickness)
+    mound, mound_cells, maxmound = measureMound(heads, dem, active, landuse, [132,252])
+    
+    return energy, sub/sub_cells, mound

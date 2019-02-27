@@ -9,14 +9,19 @@ from ValleMexico_setup import *
 import plot_results as pltvm
 from objective_function import *
 from gwscripts.optimization import opttools as opt
+from gwscripts.optimization import measureobjectives as mo
 from platypus import Problem, Integer, Real, NSGAII
 import numpy as np
 import pickle
 
+# Test Mode
+test = False
+
 # Scenario Mode
-run_scenarios = False
-plt_scen = False
+plt_scen = True
+run_scenarios = True
 scenario_names = ['Historical','WWTP','Leak','Basin']
+mapTitles = ['Historical','Increased WW Reuse','Repair Leaks','Recharge Basins']
 leak_repair = [0,0,0.2,0]
 num_wwplants = [0,74,0,0]
 num_infbasins = [0,0,0,5]
@@ -45,8 +50,10 @@ basins and negative flow from pumping wells
 LU is the dictionary that contains a raster and list of the percentage of land
 use type per model cell for each model phase    
 '''
-testModel = model('Test', 455000, 2107000, 539000, 2175000, 500, 1984, 2014, 'data_output\ACTIVE_VM_LYR1.asc', 'data_output\ACTIVE_VM_LYR2.asc', 'data_output\THICK1_VM.asc', 'data_output\THICK2_VM.asc', 'data_output\GEO_VM.asc', 'data_output\DEM_VM.asc', 'data_output\IH_1984.asc','data_output\MUN_VM.asc')
-testModel.run_scenario_model(0,0,0)
+
+if test:
+    testModel = model('Test', 455000, 2107000, 539000, 2175000, 500, 1984, 2014, 'data_output\ACTIVE_VM_LYR1.asc', 'data_output\ACTIVE_VM_LYR2.asc', 'data_output\THICK1_VM.asc', 'data_output\THICK2_VM.asc', 'data_output\GEO_VM.asc', 'data_output\DEM_VM.asc', 'data_output\IH_1984.asc','data_output\MUN_VM.asc')
+    testModel.run_scenario_model(0,0,0)
 
 
 if plt_scen:
@@ -71,14 +78,22 @@ if plt_scen:
                 vmmodel[i].wells = pickle.load(handle)
             with open('model_output\objective_data\LU_'+s_name+'.pickle', 'rb') as handle:
                 vmmodel[i].landuse = pickle.load(handle)
-            
-    vmmodel[i].heads = pltvm.get_heads(scenario_names)
-    ### Generalize
-    heads = S_heads[s_name]
+
+    # Retrieve and plot head changes over model period  
+    s_heads = pltvm.get_heads(scenario_names)
     
-    energy_array[s,:] = mo.measureEnergy(heads,well_info,DEM)
-    subs_array[s,:] = mo.measureSubidence(heads,DEM,ACTIVE_LYR1,TH1)
-    mound_array[s,:] = mo.measureMound(heads,DEM,ACTIVE_LYR1,land_use,[132,252])
+    pltvm.plt_head_change(scenario_names, mapTitles, s_heads, vmmodel[0].geo, vmmodel[0].actv2)
+    
+    # Calculate and plot objective performance
+    energy, subs, mound = (np.zeros(num_scenarios) for i in range(3))
+    
+    for i, s_name in enumerate(scenario_names):
+        energy[i], subs[i], mound[i] = mo.get_objectives(s_heads[i], vmmodel[i].wells, vmmodel[i].landuse, vmmodel[i].dem, vmmodel[i].actv1, vmmodel[i].th1)
+    
+    mound = mound/min(mound)
+    
+    pltvm.plt_scen_objectives(scenario_names, num_scenarios, [energy, subs, mound])
+    
 
 if plot_opt:
     
@@ -88,7 +103,6 @@ if plot_opt:
     the file indicated above
     '''
     if run_optimization:
-        
         
         nfe = 0
         problem = Problem(recharge_decisions, recharge_objectives)
@@ -124,6 +138,5 @@ if plot_opt:
     npresults = np.array(results_list)
     nondom_results = npresults[nondom_VM]
     
-    pltvm.parallel_axis(nondom_results,filename = 'parallelaxis_' + opt_run + '.png',
-                        obj_labels = ['Energy Use\n(kWh)','Subsidence Avoidance\n(mbgs)','Urban Mounding\n(m)', 'Cost'])
+    pltvm.parallel_axis(nondom_results, filename = 'parallelaxis_' + opt_run + '.png', obj_labels = ['Energy Use\n(kWh)','Subsidence Avoidance\n(mbgs)','Urban Mounding\n(m)', 'Cost'])
 
