@@ -18,7 +18,7 @@ ValleMexico_data_main.py
 ## Simulation Options
 The model run will create an object with the following results:
 
- '''self.wwtps''' is a list of randomly selected wastewater treatment plants where reuse has been implemented. '''self.basins''' is a list of the row and column where each infiltration basin has been implemented. '''self.mthlyleak''' is an array with the total quantity of leaks in the system per month in m3 cost is the total number of interventions time their weights defined in the model set-up
+ ```self.wwtps``` is a list of randomly selected wastewater treatment plants where reuse has been implemented. ```self.basins``` is a list of the row and column where each infiltration basin has been implemented. ```self.mthlyleak``` is an array with the total quantity of leaks in the system per month in m3 cost is the total number of interventions time their weights defined in the model set-up
     self.cost - a summed relative cost of the scenario based on the interventions applied
     self.wells - dictionary of well objects input into the MODFLOW model which includes positive flow from wastewater treatment plants, leaks, and recharge basins and negative flow from pumping wells
     self.landuse - dictionary that contains a raster and list of the percentage of land use type (NATURAL, URBAN, or WATER) per model cell for each model phase
