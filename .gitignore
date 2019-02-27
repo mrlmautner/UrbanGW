@@ -37,7 +37,6 @@ VM_Test.wel
 *.rch
 *.wel
 *.Bhd
-*.pickle
 *.svg
 \model_output\plots\*
 MPATH6.LOG
