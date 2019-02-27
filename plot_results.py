@@ -137,7 +137,7 @@ def plt_scen_objectives(scenario_names, num_scen, objectives):
     #normalized_o[:,1] = 1 - normalized_o[:,1]
     plt.savefig('model_output\plots\Objectives.svg')
     plt.savefig('model_output\plots\Objectives.png', dpi=600)
-    plt.show()
+    plt.close()
 
 def parallel_axis(nondom_results,obj_labels,filename):
     # Plots a normalized parallel axis
@@ -148,8 +148,8 @@ def parallel_axis(nondom_results,obj_labels,filename):
     
     plt.gca().set_xticks(range(len(obj_labels)))
     plt.gca().set_xticklabels(obj_labels)
-    plt.show()
     plt.savefig(filename)
+    plt.close()
 
 
 ##%% Budget

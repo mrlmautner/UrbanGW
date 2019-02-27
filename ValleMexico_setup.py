@@ -16,7 +16,7 @@ class model():
 
     # Initializer / Instance attributes
     def __init__(self, scenario, xll, yll, xur, yur, cellsize, strt_yr, end_yr, ACTIVE_LYR1, ACTIVE_LYR2, TH1, TH2, GEO, DEM, IH, MUN):
-        self.name = 'model_output\VM_' + scenario # Assign name
+        self.name = scenario # Assign name
         self.xll = xll # X coordinate of the lower left corner
         self.yll = yll # Y coordinate of the lower left corner
         self.xur = xur # X coordinate of the upper right corner
@@ -38,7 +38,7 @@ class model():
     
     def initializeFM(self, ZoneParams):
         # modelname to set the file root 
-        mf = flopy.modflow.Modflow(self.name, exe_name=r'C:\WRDAPP\MF2005.1_12\bin\mf2005.exe')
+        mf = flopy.modflow.Modflow('model_output\VM_' + self.name, exe_name=r'C:\WRDAPP\MF2005.1_12\bin\mf2005.exe')
         
         # Model domain and grid definition
         L1botm = self.dem - self.th1 # Layer 1 bottom elevation
@@ -219,7 +219,6 @@ class model():
     
     def run_scenario_model(self,num_WWTP,num_RCHBASIN,fixleak,seed=1):
         '''
-        scenario is the name of the model for the MODFLOW input and output files
         num_WWTP is the number of wastewater treatment plants to rehabilitate for
         wastewater injection into the aquifer
         num_RCHBASIN is the number of infiltration basins that will recharge the
@@ -302,7 +301,7 @@ class model():
                 LU[LUset]['LIST'][LUtype] = LU[LUset]['LIST'][LUtype][LU[LUset]['LIST'][LUtype][:,2]>0,:]
     
         # Save land use database for use in mounding objective
-        winfofile = 'model_output\objective_data\LU_'+scenario+'.pickle'
+        winfofile = 'model_output\objective_data\LU_' + self.name + '.pickle'
         with open(winfofile, 'wb') as handle:
             pickle.dump(LU, handle, protocol=pickle.HIGHEST_PROTOCOL)
         
@@ -498,7 +497,7 @@ class model():
         print('WEL_Dict generated in', str(time.time() - newtime), 'seconds')
     
         ## Create pickle file of Well Data to be available for post processing of well energy use objective
-        winfofile = 'model_output\objective_data\WEL_INFO_'+scenario+'.pickle'
+        winfofile = 'model_output\objective_data\WEL_INFO_' + self.name + '.pickle'
         with open(winfofile, 'wb') as handle:
             pickle.dump(WEL_INFO, handle, protocol=pickle.HIGHEST_PROTOCOL)
         

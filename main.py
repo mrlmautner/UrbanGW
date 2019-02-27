@@ -68,11 +68,11 @@ if plt_scen:
     if run_scenarios:
         # Execute the MODFLOW model for each scenario and collect results
         for i, s_name in enumerate(scenario_names):
-            print(s_name + 'Scenario')
+            print(s_name, 'Scenario')
             scen_time = time.time()
             vmmodel[i] = model(s_name, 455000, 2107000, 539000, 2175000, 500, 1984, 2014, 'data_output\ACTIVE_VM_LYR1.asc', 'data_output\ACTIVE_VM_LYR2.asc', 'data_output\THICK1_VM.asc', 'data_output\THICK2_VM.asc', 'data_output\GEO_VM.asc', 'data_output\DEM_VM.asc', 'data_output\IH_1984.asc','data_output\MUN_VM.asc')
             vmmodel[i].run_scenario_model(num_wwplants[i], num_infbasins[i], leak_repair[i])
-            print('Scenario' + s_name + 'completed in' + str(time.time() - scen_time) + 'seconds')
+            print('Scenario', s_name, 'completed in', str(time.time() - scen_time), 'seconds')
     else:
         # If the results have already been generated, open results from saved files
         for i, s_name in enumerate(scenario_names):
