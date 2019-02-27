@@ -18,34 +18,28 @@ import pickle
 from gwscripts.dataprocessing import gengriddata as gen
 from gwscripts.optimization import measureobjectives as mo
 import seaborn as sns
-#
-#sns.set(style="white", palette="muted", color_codes=True)
-#
-#xll = 455000
-#yll = 2107000
-#xur = 539000
-#yur = 2175000
-#cellsize = 500
-#
-#STRT_YEAR = 1984
-#END_YEAR = 2014
-#
-#ncol = int((xur-xll)/cellsize) # Number of rows
-#nrow = int((yur-yll)/cellsize) # Number of columns
-#
-## Load datasets
-#ACTIVE_LYR1 = gen.openASC('data_output\ACTIVE_VM_LYR1.asc')
-#ACTIVE_LYR2 = gen.openASC('data_output\ACTIVE_VM_LYR2.asc')
-#TH1 = gen.openASC('data_output\THICK1_VM.asc')
-#DEM = gen.openASC('data_output\DEM_VM.asc')
-#GEO = gen.openASC('data_output\GEO_VM.asc')
-#
-## Plotting defaults
-#l = [4,2,2,2]
-#c = ['k','goldenrod','blue','darkgreen']
-#mark = ['-','-','-','--']
-#
-#scenario_list = ['Historical','WWTP','Leak','Basin']
+
+sns.set(style="white", palette="muted", color_codes=True)
+
+xll = 455000
+yll = 2107000
+xur = 539000
+yur = 2175000
+cellsize = 500
+
+STRT_YEAR = 1984
+END_YEAR = 2014
+
+ncol = int((xur-xll)/cellsize) # Number of rows
+nrow = int((yur-yll)/cellsize) # Number of columns
+
+# Load datasets
+ACTIVE_LYR1 = gen.openASC('data_output\ACTIVE_VM_LYR1.asc')
+ACTIVE_LYR2 = gen.openASC('data_output\ACTIVE_VM_LYR2.asc')
+TH1 = gen.openASC('data_output\THICK1_VM.asc')
+DEM = gen.openASC('data_output\DEM_VM.asc')
+GEO = gen.openASC('data_output\GEO_VM.asc')
+
 #%% Head Dictionary
 def get_heads(scenario_list):
     S_heads = {}
@@ -55,7 +49,7 @@ def get_heads(scenario_list):
     return S_heads
     
 #%% Heads Contour
-def plt_head_change(s_heads, n=(30,0), m=(30,359)):
+def plt_head_change(s_heads, GEO, ACTIVE n=(30,0), m=(30,359), g_units = [2,3,4], lyr = 1):
     '''
     Calculates the raster of the change in head from the nth time step to the
     mth time step for each model in S_heads. Then plots the difference between
@@ -69,29 +63,29 @@ def plt_head_change(s_heads, n=(30,0), m=(30,359)):
     axes = axes.flat
     cbar_ax = fig.add_axes([0.85, 0.15, 0.03, 0.7])
     
+    # Get head values at the nth and mth time steps
     hds = s_heads[s_heads.keys()[0]]
-    hist_i = hds.get_data(mflay=1,kstpkper=(30,0))
-    hist_e = hds.get_data(mflay=1,kstpkper=(30,359))
+    hist_i = hds.get_data(mflay=lyr,kstpkper=n)
+    hist_e = hds.get_data(mflay=lyr,kstpkper=m)
     
-    new_hist_i = np.ones(hist_i.shape)*np.nan#min(h[h>0])
-    new_hist_i[GEO==2] = hist_i[GEO==2]
-    #new_hist_i[GEO==3] = hist_i[GEO==3]
-    new_hist_i[GEO==4] = hist_i[GEO==4]
-    #new_hist_i[GEO==5] = hist_i[GEO==5]
-    new_hist_i[ACTIVE_LYR2!=1] = np.nan
-    new_hist_e = np.ones(hist_e.shape)*np.nan#min(h[h>0])
-    new_hist_e[GEO==2] = hist_e[GEO==2]
-    #new_hist_e[GEO==3] = hist_e[GEO==3]
-    new_hist_e[GEO==4] = hist_e[GEO==4]
-    #new_hist_e[GEO==5] = hist_e[GEO==5]
-    new_hist_e[ACTIVE_LYR2!=1] = np.nan
+    # Create array of heads only for geologic units g_units
+    new_hist_i = np.ones(hist_i.shape)*np.nan
+    for g in g_units:
+        new_hist_i[GEO==g] = hist_i[GEO==g]
+    new_hist_i[ACTIVE_LYR2!=lyr] = np.nan # Set cells outside model area to NaN
     
+    new_hist_e = np.ones(hist_e.shape)*np.nan
+    for g in g_units:
+        new_hist_e[GEO==g] = hist_e[GEO==g]
+    new_hist_e[ACTIVE_LYR2!=lyr] = np.nan # Set cells outside model area to NaN
+    
+    # Find difference between nth and mth time steps
     hist_change = new_hist_e-new_hist_i
     
     for i,s_name in enumerate(scenario_list):
         hds = S_heads[s_name]
-        h_i = hds.get_data(mflay=1,kstpkper=(30,0))
-        h_e = hds.get_data(mflay=1,kstpkper=(30,359))
+        h_i = hds.get_data(mflay=1,kstpkper=n)
+        h_e = hds.get_data(mflay=1,kstpkper=m)
         
         new_h_i = np.ones(h_i.shape)*np.nan#min(h[h>0])
         new_h_i[GEO==2] = h_i[GEO==2]
@@ -115,11 +109,11 @@ def plt_head_change(s_heads, n=(30,0), m=(30,359)):
         axes[i].yaxis.set_visible(False)
         axes[i].set_title(mapTitle[a].format(i+1))
         
-    fig.subplots_adjust(right=0.8)
-    fig.colorbar(im, cax=cbar_ax, label='Change in Groundwater Head (m)')
-    plt.savefig('model_output\plots\Hist_change_all.svg')
-    plt.savefig('model_output\plots\Hist_change_all.png', dpi=600)
-    plt.show()
+        fig.subplots_adjust(right=0.8)
+        fig.colorbar(im, cax=cbar_ax, label='Change in Groundwater Head (m)')
+        plt.savefig('model_output\plots\Hist_change_all.svg')
+        plt.savefig('model_output\plots\Hist_change_all.png', dpi=600)
+        plt.show()
 
 ##%% Budget
 #df_1Bdget = {}
@@ -253,6 +247,14 @@ def plt_head_change(s_heads, n=(30,0), m=(30,359)):
 #mound = mound_array[:,0]/min(mound_array[:,0])
 #cells = (360-14)*np.sum(np.sum(ACTIVE_LYR2)) # Number of cells in Model Area over periods 15-360
 #
+
+# Plotting defaults
+l = [4,2,2,2]
+c = ['k','goldenrod','blue','darkgreen']
+mark = ['-','-','-','--']
+
+scenario_list = ['Historical','WWTP','Leak','Basin']
+
 #barWidth = 0.5
 #r = np.arange(n_scenario)*0.5 # bar position
 #y_label = ['Kilowatt Hours','Average Head Below top of Clay Layer','Ratio to Historical Mounding']
