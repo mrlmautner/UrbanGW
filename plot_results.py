@@ -9,40 +9,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 import flopy.utils.binaryfile as bf
 from matplotlib import cm
-from mpl_toolkits.mplot3d import Axes3D
-from matplotlib.ticker import LinearLocator, FormatStrFormatter
-import matplotlib.dates as mdates
 import pandas as pd
 import calendar
-import pickle
-from gwscripts.dataprocessing import gengriddata as gen
-from gwscripts.optimization import measureobjectives as mo
 import seaborn as sns
-#
-#sns.set(style="white", palette="muted", color_codes=True)
-#
-#xll = 455000
-#yll = 2107000
-#xur = 539000
-#yur = 2175000
-#cellsize = 500
-#
-#STRT_YEAR = 1984
-#END_YEAR = 2014
-#
-#ncol = int((xur-xll)/cellsize) # Number of rows
-#nrow = int((yur-yll)/cellsize) # Number of columns
-#
-## Load datasets
-#ACTIVE_LYR1 = gen.openASC('data_output\ACTIVE_VM_LYR1.asc')
-#ACTIVE_LYR2 = gen.openASC('data_output\ACTIVE_VM_LYR2.asc')
-#TH1 = gen.openASC('data_output\THICK1_VM.asc')
-#DEM = gen.openASC('data_output\DEM_VM.asc')
-#GEO = gen.openASC('data_output\GEO_VM.asc')
-#
+
+sns.set(style="white", palette="muted", color_codes=True)
+
 ## Plotting defaults
 #l = [4,2,2,2]
-#c = ['k','goldenrod','blue','darkgreen']
 #mark = ['-','-','-','--']
 
 def get_heads(scenario_list):
@@ -105,19 +79,20 @@ def plt_head_change(scenario_list, mapTitles, s_heads, GEO, ACTIVE, n = (30,0), 
         axes.set_title(mapTitles[i].format(i+1))
         
         fig.colorbar(im, cax=cbar_ax, label='Change in Groundwater Head (m)')
-        plt.savefig('model_output\plots\head_change'+s_name+'-'+scenario_list[0]+'.svg')
-        plt.savefig('model_output\plots\head_change'+s_name+'-'+scenario_list[0]+'.png', dpi=600)
+#        plt.savefig('model_output\plots\head-change_'+s_name+'-'+scenario_list[0]+'.svg')
+        plt.savefig('model_output\plots\head-change_'+s_name+'-'+scenario_list[0]+'.png', dpi=600)
         plt.close()
 
 def plt_scen_objectives(scenario_names, num_scen, objectives):
     '''
     objectives is a list with an array of length number of scenarios for each objective
     '''
-    barWidth = 0.25
-    r = np.arange(num_scen)*0.25 # bar position
+    c = ['k','goldenrod','blue','darkgreen']
+    barWidth = 0.1
+    r = np.arange(num_scen)*0.1 # bar position
     y_label = ['Kilowatt Hours','Average Head Below top of Clay Layer','Ratio to Historical Mounding']
     obj_title = ['Energy Use','Subsidence Avoidance','Urban Mounding']
-    ylims = [[4.5E9,6E9],[36,41],[0.9,1.25]]
+    ylims = [[4.5E9,6.5E9],[36,48],[0.9,1.25]]
     
     normalized_o = np.zeros((num_scen, len(objectives)))
     
@@ -135,11 +110,11 @@ def plt_scen_objectives(scenario_names, num_scen, objectives):
     fig.tight_layout()
     # Flip subsidence measure to be minimizing
     #normalized_o[:,1] = 1 - normalized_o[:,1]
-    plt.savefig('model_output\plots\Objectives.svg')
+#    plt.savefig('model_output\plots\Objectives.svg')
     plt.savefig('model_output\plots\Objectives.png', dpi=600)
     plt.close()
 
-def parallel_axis(nondom_results,obj_labels,filename):
+def parallel_axis(nondom_results, obj_labels, opt_run):
     # Plots a normalized parallel axis
     plt.figure()
     for ppoint in nondom_results:
@@ -148,7 +123,7 @@ def parallel_axis(nondom_results,obj_labels,filename):
     
     plt.gca().set_xticks(range(len(obj_labels)))
     plt.gca().set_xticklabels(obj_labels)
-    plt.savefig(filename)
+    plt.savefig('parallelaxis_' + opt_run + '.png')
     plt.close()
 
 

@@ -95,14 +95,16 @@ class model():
         return mf, dis, bas, lpf
     
     def addNewWells(self, New_WEL, LYR, WEL_Dict=0, INFO_Dict=0, WEL_mult=1, start=0, end=0, dateType='per', coordType='xy', wellType=0, munleak=1, F=1, G=1):
-        ''' New_WEL is an np array of the following format: X (or C), Y (or R), Start Year, End Year, Flow (m3/d)
+        '''
+        New_WEL is an np array of the following format: X (or C), Y (or R), Start Year, End Year, Flow (m3/d)
         WEL_PAR is a scalar multiplier to be applied to all wells in the data set New_WEL
         WEL_Dict is a dictionary that contains dictionary for each stress period, each dictionary contains an entry for each well with the layer, row, column, and pumping rate
         coordType is a marker that should be either 'xy' or 'rc' depending on the coordinate definition in the New_WEL array
         dateType is a marker that should be either 'yr' or 'per' depending on whether a value of year or stress period is passed in the Start and End time columns
         wellType is a marker that corresponds to the well source/sink type as follows: 0=pumping, 1=good quality (recharge basin,LID surface,WWTP injection), -1=poor quality(leak,LID deep,WWTP surface)
         munleak is an array with leak % by municipality if the data set is pumping wells and 1 otherwise
-        F is the percentage of leak that has been fixed (ie 1 means all leaks are fixed)'''
+        F is the percentage of leak that has been fixed (ie 1 means all leaks are fixed)
+        '''
         
         # Initialize dictionary    
         if WEL_Dict == 0:
@@ -161,12 +163,12 @@ class model():
         return WEL_Dict,INFO_Dict
     
     def addRecharge(self,LU_arrays, PRECIP, start=0, end=0, RCH_Dict=0, RCH_mult=[1,1,1], dateType='per'):
-        ''' Outputs a dictionary of recharge arrays based on land use multiplier, land use cover, and precipitation input
+        '''
+        Outputs a dictionary of recharge arrays based on land use multiplier, land use cover, and precipitation input
         LU_arrays: dictionary with 3 eantries, one for each land use type which contains gridded percent amounts for each land use type
         PRECIP: dictionary with 361 entries, one for each stress period which contains gridded precipitation
-        RCH_Dict: existing dictionary holding recharge data or 0 if the dictionary must be initialized
-        dateType: the date format for the start and end variables'''
-        
+        RCH_Dict: existing dictionary holding recharge data or 0 if the dictionary must be initialized dateType: the date format for the start and end variables
+        '''
         
         # Initialize dictionary: if there is no exisiting dictionary, create dictionary with no entries
         if RCH_Dict == 0:
@@ -201,8 +203,10 @@ class model():
         return RCH_Dict
     
     def outputControl(self,mf):
-        ''' Generate Output Control and Solver packages
-         Add OC package to the MODFLOW model'''
+        ''' 
+        Generate Output Control and Solver packages
+        Add OC package to the MODFLOW model
+        '''
         spd = {}
         data2record = ['save head', 'save drawdown', 'save budget', 'print budget']
         for y in range(0,30):
@@ -219,12 +223,9 @@ class model():
     
     def run_scenario_model(self,num_WWTP,num_RCHBASIN,fixleak,seed=1):
         '''
-        num_WWTP is the number of wastewater treatment plants to rehabilitate for
-        wastewater injection into the aquifer
-        num_RCHBASIN is the number of infiltration basins that will recharge the
-        aquifer using imported water
-        fixleak is the percent of fixed leaks to historical leaks, 0 indicates the
-        same level as historical leaks and 100 indicates all leaks are fixed
+        num_WWTP is the number of wastewater treatment plants to rehabilitate for wastewater injection into the aquifer
+        num_RCHBASIN is the number of infiltration basins that will recharge the aquifer using imported water
+        fixleak is the percent of fixed leaks to historical leaks, 0 indicates the same level as historical leaks and 100 indicates all leaks are fixed
         '''
         
         timestart = time.time()
@@ -273,9 +274,7 @@ class model():
         
         '''
         Land Use Type
-        Fill a land use dictionary with the ARRAYs that represent the % of each
-        land use cover in each cell and the LISTs that contain all the cells and
-        percentages of each land use type
+        Fill a land use dictionary with the ARRAYs that represent the % of each land use cover in each cell and the LISTs that contain all the cells and percentages of each land use type
         '''
         LU = {}
         for i, LUset in enumerate(LU_PAR):
@@ -307,8 +306,7 @@ class model():
         
         '''
         Recharge
-        Create recharge dictionary for MODFLOW RCH package based on land use
-        multipliers and interpolated precipitation rasters
+        Create recharge dictionary for MODFLOW RCH package based on land use multipliers and interpolated precipitation rasters
         '''
         newtime = time.time()
             

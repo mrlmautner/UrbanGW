@@ -15,10 +15,22 @@ import numpy as np
 import time
 import pickle
 
-# Test Mode
+'''
+The model run will create an object with the following results:
+
+    self.wwtps - list of randomly selected wastewater treatment plants where reuse has been implemented
+    self.basins - list of the row and column where each infiltration basin has been implemented
+    self.mthlyleak - array with the total quantity of leaks in the system per month in m3 cost is the total number of interventions time their weights defined in the model set-up
+    self.cost - a summed relative cost of the scenario based on the interventions applied
+    self.wells - dictionary of well objects input into the MODFLOW model which includes positive flow from wastewater treatment plants, leaks, and recharge basins and negative flow from pumping wells
+    self.landuse - dictionary that contains a raster and list of the percentage of land use type (NATURAL, URBAN, or WATER) per model cell for each model phase
+'''
+
+# Parameters
+## Test Mode
 test = False
 
-# Scenario Mode
+## Scenario Mode
 plt_scen = True
 run_scenarios = False
 scenario_names = ['Historical','WWTP','Leak','Basin']
@@ -27,7 +39,7 @@ leak_repair = [0,0,20,0]
 num_wwplants = [0,74,0,0]
 num_infbasins = [0,0,0,5]
 
-# Optimization parameters
+## Optimization mode
 run_optimization = False
 plot_opt = False
 recharge_decisions = 3
@@ -35,23 +47,7 @@ recharge_objectives = 4
 max_nfes = 200
 opt_run = str(max_nfes)+'nfe'
 
-'''
-The model run will output the following variables:
-    
-w is the list of randomly selected wastewater treatment plants where reuse has
-been implemented
-b is the list of the row and column where each infiltration basin has been
-implemented
-l is an array with the total quantity of leaks in the system per month in m3
-cost is the total number of interventions time their weights defined in the
-model set-up
-WEL_INFO is the dictionary of well objects input into the MODFLOW model which
-includes positive flow from wastewater treatment plants, leaks, and recharge
-basins and negative flow from pumping wells
-LU is the dictionary that contains a raster and list of the percentage of land
-use type per model cell for each model phase    
-'''
-
+####### DON'T MESS WITH ANYTHING BELOW THIS LINE IF YOU AREN'T SURE #######
 if test:
     testModel = model('Test', 455000, 2107000, 539000, 2175000, 500, 1984, 2014, 'data_output\ACTIVE_VM_LYR1.asc', 'data_output\ACTIVE_VM_LYR2.asc', 'data_output\THICK1_VM.asc', 'data_output\THICK2_VM.asc', 'data_output\GEO_VM.asc', 'data_output\DEM_VM.asc', 'data_output\IH_1984.asc','data_output\MUN_VM.asc')
     testModel.run_scenario_model(0,0,0)
@@ -59,8 +55,7 @@ if test:
 
 if plt_scen:
     '''
-    Scenario mode allows the user to compare predetermined scenarios defined
-    above by the quantity of each recharge intervention
+    Scenario mode allows the user to compare predetermined scenarios defined above by the quantity of each recharge intervention
     '''
     num_scenarios = len(scenario_names)
     vmmodel = [0]*num_scenarios
@@ -72,7 +67,7 @@ if plt_scen:
             scen_time = time.time()
             vmmodel[i] = model(s_name, 455000, 2107000, 539000, 2175000, 500, 1984, 2014, 'data_output\ACTIVE_VM_LYR1.asc', 'data_output\ACTIVE_VM_LYR2.asc', 'data_output\THICK1_VM.asc', 'data_output\THICK2_VM.asc', 'data_output\GEO_VM.asc', 'data_output\DEM_VM.asc', 'data_output\IH_1984.asc','data_output\MUN_VM.asc')
             vmmodel[i].run_scenario_model(num_wwplants[i], num_infbasins[i], leak_repair[i])
-            print('Scenario', s_name, 'completed in', str(time.time() - scen_time), 'seconds')
+            print(s_name, 'Scenario completed in', str(time.time() - scen_time), 'seconds')
     else:
         # If the results have already been generated, open results from saved files
         for i, s_name in enumerate(scenario_names):
@@ -93,7 +88,7 @@ if plt_scen:
     energy, subs, mound = (np.zeros(num_scenarios) for i in range(3))
     
     for i, s_name in enumerate(scenario_names):
-        energy[i], subs[i], mound[i] = mo.get_objectives(s_heads[i], vmmodel[i].wells, vmmodel[i].landuse, vmmodel[i].dem, vmmodel[i].actv1, vmmodel[i].th1)
+        energy[i], subs[i], mound[i] = mo.get_objectives(s_heads[s_name], vmmodel[i].wells, vmmodel[i].landuse, vmmodel[i].dem, vmmodel[i].actv1, vmmodel[i].th1)
     
     mound = mound/min(mound)
     
@@ -101,11 +96,9 @@ if plt_scen:
     
 
 if plot_opt:
-    
-    ''' The optimize option runs an optimization problem with the model using the
-    recharge decisions and objectives defined above
-    If the run_optimization is not activated, previous results are loaded from
-    the file indicated above
+    ''' 
+    The optimize option runs an optimization problem with the model using the recharge decisions and objectives defined above
+    If the run_optimization is not activated, previous results are loaded from the file indicated above
     '''
     if run_optimization:
         
@@ -143,5 +136,5 @@ if plot_opt:
     npresults = np.array(results_list)
     nondom_results = npresults[nondom_VM]
     
-    pltvm.parallel_axis(nondom_results, filename = 'parallelaxis_' + opt_run + '.png', obj_labels = ['Energy Use\n(kWh)','Subsidence Avoidance\n(mbgs)','Urban Mounding\n(m)', 'Cost'])
+    pltvm.parallel_axis(nondom_results, obj_labels = ['Energy Use\n(kWh)','Subsidence Avoidance\n(mbgs)','Urban Mounding\n(m)', 'Cost'], opt_run = opt_run)
 
