@@ -83,7 +83,7 @@ def plt_head_change(scenario_list, mapTitles, s_heads, GEO, ACTIVE, n = (30,0), 
     plt.set_cmap('rainbow_r')
     
     # Get head values at the nth and mth time steps
-    first_heads = s_heads[s_heads.keys()[0]]
+    first_heads = s_heads[list(s_heads.keys())[0]]
    
     first_change = calc_head_change(first_heads, GEO, ACTIVE, n, m, g_units, lyr)
     

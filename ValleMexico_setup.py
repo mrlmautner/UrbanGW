@@ -22,8 +22,8 @@ class model():
         self.xur = xur # X coordinate of the upper right corner
         self.yur = yur # Y coordinate of the upper right corner
         self.cellsize = cellsize # Grid size
-        self.ncol = int((self.xur-self.xll)/self.cellsize) # Number of rows
-        self.nrow = int((self.yur-self.yll)/self.cellsize) # Number of columns
+        self.ncol = int((self.xur - self.xll) / self.cellsize) # Number of rows
+        self.nrow = int((self.yur - self.yll) / self.cellsize) # Number of columns
         self.strt_yr = strt_yr
         self.end_yr = end_yr
         self.actv1 = gen.openASC(ACTIVE_LYR1) # Extent of model layer 1
@@ -70,24 +70,24 @@ class model():
         # Layer properties
         # Add LPF package to the MODFLOW model
         # Hydraulic conductivity
-        HK_LYR1 = (self.geo==1)*ZoneParams[0,0]
-        HK_LYR2 = (self.geo==1)*ZoneParams[0,1] + (self.geo==2)*ZoneParams[0,1] + (self.geo==3)*ZoneParams[0,2] + (self.geo==4)*ZoneParams[0,3] + (self.geo==5)*ZoneParams[0,4]
-        HK = np.array([HK_LYR1,HK_LYR2])
+        HK_LYR1 = (self.geo==1) * ZoneParams[0,0]
+        HK_LYR2 = (self.geo==1) * ZoneParams[0,1] + (self.geo==2) * ZoneParams[0,1] + (self.geo==3) * ZoneParams[0,2] + (self.geo==4) * ZoneParams[0,3] + (self.geo==5) * ZoneParams[0,4]
+        HK = np.array([HK_LYR1, HK_LYR2])
         
         # Vertical anisotropy (H:V) of hydraulic conductivity
-        VK_LYR1 = (self.geo==1)*ZoneParams[1,0]
-        VK_LYR2 = (self.geo==1)*ZoneParams[1,1] + (self.geo==2)*ZoneParams[1,1] + (self.geo==3)*ZoneParams[1,2] + (self.geo==4)*ZoneParams[1,3] + (self.geo==5)*ZoneParams[1,4]
-        VKA = np.array([VK_LYR1,VK_LYR2])
+        VK_LYR1 = (self.geo==1) * ZoneParams[1,0]
+        VK_LYR2 = (self.geo==1) * ZoneParams[1,1] + (self.geo==2) * ZoneParams[1,1] + (self.geo==3) * ZoneParams[1,2] + (self.geo==4) * ZoneParams[1,3] + (self.geo==5) * ZoneParams[1,4]
+        VKA = np.array([VK_LYR1, VK_LYR2])
         
         # Specific storage
-        SS_LYR1 = (self.geo==1)*ZoneParams[2,0]
-        SS_LYR2 = (self.geo==1)*ZoneParams[2,1] + (self.geo==2)*ZoneParams[2,1] + (self.geo==3)*ZoneParams[2,2] + (self.geo==4)*ZoneParams[2,3] + (self.geo==5)*ZoneParams[2,4]
-        SS = np.array([SS_LYR1,SS_LYR2])
+        SS_LYR1 = (self.geo==1) * ZoneParams[2,0]
+        SS_LYR2 = (self.geo==1) * ZoneParams[2,1] + (self.geo==2) * ZoneParams[2,1] + (self.geo==3) * ZoneParams[2,2] + (self.geo==4) * ZoneParams[2,3] + (self.geo==5) * ZoneParams[2,4]
+        SS = np.array([SS_LYR1, SS_LYR2])
         
         ## Specific yield
-        SY_LYR1 = (self.geo==1)*ZoneParams[3,0]
-        SY_LYR2 = (self.geo==1)*ZoneParams[3,1] + (self.geo==2)*ZoneParams[3,1] + (self.geo==3)*ZoneParams[3,2] + (self.geo==4)*ZoneParams[3,3] + (self.geo==5)*ZoneParams[3,4]
-        SY = np.array([SY_LYR1,SY_LYR2])
+        SY_LYR1 = (self.geo==1) * ZoneParams[3,0]
+        SY_LYR2 = (self.geo==1) * ZoneParams[3,1] + (self.geo==2) * ZoneParams[3,1] + (self.geo==3) * ZoneParams[3,2] + (self.geo==4) * ZoneParams[3,3] + (self.geo==5) * ZoneParams[3,4]
+        SY = np.array([SY_LYR1, SY_LYR2])
         
         lpf = flopy.modflow.mflpf.ModflowLpf(mf, ipakcb=9, hdry=-1e+20, laytyp=[0,0], layvka=[1,1], 
                                              laywet=[0,0], hk=HK, vka=VKA, ss=SS, sy=SY)
@@ -119,19 +119,19 @@ class model():
         
         # Convert X and Y to Column and Row
         if coordType == 'xy':
-            cconvert = lambda x: int(np.floor((x - self.xll)/self.cellsize))
+            cconvert = lambda x: int(np.floor((x - self.xll) / self.cellsize))
             New_WEL[:,0] = np.array([cconvert(xi) for xi in New_WEL[:,0]])
-            rconvert = lambda y: int(np.floor((self.yur - y)/self.cellsize))
+            rconvert = lambda y: int(np.floor((self.yur - y) / self.cellsize))
             New_WEL[:,1] = np.array([rconvert(yi) for yi in New_WEL[:,1]])
         
         if coordType == 'rc':
-            New_WEL[:,0] = np.array([int(xi) for xi in New_WEL[:,0]-1])
-            New_WEL[:,1] = np.array([int(yi) for yi in New_WEL[:,1]-1])
+            New_WEL[:,0] = np.array([int(xi) for xi in New_WEL[:,0] - 1])
+            New_WEL[:,1] = np.array([int(yi) for yi in New_WEL[:,1] - 1])
         
         # Convert data in year format to stress period format (months)
         if dateType == 'yr':
-            New_WEL[:,2] = (New_WEL[:,2]-self.strt_yr)*12+1
-            New_WEL[:,3] = (New_WEL[:,3]-self.strt_yr)*12+1
+            New_WEL[:,2] = (New_WEL[:,2] - self.strt_yr) * 12 + 1
+            New_WEL[:,3] = (New_WEL[:,3] - self.strt_yr) * 12 + 1
         
         # Loop through all wells in the dataset to fill dictionary
         for w in range(0,New_WEL.shape[0]):
@@ -144,10 +144,10 @@ class model():
                 P = float(munleak[np.where(munleak==wellmun)[0],4]) # the percent of the total usage that is made up of leaks
                                 
             # Assign flow rate for each well to all stress periods indicated by start and end years
-            for per in range(int(New_WEL[w,2]-1),int(New_WEL[w,3]-1)):
+            for per in range(int(New_WEL[w,2] - 1),int(New_WEL[w,3] - 1)):
                 # Determine whether the dataset is a pumping set or any other type
                 if type(munleak) is not int:
-                    LEAK_mult = 1 - (1/G[per])*P*F # Apply a multiplier that subtracts the leak averted from the total water use from the groundwater pumping
+                    LEAK_mult = 1 - (1 / G[per]) * P * F # Apply a multiplier that subtracts the leak averted from the total water use from the groundwater pumping
                 else:
                     LEAK_mult = 1
                 
@@ -177,18 +177,18 @@ class model():
             for l, landuse in enumerate(['URBAN','NATURAL','WATER']):
                 # If there is not already an entry for the selected stress period, create a new array
                 try:
-                    RCH_Dict[0] += PRECIP[0]*LU_arrays[landuse]*RCH_mult[l]
+                    RCH_Dict[0] += PRECIP[0] * LU_arrays[landuse] * RCH_mult[l]
                 except:
-                    RCH_Dict[0] = PRECIP[0]*LU_arrays[landuse]*RCH_mult[l]
+                    RCH_Dict[0] = PRECIP[0] * LU_arrays[landuse] * RCH_mult[l]
         
         # Convert data in year format to stress period format (months)
         if dateType == 'yr':
-            start = (start-1984)*12+1
-            end = (end-1984)*12+1
+            start = (start - self.strt_yr) * 12 + 1
+            end = (end - self.strt_yr) * 12 + 1
         
         # Loop through all stress periods between S_YR and E_YR
         else:
-            for per in range(int(start-1),int(end-1)):
+            for per in range(int(start - 1), int(end - 1)):
                 
                 # Apply recharge amounts for each land use type                
                 for l, landuse in enumerate(['URBAN','NATURAL','WATER']):                    
@@ -207,8 +207,8 @@ class model():
         data2record = ['save head', 'save drawdown', 'save budget', 'print budget']
         for y in range(0,30):
             for m in range(1,13):
-                for d in range(0,calendar.monthrange(self.strt_yr+y,m)[1]):
-                    spd[y*12+m-1,d] = data2record.copy()
+                for d in range(0,calendar.monthrange(self.strt_yr + y, m)[1]):
+                    spd[y * 12 + m - 1, d] = data2record.copy()
         spd[14,30] = ['save head', 'save drawdown', 'save budget', 'print budget', 'ddreference']
         oc = flopy.modflow.ModflowOc(mf, stress_period_data=spd, compact=True)
 
@@ -235,8 +235,8 @@ class model():
         # Model phase specific parameters
         # Phase starting stress period
         PHASE_PER = [0, 132, 252, 360]
-        phases = len(PHASE_PER)-1
-        S_per = PHASE_PER[0:len(PHASE_PER)-1]
+        phases = len(PHASE_PER) - 1
+        S_per = PHASE_PER[0:len(PHASE_PER) - 1]
         E_per = PHASE_PER[1:len(PHASE_PER)]
         # Phase land use dataset year
         LU_PAR = ['1990', '2000', '2010']
@@ -270,11 +270,10 @@ class model():
         # Initialize the modflow model with the boundary conditions input above
         mf, dis, bas, lpf = self.initializeFM(ZoneParams)
         
-        print('Basic, Discretization, and Layer packages generated in',str(time.time()-timestart),'seconds')
+        print('Basic, Discretization, and Layer packages generated in', str(time.time() - timestart), 'seconds')
         
         '''
         Land Use Type
-    
         Fill a land use dictionary with the ARRAYs that represent the % of each
         land use cover in each cell and the LISTs that contain all the cells and
         percentages of each land use type
@@ -297,19 +296,18 @@ class model():
                             LU[LUset]['LIST'][LUtype][l,2] = perarea[row,col]
                         LU[LUset]['LIST'][LUtype][l,0] = col
                         LU[LUset]['LIST'][LUtype][l,1] = row
-                        LU[LUset]['LIST'][LUtype][l,3] = 1-self.actv1[row,col] # 0 if clay layer, 1 if no clay layer
+                        LU[LUset]['LIST'][LUtype][l,3] = 1 - self.actv1[row,col] # 0 if clay layer, 1 if no clay layer
                         LU[LUset]['LIST'][LUtype][l,4] = self.mun[row,col]
                         l += 1
                 LU[LUset]['LIST'][LUtype] = LU[LUset]['LIST'][LUtype][LU[LUset]['LIST'][LUtype][:,2]>0,:]
     
-    #    ### Save land use database for use in mounding objective
-    #    winfofile = 'model_output\objective_data\LU_'+scenario+'.pickle'
-    #    with open(winfofile, 'wb') as handle:
-    #        pickle.dump(LU, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        # Save land use database for use in mounding objective
+        winfofile = 'model_output\objective_data\LU_'+scenario+'.pickle'
+        with open(winfofile, 'wb') as handle:
+            pickle.dump(LU, handle, protocol=pickle.HIGHEST_PROTOCOL)
         
         '''
         Recharge
-        
         Create recharge dictionary for MODFLOW RCH package based on land use
         multipliers and interpolated precipitation rasters
         '''
@@ -320,20 +318,22 @@ class model():
             
         for year in range(int(self.strt_yr),int(self.end_yr)):
             for month in range(1,13):
-                per = (year-self.strt_yr)*12+month-1
+                per = (year - self.strt_yr) * 12 + month - 1
             
                 filename = r'data_output\recharge\claymult\PrecipCM_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
                 Precip_Dict[per] = gen.openASC(filename)
         
         for i, LUset in enumerate(LU_PAR):
-            RCH_DICT = self.addRecharge(LU_arrays=LU[LUset]['ARRAY'],PRECIP=Precip_Dict,start=S_per[i]+1,end=E_per[i]+1,RCH_Dict=RCH_DICT,RCH_mult=RCH_PAR)
+            RCH_DICT = self.addRecharge(LU_arrays=LU[LUset]['ARRAY'], PRECIP=Precip_Dict, start=S_per[i] + 1, end=E_per[i] + 1, RCH_Dict=RCH_DICT, RCH_mult=RCH_PAR)
         
         # Create MODFLOW RCH package
         rch = flopy.modflow.ModflowRch(mf, nrchop=3,  ipakcb=9, rech=RCH_DICT)
         
-        print('RCH_Dict generated in',str(time.time()-newtime),'seconds')
+        print('RCH_Dict generated in', str(time.time() - newtime), 'seconds')
         
-        ### Well objects: supply wells, distribution leaks, injection wells, wastewater reuse, recharge basins
+        '''
+        Well objects: supply wells, distribution leaks, injection wells, wastewater reuse, recharge basins
+        '''
         newtime = time.time()
         LEAK_MUN = np.loadtxt('data_output\leak\LEAK_TOT_MUN.csv',delimiter=',',skiprows=1) # Total recharge percent per municipality: equal to percent of total water use (1997 values) x percent leak (~35%) x recharge percent (15%)
         
@@ -361,7 +361,7 @@ class model():
         for i in range(phases):
             PUMP_array = np.loadtxt(r'data_output\wells\PUMP_RC_Q.csv', delimiter=',', skiprows=1, usecols=[1,2,4,5,11]) # pumping in m3 per day
             
-            WEL_DICT, WEL_INFO = self.addNewWells(New_WEL=PUMP_array, LYR=1, WEL_Dict=WEL_DICT, INFO_Dict=WEL_INFO, WEL_mult=PUMP_PARAM[i], start=S_per[i]+1, end=E_per[i]+1, munleak=LEAK_MUN, F=fixleak, G=gval)
+            WEL_DICT, WEL_INFO = self.addNewWells(New_WEL=PUMP_array, LYR=1, WEL_Dict=WEL_DICT, INFO_Dict=WEL_INFO, WEL_mult=PUMP_PARAM[i], start=S_per[i] + 1, end=E_per[i] + 1, munleak=LEAK_MUN, F=fixleak, G=gval)
         
         # Sum total pumping
         total_mthly_pumping = np.zeros(PHASE_PER[phases])
@@ -388,42 +388,42 @@ class model():
         '''
         LEAK_arrays = {}
         for i, leakset in enumerate(LU_PAR):
-            LEAK_arrays[leakset] = np.zeros((LU[leakset]['LIST']['URBAN'].shape[0]*(PHASE_PER[i+1]-PHASE_PER[i]),5))
+            LEAK_arrays[leakset] = np.zeros((LU[leakset]['LIST']['URBAN'].shape[0] * (PHASE_PER[i + 1] - PHASE_PER[i]),5))
             j = 0
             
             # Loop through each period model period
-            for p in range(PHASE_PER[i]+1,PHASE_PER[i+1]+1):
+            for p in range(PHASE_PER[i] + 1,PHASE_PER[i + 1] + 1):
                 for n,m in enumerate(mun):
                     # Calculate the total urban area in normalized cell area (1 cell = 1) per municipality
-                    tempLeak = LU[leakset]['LIST']['URBAN'][(LU[leakset]['LIST']['URBAN'][:,4]==m),:4]
-                    u_area = tempLeak[:,2].sum()
+                    tempLeak = LU[leakset]['LIST']['URBAN'][(LU[leakset]['LIST']['URBAN'][:,4]==m), :4]
+                    u_area = tempLeak[:, 2].sum()
                     
                     # Use total pumping for each stress period to determine leak quantities
-                    LperArea = (-1*total_mthly_pumping[p]/GW_to_WU[i])*(1-fixleak)*LEAK_MUN[n,i+1]/u_area # Divide total pumping by GW ratio to get total usage, multiply by leak status percent, multiply by % recharge by municipality (FIX)
+                    LperArea = (-1 * total_mthly_pumping[p - 1] / GW_to_WU[i]) * (1 - fixleak) * LEAK_MUN[n, i + 1] / u_area # Divide total pumping by GW ratio to get total usage, multiply by leak status percent, multiply by % recharge by municipality (FIX)
                     tempLeak[:,2] *= LperArea
                     
                     # apply 90% returns to sewer under clay layer (Geologic formation 1)
-                    tempLeak[tempLeak[:,3]==1,2] *= 0.1
+                    tempLeak[tempLeak[:,3]==1, 2] *= 0.1
                     
                     # Get rows of all cells of urban land use type from list
-                    LEAK_arrays[leakset][j:(j+tempLeak.shape[0]),0] = tempLeak[:,0]
+                    LEAK_arrays[leakset][j:(j + tempLeak.shape[0]), 0] = tempLeak[:, 0]
                     
                     # Get columns of all cells of urban land use type from list
-                    LEAK_arrays[leakset][j:(j+tempLeak.shape[0]),1] = tempLeak[:,1]
+                    LEAK_arrays[leakset][j:(j + tempLeak.shape[0]), 1] = tempLeak[:, 1]
                     
                     # Set the period to the current stress period for all urban cells
-                    LEAK_arrays[leakset][j:(j+tempLeak.shape[0]),2] = p
+                    LEAK_arrays[leakset][j:(j + tempLeak.shape[0]), 2] = p
                     
                     # Set the end of the period to the next stress period
-                    LEAK_arrays[leakset][j:(j+tempLeak.shape[0]),3] = p+1
+                    LEAK_arrays[leakset][j:(j + tempLeak.shape[0]), 3] = p + 1
                     
                     # Set the multiplier to the percentage of urban land use type stored in list
-                    LEAK_arrays[leakset][j:(j+tempLeak.shape[0]),4] = tempLeak[:,2]
+                    LEAK_arrays[leakset][j:(j + tempLeak.shape[0]), 4] = tempLeak[:,2]
                     
                     # Set the new index to the previous index plus the number of cells added
                     j += tempLeak.shape[0]
                 
-            LEAK_arrays[leakset] = LEAK_arrays[leakset][(LEAK_arrays[leakset][:,4]>5),:] # Only include cells that contribute at least 5 m3/day
+            LEAK_arrays[leakset] = LEAK_arrays[leakset][(LEAK_arrays[leakset][:, 4] > 5), :] # Only include cells that contribute at least 5 m3/day
                 
             WEL_DICT, WEL_INFO = self.addNewWells(LEAK_arrays[leakset], LYR=1, WEL_Dict=WEL_DICT, INFO_Dict=WEL_INFO, WEL_mult=LEAK_PAR[i], coordType='rc', wellType=1)
         
@@ -432,8 +432,8 @@ class model():
             total_mthly_leak[i] = np.sum(list(zip(*WEL_INFO[i]))[3])
         total_mthly_leak = (total_mthly_leak - total_mthly_pumping)
         ### Cost attributed to fixing leaks
-        average_leak = total_mthly_leak.sum()/(360*24*60*60) # convert to m3/s
-        cost += np.round(2.0030-average_leak,2)*200
+        average_leak = total_mthly_leak.sum() / (360 * 24 * 60 * 60) # convert to m3/s
+        cost += np.round(2.0030 - average_leak, 2)*200
         
         '''
         Wastewater Treatment Reuse
@@ -448,29 +448,29 @@ class model():
         '''
         WWTPs = np.loadtxt(r'data_output\scenarios\WWTP.csv', delimiter=',', skiprows=1, usecols=[9,8,5,6,11])
         
-        if num_WWTP>0:
-            WWTPs[:,3] = WWTPs[:,2] - WWTPs[:,3] # Col 2 is installed treatment capacity and Col 3 is actual treatment quantity
-            WWTPs = np.insert(WWTPs, 2, PHASE_PER[0]+1, axis=1) # Insert starting period
-            WWTPs[:,3] = np.ones(WWTPs.shape[0])*PHASE_PER[phases] # Replace Col 3 with ending period
-            WWTPs[WWTPs[:,4]<0.01,4] = 0.01 # For any WWTPs with a difference of
+        if num_WWTP > 0:
+            WWTPs[:, 3] = WWTPs[:,2] - WWTPs[:,3] # Col 2 is installed treatment capacity and Col 3 is actual treatment quantity
+            WWTPs = np.insert(WWTPs, 2, PHASE_PER[0] + 1, axis=1) # Insert starting period
+            WWTPs[:, 3] = np.ones(WWTPs.shape[0]) * PHASE_PER[phases] # Replace Col 3 with ending period
+            WWTPs[WWTPs[:, 4] < 0.01, 4] = 0.01 # For any WWTPs with a difference of
             # less than 0.01 m3/s in capacity, assign an injection of 0.01 m3/s
             
-            WWTPs = WWTPs[np.random.choice(WWTPs.shape[0],size=num_WWTP,replace=False),:]
+            WWTPs = WWTPs[np.random.choice(WWTPs.shape[0], size=num_WWTP, replace=False), :]
             WEL_DICT, WEL_INFO = self.addNewWells(WWTPs, LYR=1, WEL_Dict=WEL_DICT, INFO_Dict=WEL_INFO, WEL_mult=60*60*24, wellType=-1) # Mult used to convert to m3/d
             
-            ### Cost attributed to each exapanded WWTPs
+            ## Cost attributed to each exapanded WWTPs
             for i in range(WWTPs.shape[0]):
-                if WWTPs[i,5] == 3:
-                    WWTPs[i,5] = 30
-                elif WWTPs[i,5] == 2:
-                    if np.round(WWTPs[i,4],3) >= 0.1:
-                        WWTPs[i,5] = 20
+                if WWTPs[i, 5] == 3:
+                    WWTPs[i, 5] = 30
+                elif WWTPs[i, 5] == 2:
+                    if np.round(WWTPs[i, 4], 3) >= 0.1:
+                        WWTPs[i, 5] = 20
                     else:
-                        WWTPs[i,5] = 4
+                        WWTPs[i, 5] = 4
                 else:
-                    WWTPs[i,5] = 2
+                    WWTPs[i, 5] = 2
                     
-            cost += WWTPs[:,5].sum()
+            cost += WWTPs[:, 5].sum()
         else:
             WWTPs = np.zeros(5)
         
@@ -478,53 +478,53 @@ class model():
         Recharge Basins
         '''
         Basin_Array = np.loadtxt(r'data_output\scenarios\RCH_BASIN.csv', delimiter=',', skiprows=1)
-        Basins = np.zeros((num_RCHBASIN,2))
-        for b in range(0,num_RCHBASIN):
-            randBasin = np.random.randint(0,Basin_Array.shape[0])
-            c = int(np.floor((Basin_Array[randBasin,0] - self.xll)/self.cellsize))
-            r = int(np.floor((self.yur - Basin_Array[randBasin,1])/self.cellsize))
-            Basins[b,:] = [r,c]
+        Basins = np.zeros((num_RCHBASIN, 2))
+        for b in range(0, num_RCHBASIN):
+            randBasin = np.random.randint(0, Basin_Array.shape[0])
+            c = int(np.floor((Basin_Array[randBasin,0] - self.xll) / self.cellsize))
+            r = int(np.floor((self.yur - Basin_Array[randBasin, 1]) / self.cellsize))
+            Basins[b, :] = [r, c]
             
-            for per in range(0,360):
+            for per in range(0, 360):
                 # Add injection equal to treatment capacity for each parameter period
-                WEL_DICT[per].append([1,r,c,1*86400]) # 1 m3/s recharge basins (35 cfs)
-                WEL_INFO[per].append([1,r,c,1*86400,self.mun[r,c],1])
+                WEL_DICT[per].append([1, r, c, 1 * 86400]) # 1 m3/s recharge basins (35 cfs)
+                WEL_INFO[per].append([1, r, c, 1 * 86400, self.mun[r, c], 1])
         
-        ### Cost attributed to building recharge basins
-        cost += num_RCHBASIN*20
+        ## Cost attributed to building recharge basins
+        cost += num_RCHBASIN * 20
         
         wel = flopy.modflow.ModflowWel(mf, stress_period_data=WEL_DICT)
             
-        print('WEL_Dict generated in',str(time.time()-newtime),'seconds')
+        print('WEL_Dict generated in', str(time.time() - newtime), 'seconds')
     
-    #    ### Create pickle file of Well Data to be available for post processing of well energy use objective
-    #    winfofile = 'model_output\objective_data\WEL_INFO_'+scenario+'.pickle'
-    #    with open(winfofile, 'wb') as handle:
-    #        pickle.dump(WEL_INFO, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    #    
-    #    print('WEL_Dict saved in',str(time.time()-newtime),'seconds')
+        ## Create pickle file of Well Data to be available for post processing of well energy use objective
+        winfofile = 'model_output\objective_data\WEL_INFO_'+scenario+'.pickle'
+        with open(winfofile, 'wb') as handle:
+            pickle.dump(WEL_INFO, handle, protocol=pickle.HIGHEST_PROTOCOL)
         
-        ### Generate output control and solver MODFLOW packages 
+        print('WEL_Dict saved in',str(time.time()-newtime),'seconds')
+        
+        # Generate output control and solver MODFLOW packages 
         oc, pcg = self.outputControl(mf)
         
-        #    hobs = flopy.modflow.ModflowHob.load('ValleMexicoTR_C.ob_hob', mf)
+        ##    hobs = flopy.modflow.ModflowHob.load('ValleMexicoTR_C.ob_hob', mf)
     
-        ### Run Model and post processing
-        # Write the MODFLOW model input files
-        print('Data processed in',str(time.time()-timestart),'seconds')
+        # Run Model and post processing
+        ## Write the MODFLOW model input files
+        print('Data processed in', str(time.time() - timestart), 'seconds')
         
         newtime = time.time()
         print('Writing input file...')
         
         mf.write_input()
-        print('Input file written in',str(time.time()-newtime),'seconds')
+        print('Input file written in', str(time.time() - newtime), 'seconds')
         
         newtime = time.time()
         print('Running MODFLOW model...')
         # Run the MODFLOW model
         success, buff = mf.run_model(silent=True)
         
-        print('MODFLOW model completed run in',str(time.time()-newtime),'seconds')
+        print('MODFLOW model completed run in', str(time.time() - newtime), 'seconds')
         
         self.wwtps = WWTPs
         self.basins = Basins
