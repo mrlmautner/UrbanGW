@@ -1,10 +1,14 @@
 # UrbanGW
 This repository takes raster and csv input data for a groundwater model of the Valley of Mexico and runs a simulation model to compare scenarios or optimize under multiple objectives.
 
+Dependencies:
+```flopy```
+```osgeo```
+```numpy```
+
 ## Data Inputs
 
-![GitHub Logo](/images/data_processing.png)
-Format: ![Alt Text](url)
+![Data](/images/data_processing.png)
 
 ### Ensure rasters are at the model grid resolution
 ```
