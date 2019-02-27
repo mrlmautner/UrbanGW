@@ -86,5 +86,3 @@ def measureMound(heads,DEM,ACTIVE_LYR1,LU,PhasePer):
                         maxmound = h[i,j] - DEM[i,j]
     
     return mound,cells,maxmound
-
-
