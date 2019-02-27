@@ -9,7 +9,7 @@ import flopy
 import numpy as np
 import calendar
 
-def initializeFM(modelname,xll,yll,xur,yur,cellsize,STRT_YEAR,END_YEAR,ACTIVE1,ACTIVE2,GEO,DEM,IH_SS,ZoneParams,THICK1=50,THICK2=350):
+def initializeFM(modelname, xll, yll, xur, yur, cellsize, STRT_YEAR, END_YEAR, ACTIVE1, ACTIVE2, GEO, DEM, IH_SS, ZoneParams, THICK1=50, THICK2=350):
     # modelname to set the file root 
     mf = flopy.modflow.Modflow(modelname, exe_name=r'C:\WRDAPP\MF2005.1_12\bin\mf2005.exe')
     
@@ -78,7 +78,7 @@ def initializeFM(modelname,xll,yll,xur,yur,cellsize,STRT_YEAR,END_YEAR,ACTIVE1,A
     
     return ncol, nrow, mf, dis, bas, lpf
 
-def addNewWells(New_WEL,LYR,mun,WEL_Dict=0,INFO_Dict=0,WEL_mult=1,start=0,end=0,dateType='per',coordType='xy',xll=455000,yur=2175000,cellsize=500,wellType=0,munleak=1,F=1,G=1):
+def addNewWells(New_WEL, LYR, mun, WEL_Dict=0, INFO_Dict=0, WEL_mult=1, start=0, end=0, dateType='per', coordType='xy', xll=455000, yur=2175000, cellsize=500, wellType=0, munleak=1, F=1, G=1):
     ''' New_WEL is an np array of the following format: X (or C), Y (or R), Start Year, End Year, Flow (m3/d)
     WEL_PAR is a scalar multiplier to be applied to all wells in the data set New_WEL
     WEL_Dict is a dictionary that contains dictionary for each stress period, each dictionary contains an entry for each well with the layer, row, column, and pumping rate
@@ -144,7 +144,7 @@ def addNewWells(New_WEL,LYR,mun,WEL_Dict=0,INFO_Dict=0,WEL_mult=1,start=0,end=0,
                 
     return WEL_Dict,INFO_Dict
 
-def addRecharge(LU_arrays,PRECIP,start=0,end=0,RCH_Dict=0,RCH_mult=[1,1,1],dateType='per'):
+def addRecharge(LU_arrays, PRECIP, start=0, end=0, RCH_Dict=0, RCH_mult=[1,1,1], dateType='per'):
     ''' Outputs a dictionary of recharge arrays based on land use multiplier, land use cover, and precipitation input
     LU_arrays: dictionary with 3 eantries, one for each land use type which contains gridded percent amounts for each land use type
     PRECIP: dictionary with 361 entries, one for each stress period which contains gridded precipitation

@@ -5,7 +5,7 @@ Created on Mon Feb 18 20:27:21 2019
 @author: MM
 """
 
-import ValleMexico_setup as vmmodel
+from ValleMexico_setup import *
 import plot_results as pltvm
 from gwscripts.optimization import opttools as opt
 from platypus import Problem, Integer, Real, NSGAII
@@ -44,8 +44,8 @@ basins and negative flow from pumping wells
 LU is the dictionary that contains a raster and list of the percentage of land
 use type per model cell for each model phase    
 '''
-
-wwtp, basin, leak, cost, well_info, land_use = vmmodel.run_scenario_model('Test',0,0,0)
+testModel = model(455000, 2107000, 539000, 2175000, 500, 1984, 2014, 'data_output\ACTIVE_VM_LYR1.asc', 'data_output\ACTIVE_VM_LYR2.asc', 'data_output\THICK1_VM.asc', 'data_output\THICK2_VM.asc', 'data_output\GEO_VM.asc', 'data_output\DEM_VM.asc', 'data_output\IH_1984.asc','data_output\MUN_VM.asc')
+wwtp, basin, leak, cost, well_info, land_use = testModel.run_scenario_model('Test',0,0,0)
 
 if plt_scen:
     '''
@@ -58,6 +58,7 @@ if plt_scen:
     if run_scenarios:
         # Execute the MODFLOW model for each scenario and collect results
         for i, s_name in enumerate(scenario_names):
+            vmmodel
             wwtp[i], basin[i], leak[i], cost[i], well_info[i], land_use[i] = vmmodel.run_scenario_model(s_name,
                                                              num_wwplants[i],num_infbasins[i],leak_repair[i])
 
