@@ -39,6 +39,7 @@ VM_Test.wel
 *.Bhd
 *.svg
 *.png
+*.pickle
 MPATH6.LOG
 *.chk
 *.mpbas
