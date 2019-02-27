@@ -40,6 +40,7 @@ VM_Test.wel
 *.pickle
 *.svg
 *.png
+!data_processing.png
 MPATH6.LOG
 *.chk
 *.mpbas
