@@ -80,7 +80,7 @@ def plt_head_change(scenario_list, mapTitles, s_heads, GEO, ACTIVE, n = (30,0), 
     other models in S_heads. Plots the heads for the geologic units g_units and
     in the active area .
     '''
-    plt.set_cmap('rainbow_r')
+    plt.set_cmap('viridis_r')
     
     # Get head values at the nth and mth time steps
     first_heads = s_heads[list(s_heads.keys())[0]]

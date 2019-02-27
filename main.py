@@ -20,10 +20,10 @@ test = False
 
 # Scenario Mode
 plt_scen = True
-run_scenarios = True
+run_scenarios = False
 scenario_names = ['Historical','WWTP','Leak','Basin']
 mapTitles = ['Historical','Increased WW Reuse','Repair Leaks','Recharge Basins']
-leak_repair = [0,0,0.2,0]
+leak_repair = [0,0,20,0]
 num_wwplants = [0,74,0,0]
 num_infbasins = [0,0,0,5]
 
@@ -76,6 +76,8 @@ if plt_scen:
     else:
         # If the results have already been generated, open results from saved files
         for i, s_name in enumerate(scenario_names):
+            print('Opening', s_name, 'Scenario')
+            
             vmmodel[i] = model(s_name, 455000, 2107000, 539000, 2175000, 500, 1984, 2014, 'data_output\ACTIVE_VM_LYR1.asc', 'data_output\ACTIVE_VM_LYR2.asc', 'data_output\THICK1_VM.asc', 'data_output\THICK2_VM.asc', 'data_output\GEO_VM.asc', 'data_output\DEM_VM.asc', 'data_output\IH_1984.asc','data_output\MUN_VM.asc')
             with open('model_output\objective_data\WEL_INFO_'+s_name+'.pickle', 'rb') as handle:
                 vmmodel[i].wells = pickle.load(handle)
