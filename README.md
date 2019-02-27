@@ -1,7 +1,7 @@
 # UrbanGW
 This repository takes raster and csv input data for a groundwater model of the Valley of Mexico and runs a simulation model to compare or optimize recharge scenarios under multiple objectives. The portfolio of intervention options includes repairs to the distribution network to reduce leaks, increased wastewater treatment and infiltration, and increased infiltration of imported water using recharge basins. These policies can be optimized using the NSGAII MOEA according to four objectives: minimize energy use for pumping, maximize hydraulic head in high subsidence regions, minimize groundwater mounding in urban areas, and minimize the cost of the interventions.
 
-Dependencies: ```flopy``` ```osgeo``` ```numpy```
+Dependencies: ```flopy``` ```osgeo``` ```numpy``` ```pickle```
 
 To run new simulations you must have MODFLOW installed in ```C:\WRDAPP\MF2005.1_12\bin\mf2005.exe``` which can be downloaded at https://water.usgs.gov/ogw/modflow/mf2005.html#downloads. However, you can still plot saved files when ```run_scenarios``` and ```run_optimization``` are set to ```False```.
 
