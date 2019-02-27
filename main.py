@@ -52,7 +52,6 @@ if test:
     testModel = model('Test', 455000, 2107000, 539000, 2175000, 500, 1984, 2014, 'data_output\ACTIVE_VM_LYR1.asc', 'data_output\ACTIVE_VM_LYR2.asc', 'data_output\THICK1_VM.asc', 'data_output\THICK2_VM.asc', 'data_output\GEO_VM.asc', 'data_output\DEM_VM.asc', 'data_output\IH_1984.asc','data_output\MUN_VM.asc')
     testModel.run_scenario_model(0,0,0)
 
-
 if plt_scen:
     '''
     Scenario mode allows the user to compare predetermined scenarios defined above by the quantity of each recharge intervention
