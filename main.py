@@ -26,6 +26,9 @@ The model run will create an object with the following results:
     self.landuse - dictionary that contains a raster and list of the percentage of land use type (NATURAL, URBAN, or WATER) per model cell for each model phase
 '''
 
+# MODFLOW File location
+exefile = r'C:\WRDAPP\MF2005.1_12\bin\mf2005.exe'
+
 # Parameters
 ## Test Mode
 test = False
@@ -49,7 +52,7 @@ opt_run = str(max_nfes)+'nfe'
 
 ####### DON'T MESS WITH ANYTHING BELOW THIS LINE IF YOU AREN'T SURE #######
 if test:
-    testModel = model('Test', 455000, 2107000, 539000, 2175000, 500, 1984, 2014, 'data_output\ACTIVE_VM_LYR1.asc', 'data_output\ACTIVE_VM_LYR2.asc', 'data_output\THICK1_VM.asc', 'data_output\THICK2_VM.asc', 'data_output\GEO_VM.asc', 'data_output\DEM_VM.asc', 'data_output\IH_1984.asc','data_output\MUN_VM.asc')
+    testModel = model('Test', 455000, 2107000, 539000, 2175000, 500, 1984, 2014, 'data_output\ACTIVE_VM_LYR1.asc', 'data_output\ACTIVE_VM_LYR2.asc', 'data_output\THICK1_VM.asc', 'data_output\THICK2_VM.asc', 'data_output\GEO_VM.asc', 'data_output\DEM_VM.asc', 'data_output\IH_1984.asc','data_output\MUN_VM.asc', exefile)
     testModel.run_scenario_model(0,0,0)
 
 if plt_scen:
