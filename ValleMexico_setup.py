@@ -8,7 +8,6 @@ Created on Thu Apr  5 15:23:15 2018
 import flopy
 import numpy as np
 import time
-from gwscripts.dataprocessing import gengriddata as gen
 import pickle
 import calendar
 
