@@ -15,7 +15,7 @@ import calendar
 class model():
 
     # Initializer / Instance attributes
-    def __init__(self, scenario, xll, yll, xur, yur, cellsize, strt_yr, end_yr, ACTIVE_LYR1, ACTIVE_LYR2, TH1, TH2, GEO, DEM, IH, MUN):
+    def __init__(self, scenario, xll, yll, xur, yur, cellsize, strt_yr, end_yr, ACTIVE_LYR1, ACTIVE_LYR2, TH1, TH2, GEO, DEM, IH, MUN, exe_file = r'C:\WRDAPP\MF2005.1_12\bin\mf2005.exe'):
         self.name = scenario # Assign name
         self.xll = xll # X coordinate of the lower left corner
         self.yll = yll # Y coordinate of the lower left corner
@@ -26,19 +26,20 @@ class model():
         self.nrow = int((self.yur - self.yll) / self.cellsize) # Number of columns
         self.strt_yr = strt_yr
         self.end_yr = end_yr
-        self.actv1 = gen.openASC(ACTIVE_LYR1) # Extent of model layer 1
-        self.actv2 = gen.openASC(ACTIVE_LYR2) # Extent of model layer 2
-        self.th1 = gen.openASC(TH1) # Thickness of model layer 1
-        self.th2 = gen.openASC(TH2) # Thickness of model layer 2
-        self.geo = gen.openASC(GEO) # Geologic formations in layer 2
-        self.dem = gen.openASC(DEM) # Digital elevation model of the basin (model top)
-        self.ih = gen.openASC(IH) # Initial hydraulic head in layer 1 and layer 2
-        self.mun = gen.openASC(MUN) # Geographic extent of each municipality
+        self.actv1 = np.loadtxt(ACTIVE_LYR1,skiprows=6) # Extent of model layer 1
+        self.actv2 = np.loadtxt(ACTIVE_LYR2,skiprows=6) # Extent of model layer 2
+        self.th1 = np.loadtxt(TH1,skiprows=6) # Thickness of model layer 1
+        self.th2 = np.loadtxt(TH2,skiprows=6) # Thickness of model layer 2
+        self.geo = np.loadtxt(GEO,skiprows=6) # Geologic formations in layer 2
+        self.dem = np.loadtxt(DEM,skiprows=6) # Digital elevation model of the basin (model top)
+        self.ih = np.loadtxt(IH,skiprows=6) # Initial hydraulic head in layer 1 and layer 2
+        self.mun = np.loadtxt(MUN,skiprows=6) # Geographic extent of each municipality
         self.nlay = 2 # This model only accepts 2 layers
+        self.exe = exe_file
     
     def initializeFM(self, ZoneParams):
         # modelname to set the file root 
-        mf = flopy.modflow.Modflow('model_output\VM_' + self.name, exe_name=r'C:\WRDAPP\MF2005.1_12\bin\mf2005.exe')
+        mf = flopy.modflow.Modflow('model_output\VM_' + self.name, exe_name=self.exe)
         
         # Model domain and grid definition
         L1botm = self.dem - self.th1 # Layer 1 bottom elevation
@@ -282,7 +283,7 @@ class model():
             
             for l, LUtype in enumerate(['URBAN','NATURAL','WATER']):
                 filename = r'data_output\landuse\LU-' + LUset + '-' + LUtype + '.asc'
-                perarea =  gen.openASC(filename)
+                perarea =  np.loadtxt(filename,skiprows=6)
                 LU[LUset]['ARRAY'][LUtype] = perarea
                 
                 LU[LUset]['LIST'][LUtype] = np.zeros((perarea.shape[0]*perarea.shape[1],5))
@@ -318,7 +319,7 @@ class model():
                 per = (year - self.strt_yr) * 12 + month - 1
             
                 filename = r'data_output\recharge\claymult\PrecipCM_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
-                Precip_Dict[per] = gen.openASC(filename)
+                Precip_Dict[per] = np.loadtxt(filename,skiprows=6)
         
         for i, LUset in enumerate(LU_PAR):
             RCH_DICT = self.addRecharge(LU_arrays=LU[LUset]['ARRAY'], PRECIP=Precip_Dict, start=S_per[i] + 1, end=E_per[i] + 1, RCH_Dict=RCH_DICT, RCH_mult=RCH_PAR)
