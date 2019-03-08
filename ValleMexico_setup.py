@@ -254,18 +254,18 @@ class model():
         
         # Geologic zone specific parameters translated into an array to input into the model
         # COL1 : Zone hydraulic conductivity vertical anisotropy
-        VK_PAR = [100,100,10,1,1]
+        VK_PAR = [100,100,10,1,0.1]
         # COL2 : Zone specific storage
-        SS_PAR = [6.562E-02,1.073E-03,3.176E-02,1.214E-05,9.483E-06]
+        SS_PAR = [0.065616798,0.0006756,0.00001142,0.000003224,0.00102]
         # COL3 : Zone horizontal hydraulic conductivity
-        HK_PAR = [4.320E-04,2.331E+02,6.750E-02,2.518E-01,8.640E-02] # m/d
+        HK_PAR = [0.0000432,135.7,0.638,0.1293,0.05861] # m/d
         # COL4 : Zone specific yield
         SY_PAR = [0.06,0.15,0.15,0.30,0.01]
         ZoneParams = np.array([HK_PAR,VK_PAR,SS_PAR,SY_PAR])
         
         municipalities = np.unique(self.mun)[1:]
         
-        RCH_PAR = [1.00E-02, 1.949E-01, 50.00E-02] # Recharge multiplier for urban, natural, and water cover
+        RCH_PAR = [1.00E-02, 1.5E-01, 50.00E-02] # Recharge multiplier for urban, natural, and water cover
         
         # Initialize the modflow model with the boundary conditions input above
         mf, dis, bas, lpf = self.initializeFM(ZoneParams)
