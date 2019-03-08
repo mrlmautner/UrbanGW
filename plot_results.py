@@ -54,6 +54,7 @@ def plt_head_change(scenario_list, mapTitles, s_heads, GEO, ACTIVE, n = (30,0), 
     other models in S_heads. Plots the heads for the geologic units g_units and
     in the active area .
     '''
+    print('Plotting head changes over model period...')
     plt.set_cmap('viridis_r')
     
     # Get head values at the nth and mth time steps
@@ -87,6 +88,7 @@ def plt_scen_objectives(scenario_names, num_scen, objectives):
     '''
     objectives is a list with an array of length number of scenarios for each objective
     '''
+    print('Plotting scenario performance under objectives...')
     c = ['k','goldenrod','blue','darkgreen']
     barWidth = 0.1
     r = np.arange(num_scen)*0.1 # bar position
