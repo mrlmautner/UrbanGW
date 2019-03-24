@@ -8,17 +8,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
+import os
+from pathlib import Path
 
-df = pd.read_csv('C:/Users/MM/Google Drive/ValleMexico/Data/Pumping/PUMP_POP_INEGI_REPDA_20180320.csv')
+
+# Set current working directory to script folder
+os.chdir(os.path.dirname(__file__))
+
+# Set cwd to repository folder
+path = Path(os.getcwd()).parent.parent
+os.chdir(path)
+
+df = pd.read_csv(Path.cwd()/'data_processed'/'wells'/'POPULATION.csv')
 df = df.set_index(pd.to_datetime(df.Year.apply(lambda x: str(x)+'/01/01')))
 
-PSeries = df.PopZMVM_Census.dropna()
-#PSeries = PSeries.append(df.PopZMVM_Proj.dropna())
-t = df.Year[PSeries.index].values - 1895
-P = PSeries.values
-
-t1 = np.array([1960,1970,1980,1990,1995,2000,2005,2010])
-p1 = df.PopZMVM_Census.dropna()['1960/01/01':]
+t1 = np.array([1950,1960,1970,1980,1990,1995,2000,2005,2010])
+p1 = df.PopZMVM_Census.dropna()['1950/01/01':]
 t2 = np.array([2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,
                2023,2024,2025,2026,2027,2028,2029,2030])
 p2 = df.PopZMVM_Proj.dropna()
@@ -32,20 +37,20 @@ f1 = np.poly1d(g1)
 g2 = np.polyfit(t2, p2, 2)
 f2 = np.poly1d(g2)
 
-x = np.arange(1960,2030,1)
+x = np.arange(1950,2030,1)
 Pt1 = np.zeros(len(x))
 Pt2 = np.zeros(len(x))
 for i in range(0,len(x)):
     Pt1[i] = f1(x[i])
     Pt2[i] = f2(x[i])
     
-plt.plot(np.array(df.Year),np.array(df.PopZMVM_Proj),'.',color='black')
-plt.plot(t1,p1,'s',color='grey',zorder=3)
-plt.plot(x,Pt1,'--',color='red')
-plt.plot(x,Pt2,'--',color='blue')
+plt.plot(np.array(df.Year),np.array(df.PopZMVM_Proj)/1000000,'.',color='black')
+plt.plot(t1,p1/1000000,'s',color='grey',zorder=3)
+plt.plot(x,Pt1/1000000,'--',color='red')
+plt.plot(x,Pt2/1000000,'--',color='blue')
 plt.grid(True)
 plt.xlabel('Year')
-plt.ylabel('Population')
+plt.ylabel('Population (millions)')
 plt.legend(['CONAPO 2014 Projections','1895 to 2010 Census Data', 'Census Model','CONAPO Projection Model'])
 
 #%%
