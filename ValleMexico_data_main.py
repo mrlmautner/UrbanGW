@@ -72,6 +72,18 @@ nrows = int((yur-yll)/cellsize) # nrows
 #dsAsArray = gen.sampleGD(filename,newfile,header,xll,yll,xur,yur,cellsize)
 
 ##%%
+## WETDRY raster
+LYR1FILE = r'data_output\ACTIVE_VM_LYR1.asc'
+LYR2FILE = r'data_output\ACTIVE_VM_LYR2.asc'
+newfile = r'data_output\WETDRY_VM.asc'
+header = gen.getHeader(ncols,nrows,xll,yll,cellsize,-99999)
+lyr1 = np.loadtxt(LYR1FILE,skiprows=6)
+lyr2 = np.loadtxt(LYR2FILE,skiprows=6)
+wetdry = (lyr1 - lyr2) * 5
+np.savetxt(newfile, wetdry, header=header, fmt="%d",comments='')
+
+
+##%%
 ## Well Data
 #years = np.arange(1984,2014)
 #dataset = years.copy()

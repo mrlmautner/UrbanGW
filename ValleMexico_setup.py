@@ -89,8 +89,8 @@ class model():
         SY_LYR2 = (self.geo==1) * ZoneParams[3,1] + (self.geo==2) * ZoneParams[3,1] + (self.geo==3) * ZoneParams[3,2] + (self.geo==4) * ZoneParams[3,3] + (self.geo==5) * ZoneParams[3,4]
         SY = np.array([SY_LYR1, SY_LYR2])
         
-        lpf = flopy.modflow.mflpf.ModflowLpf(mf, ipakcb=9, hdry=-1e+20, laytyp=[0,0], layvka=[1,1], 
-                                             laywet=[0,0], hk=HK, vka=VKA, ss=SS, sy=SY)
+        lpf = flopy.modflow.mflpf.ModflowLpf(mf, ipakcb=9, hdry=-1e+20, laytyp=[1,1], layvka=[1,1], 
+                                             laywet=[1,0], hk=HK, vka=VKA, ss=SS, sy=SY, wetdry=-5)
         
         return mf, dis, bas, lpf
     
@@ -211,8 +211,9 @@ class model():
         data2record = ['save head', 'save drawdown', 'save budget', 'print budget']
         for y in range(0,30):
             for m in range(1,13):
-                for d in range(0,calendar.monthrange(self.strt_yr + y, m)[1]):
-                    spd[y * 12 + m - 1, d] = data2record.copy()
+                spd[y * 12 + m - 1, calendar.monthrange(self.strt_yr + y, m)[1] - 1] = data2record.copy()
+#                for d in range(0,calendar.monthrange(self.strt_yr + y, m)[1]):
+#                    spd[y * 12 + m - 1, d] = data2record.copy()
         spd[14,30] = ['save head', 'save drawdown', 'save budget', 'print budget', 'ddreference']
         oc = flopy.modflow.ModflowOc(mf, stress_period_data=spd, compact=True)
 
@@ -228,6 +229,7 @@ class model():
         fixleak is the percent of fixed leaks to historical leaks, 0 indicates the same level as historical leaks and 100 indicates all leaks are fixed
         '''
         
+        np.random.seed(seed)
         timestart = time.time()
         print('Processing data...')
         ### Parameter data
@@ -241,7 +243,7 @@ class model():
         # Phase land use dataset year
         LU_PAR = ['1990', '2000', '2010']
         # Phase well pumping multiplier 
-        WEL_PAR = np.array([2.671E+00,2.581E+00,2.558E+00])
+        WEL_PAR = np.array([1.25,0.40,0.62])
         # Phase distribution system leak multiplier
         LEAK_PAR = np.array([1,1,1])
         fixleak = fixleak/100 # convert from integer to decimal
@@ -254,13 +256,13 @@ class model():
         
         # Geologic zone specific parameters translated into an array to input into the model
         # COL1 : Zone hydraulic conductivity vertical anisotropy
-        VK_PAR = [100,100,10,1,0.1]
+        VK_PAR = [100,100,10,1,1]
         # COL2 : Zone specific storage
-        SS_PAR = [0.065616798,0.0006756,0.00001142,0.000003224,0.00102]
+        SS_PAR = [6.562E-02,2.479E-04,1.604E-03,1.640E-05,1.640E-05]
         # COL3 : Zone horizontal hydraulic conductivity
-        HK_PAR = [0.0000432,135.7,0.638,0.1293,0.05861] # m/d
+        HK_PAR = [4.320E-05,3.370E+01,2.750E-01,2.874E-01,8.640E-02] # m/d
         # COL4 : Zone specific yield
-        SY_PAR = [0.06,0.15,0.15,0.30,0.01]
+        SY_PAR = [6.000E-02,1.500E-01,3.968E-04,4.036E-02,1.000E-02]
         ZoneParams = np.array([HK_PAR,VK_PAR,SS_PAR,SY_PAR])
         
         municipalities = np.unique(self.mun)[1:]

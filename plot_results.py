@@ -106,7 +106,7 @@ def plt_scen_objectives(scenario_names, num_scen, objectives):
         plt.bar(r, obj, width=barWidth, edgecolor='white', color=c)
         plt.xticks(r, scenario_names, rotation='vertical')
         plt.ylabel(y_label[o])
-        plt.ylim(ylims[o])
+#        plt.ylim(ylims[o])
         plt.title(obj_title[o])
     
     fig.tight_layout()

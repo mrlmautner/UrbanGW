@@ -35,8 +35,8 @@ test = False
 
 ## Scenario Mode
 plt_scen = True
-run_scenarios = False
-scenario_names = ['Historical','WWTP','Leak','Basin']
+run_scenarios = True
+scenario_names = ['Historical_U','WWTP_U','Leak_U','Basin_U']
 mapTitles = ['Historical','Increased WW Reuse','Repair Leaks','Recharge Basins']
 leak_repair = [0,0,20,0]
 num_wwplants = [0,74,0,0]
