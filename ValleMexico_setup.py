@@ -10,6 +10,14 @@ import numpy as np
 import time
 import pickle
 import calendar
+import os
+from pathlib import Path
+
+# Set current working directory to script folder
+os.chdir(os.path.dirname(__file__))
+
+# Set cwd to repository folder
+path = Path(os.getcwd())
 
 class model():
 
@@ -25,20 +33,20 @@ class model():
         self.nrow = int((self.yur - self.yll) / self.cellsize) # Number of columns
         self.strt_yr = strt_yr
         self.end_yr = end_yr
-        self.actv1 = np.loadtxt(ACTIVE_LYR1,skiprows=6) # Extent of model layer 1
-        self.actv2 = np.loadtxt(ACTIVE_LYR2,skiprows=6) # Extent of model layer 2
-        self.th1 = np.loadtxt(TH1,skiprows=6) # Thickness of model layer 1
-        self.th2 = np.loadtxt(TH2,skiprows=6) # Thickness of model layer 2
-        self.geo = np.loadtxt(GEO,skiprows=6) # Geologic formations in layer 2
-        self.dem = np.loadtxt(DEM,skiprows=6) # Digital elevation model of the basin (model top)
-        self.ih = np.loadtxt(IH,skiprows=6) # Initial hydraulic head in layer 1 and layer 2
-        self.mun = np.loadtxt(MUN,skiprows=6) # Geographic extent of each municipality
+        self.actv1 = np.loadtxt(Path.cwd()/ACTIVE_LYR1,skiprows=6) # Extent of model layer 1
+        self.actv2 = np.loadtxt(Path.cwd()/ACTIVE_LYR2,skiprows=6) # Extent of model layer 2
+        self.th1 = np.loadtxt(Path.cwd()/TH1,skiprows=6) # Thickness of model layer 1
+        self.th2 = np.loadtxt(Path.cwd()/TH2,skiprows=6) # Thickness of model layer 2
+        self.geo = np.loadtxt(Path.cwd()/GEO,skiprows=6) # Geologic formations in layer 2
+        self.dem = np.loadtxt(Path.cwd()/DEM,skiprows=6) # Digital elevation model of the basin (model top)
+        self.ih = np.loadtxt(Path.cwd()/IH,skiprows=6) # Initial hydraulic head in layer 1 and layer 2
+        self.mun = np.loadtxt(Path.cwd()/MUN,skiprows=6) # Geographic extent of each municipality
         self.nlay = 2 # This model only accepts 2 layers
         self.exe = exe_file
     
     def initializeFM(self, ZoneParams):
         # modelname to set the file root 
-        mf = flopy.modflow.Modflow('model_output\VM_' + self.name, exe_name=self.exe)
+        mf = flopy.modflow.Modflow(modelname='VM_' + self.name, model_ws=Path.cwd()/'model_output', exe_name=self.exe)
         
         # Model domain and grid definition
         L1botm = self.dem - self.th1 # Layer 1 bottom elevation
@@ -59,7 +67,8 @@ class model():
         # Model Boundaries & initial conditions
         # Active areas
         ibound = np.ones((self.nlay, self.nrow, self.ncol), dtype=np.int32)
-        ibound[0,:,:] = ibound[0,:,:]*self.actv1
+#        ibound[0,:,:] = ibound[0,:,:]*self.actv1
+        ibound[0,:,:] = ibound[0,:,:]*self.actv2
         ibound[1,:,:] = ibound[1,:,:]*self.actv2
         
         # Variables for the BAS package
@@ -85,7 +94,7 @@ class model():
         SS = np.array([SS_LYR1, SS_LYR2])
         
         ## Specific yield
-        SY_LYR1 = (self.geo==1) * ZoneParams[3,0]
+        SY_LYR1 = (self.geo==1) * ZoneParams[3,0] 
         SY_LYR2 = (self.geo==1) * ZoneParams[3,1] + (self.geo==2) * ZoneParams[3,1] + (self.geo==3) * ZoneParams[3,2] + (self.geo==4) * ZoneParams[3,3] + (self.geo==5) * ZoneParams[3,4]
         SY = np.array([SY_LYR1, SY_LYR2])
         
@@ -244,8 +253,8 @@ class model():
         LU_PAR = ['1990', '2000', '2010']
         # Phase well pumping multiplier 
         WEL_PAR = np.array([1.25,0.40,0.62])
-        # Phase distribution system leak multiplier
-        LEAK_PAR = np.array([1,1,1])
+        # Phase distribution system leak multiplier, determines the percent of leaks that enters the subsurface
+        LEAK_PAR = np.array([0.15,0.15,0.15])
         fixleak = fixleak/100 # convert from integer to decimal
         # Percentage of groundwater pumping as ratio of total water use
         GW_to_WU = [0.7131,0.644,0.574966] 
@@ -283,7 +292,7 @@ class model():
             LU[LUset] = {'ARRAY':{},'LIST':{}}
             
             for l, LUtype in enumerate(['URBAN','NATURAL','WATER']):
-                filename = r'data_output\landuse\LU-' + LUset + '-' + LUtype + '.asc'
+                filename = Path.cwd()/'data_processed'/'landuse'/('LU-' + LUset + '-' + LUtype + '.asc')
                 perarea =  np.loadtxt(filename,skiprows=6)
                 LU[LUset]['ARRAY'][LUtype] = perarea
                 
@@ -302,7 +311,7 @@ class model():
                 LU[LUset]['LIST'][LUtype] = LU[LUset]['LIST'][LUtype][LU[LUset]['LIST'][LUtype][:,2]>0,:]
     
         # Save land use database for use in mounding objective
-        winfofile = 'model_output\objective_data\LU_' + self.name + '.pickle'
+        winfofile = Path.cwd()/'model_output'/'objective_data'/('LU_' + self.name + '.pickle')
         with open(winfofile, 'wb') as handle:
             pickle.dump(LU, handle, protocol=pickle.HIGHEST_PROTOCOL)
         
@@ -319,7 +328,7 @@ class model():
             for month in range(1,13):
                 per = (year - self.strt_yr) * 12 + month - 1
             
-                filename = r'data_output\recharge\claymult\PrecipCM_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
+                filename = Path.cwd()/'data_processed'/'recharge'/'claymult'/('PrecipCM_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc')
                 Precip_Dict[per] = np.loadtxt(filename,skiprows=6)
         
         for i, LUset in enumerate(LU_PAR):
@@ -334,7 +343,7 @@ class model():
         Well objects: supply wells, distribution leaks, injection wells, wastewater reuse, recharge basins
         '''
         newtime = time.time()
-        LEAK_MUN = np.loadtxt('data_output\leak\LEAK_TOT_MUN.csv',delimiter=',',skiprows=1) # Total recharge percent per municipality: equal to percent of total water use (1997 values) x percent leak (~35%) x recharge percent (15%)
+        LEAK_MUN = np.loadtxt(Path.cwd()/'data_processed'/'leak'/'LEAK_TOT_MUN.csv',delimiter=',',skiprows=1) # Total recharge percent per municipality: equal to percent of total water use (1997 values) x percent leak (~35%) x recharge percent (15%)
         
         # Get groundwater percentage of total based on time period
         gval = np.zeros(360)
@@ -349,16 +358,16 @@ class model():
         PUMP_PARAM = [WEL_PAR[0],WEL_PAR[1],WEL_PAR[2]]
         
         # Import CONAGUA and SACM pumping datasets
-        PUMP_array = np.loadtxt(r'data_output\wells\PUMP_C.csv',
+        PUMP_array = np.loadtxt(Path.cwd()/'data_processed'/'wells'/'PUMP_C.csv',
                                                       delimiter=',', skiprows=1, usecols=[1,2,7,8,11]) # pumping in m3 per day
         WEL_DICT, WEL_INFO = self.addNewWells(PUMP_array, LYR=1, WEL_Dict=WEL_DICT, INFO_Dict=WEL_INFO, munleak=LEAK_MUN, F=fixleak, G=gval)
-        PUMP_array = np.loadtxt(r'data_output\wells\PUMP_S.csv',
+        PUMP_array = np.loadtxt(Path.cwd()/'data_processed'/'wells'/'PUMP_S.csv',
                                                       delimiter=',', skiprows=1, usecols=[1,2,7,8,11]) # pumping in m3 per day
         WEL_DICT, WEL_INFO = self.addNewWells(PUMP_array, LYR=1, WEL_Dict=WEL_DICT, INFO_Dict=WEL_INFO, munleak=LEAK_MUN, F=fixleak, G=gval)
         
         # Generate monthly pumping datasets for REPDA data in single pumping value format
         for i in range(phases):
-            PUMP_array = np.loadtxt(r'data_output\wells\PUMP_RC_Q.csv', delimiter=',', skiprows=1, usecols=[1,2,4,5,11]) # pumping in m3 per day
+            PUMP_array = np.loadtxt(Path.cwd()/'data_processed'/'wells'/'PUMP_RC_Q.csv', delimiter=',', skiprows=1, usecols=[1,2,4,5,11]) # pumping in m3 per day
             
             WEL_DICT, WEL_INFO = self.addNewWells(New_WEL=PUMP_array, LYR=1, WEL_Dict=WEL_DICT, INFO_Dict=WEL_INFO, WEL_mult=PUMP_PARAM[i], start=S_per[i] + 1, end=E_per[i] + 1, munleak=LEAK_MUN, F=fixleak, G=gval)
         
@@ -424,7 +433,7 @@ class model():
                 
             LEAK_arrays[leakset] = LEAK_arrays[leakset][(LEAK_arrays[leakset][:, 4] > 5), :] # Only include cells that contribute at least 5 m3/day
                 
-            WEL_DICT, WEL_INFO = self.addNewWells(LEAK_arrays[leakset], LYR=1, WEL_Dict=WEL_DICT, INFO_Dict=WEL_INFO, WEL_mult=LEAK_PAR[i], coordType='rc', wellType=1)
+            WEL_DICT, WEL_INFO = self.addNewWells(LEAK_arrays[leakset], LYR=0, WEL_Dict=WEL_DICT, INFO_Dict=WEL_INFO, WEL_mult=LEAK_PAR[i], coordType='rc', wellType=1) # Inject to Layer 1
         
         total_mthly_leak = np.zeros(PHASE_PER[3])
         for i in range(total_mthly_leak.shape[0]):
@@ -445,7 +454,7 @@ class model():
         At the end of the data processing WWTP has the following columns: X, Y, 
         start year, end year, difference between installed and actual capacity
         '''
-        WWTPs = np.loadtxt(r'data_output\scenarios\WWTP.csv', delimiter=',', skiprows=1, usecols=[9,8,5,6,11])
+        WWTPs = np.loadtxt(r'data_processed\scenarios\WWTP.csv', delimiter=',', skiprows=1, usecols=[9,8,5,6,11])
         
         if num_WWTP > 0:
             WWTPs[:, 3] = WWTPs[:,2] - WWTPs[:,3] # Col 2 is installed treatment capacity and Col 3 is actual treatment quantity
@@ -476,7 +485,7 @@ class model():
         '''
         Recharge Basins
         '''
-        Basin_Array = np.loadtxt(r'data_output\scenarios\RCH_BASIN.csv', delimiter=',', skiprows=1)
+        Basin_Array = np.loadtxt(Path.cwd()/'data_processed'/'scenarios'/'RCH_BASIN.csv', delimiter=',', skiprows=1)
         Basins = np.zeros((num_RCHBASIN, 2))
         for b in range(0, num_RCHBASIN):
             randBasin = np.random.randint(0, Basin_Array.shape[0])

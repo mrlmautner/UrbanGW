@@ -31,11 +31,11 @@ exefile = r'C:\WRDAPP\MF2005.1_12\bin\mf2005.exe'
 
 # Parameters
 ## Test Mode
-test = False
+test = True
 
 ## Scenario Mode
-plt_scen = True
-run_scenarios = True
+plt_scen = False
+run_scenarios = False
 scenario_names = ['Historical_U','WWTP_U','Leak_U','Basin_U']
 mapTitles = ['Historical','Increased WW Reuse','Repair Leaks','Recharge Basins']
 leak_repair = [0,0,20,0]
@@ -52,7 +52,7 @@ opt_run = str(max_nfes)+'nfe'
 
 ####### DON'T MESS WITH ANYTHING BELOW THIS LINE IF YOU AREN'T SURE #######
 if test:
-    testModel = model('Test', 455000, 2107000, 539000, 2175000, 500, 1984, 2014, 'data_output\ACTIVE_VM_LYR1.asc', 'data_output\ACTIVE_VM_LYR2.asc', 'data_output\THICK1_VM.asc', 'data_output\THICK2_VM.asc', 'data_output\GEO_VM.asc', 'data_output\DEM_VM.asc', 'data_output\IH_1984.asc','data_output\MUN_VM.asc', exefile)
+    testModel = model('Test', 455000, 2107000, 539000, 2175000, 500, 1984, 2014, 'data_processed\ACTIVE_VM_LYR1.asc', 'data_processed\ACTIVE_VM_LYR2.asc', 'data_processed\THICK1_VM.asc', 'data_processed\THICK2_VM.asc', 'data_processed\GEO_VM.asc', 'data_processed\DEM_VM.asc', 'data_processed\IH_1984.asc','data_processed\MUN_VM.asc', exefile)
     testModel.run_scenario_model(0,0,0)
 
 if plt_scen:
@@ -67,7 +67,7 @@ if plt_scen:
         for i, s_name in enumerate(scenario_names):
             print(s_name, 'Scenario')
             scen_time = time.time()
-            vmmodel[i] = model(s_name, 455000, 2107000, 539000, 2175000, 500, 1984, 2014, 'data_output\ACTIVE_VM_LYR1.asc', 'data_output\ACTIVE_VM_LYR2.asc', 'data_output\THICK1_VM.asc', 'data_output\THICK2_VM.asc', 'data_output\GEO_VM.asc', 'data_output\DEM_VM.asc', 'data_output\IH_1984.asc','data_output\MUN_VM.asc')
+            vmmodel[i] = model(s_name, 455000, 2107000, 539000, 2175000, 500, 1984, 2014, 'data_processed\ACTIVE_VM_LYR1.asc', 'data_processed\ACTIVE_VM_LYR2.asc', 'data_processed\THICK1_VM.asc', 'data_processed\THICK2_VM.asc', 'data_processed\GEO_VM.asc', 'data_processed\DEM_VM.asc', 'data_processed\IH_1984.asc','data_processed\MUN_VM.asc')
             vmmodel[i].run_scenario_model(num_wwplants[i], num_infbasins[i], leak_repair[i])
             print(s_name, 'Scenario completed in', str(time.time() - scen_time), 'seconds')
     else:
@@ -75,7 +75,7 @@ if plt_scen:
         for i, s_name in enumerate(scenario_names):
             print('Opening', s_name, 'Scenario')
             
-            vmmodel[i] = model(s_name, 455000, 2107000, 539000, 2175000, 500, 1984, 2014, 'data_output\ACTIVE_VM_LYR1.asc', 'data_output\ACTIVE_VM_LYR2.asc', 'data_output\THICK1_VM.asc', 'data_output\THICK2_VM.asc', 'data_output\GEO_VM.asc', 'data_output\DEM_VM.asc', 'data_output\IH_1984.asc','data_output\MUN_VM.asc')
+            vmmodel[i] = model(s_name, 455000, 2107000, 539000, 2175000, 500, 1984, 2014, 'data_processed\ACTIVE_VM_LYR1.asc', 'data_processed\ACTIVE_VM_LYR2.asc', 'data_processed\THICK1_VM.asc', 'data_processed\THICK2_VM.asc', 'data_processed\GEO_VM.asc', 'data_processed\DEM_VM.asc', 'data_processed\IH_1984.asc','data_processed\MUN_VM.asc')
             with open('model_output\objective_data\WEL_INFO_'+s_name+'.pickle', 'rb') as handle:
                 vmmodel[i].wells = pickle.load(handle)
             with open('model_output\objective_data\LU_'+s_name+'.pickle', 'rb') as handle:
