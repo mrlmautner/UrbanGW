@@ -4,6 +4,9 @@ Created on Mon Nov 26 14:02:08 2018
 
 @author: MM
 """
+import os
+os.chdir(r'D:\MMautner\UrbanGW')
+
 import flopy
 import numpy as np
 import matplotlib.pyplot as plt
@@ -18,8 +21,18 @@ import pickle
 from gwscripts.dataprocessing import gengriddata as gen
 from gwscripts.optimization import measureobjectives as mo
 import seaborn as sns
+import datetime
 
 sns.set(style="white", palette="muted", color_codes=True)
+plt.rcParams['legend.fontsize'] = 20
+plt.rcParams['axes.titlesize'] = 22
+plt.rcParams['axes.labelsize'] = 22
+plt.rcParams['xtick.labelsize'] = 18
+plt.rcParams['ytick.labelsize'] = 18
+plt.rcParams['figure.titlesize'] = 24
+plt.rcParams.update({'font.size': 20})
+
+#%%
 
 xll = 455000
 yll = 2107000
@@ -113,6 +126,59 @@ plt.savefig('model_output\plots\Hist_change_all.svg')
 plt.savefig('model_output\plots\Hist_change_all.png', dpi=600)
 plt.show()
 
+#%% Multi-Heads Countour
+
+print('Plotting head changes over model period...')
+plt.set_cmap('viridis_r')
+mapTitles = ['Historical','Increased WW Reuse','Repair Leaks','Recharge Basins']
+
+# Get head values at the nth and mth time steps
+first_heads = S_heads['Historical']
+
+def calc_head_change(hds, GEO, ACTIVE, n, m, g_units, lyr):
+    # Get head values at the nth and mth time steps
+    h_i = hds.get_data(mflay=lyr,kstpkper=n)
+    h_e = hds.get_data(mflay=lyr,kstpkper=m)
+    
+    # Create array of heads only for geologic units g_units
+    new_h_i = np.ones(h_i.shape)*np.nan
+    for g in g_units:
+        new_h_i[GEO==g] = h_i[GEO==g]
+    new_h_i[ACTIVE!=1] = np.nan # Set cells outside model area to NaN
+    
+    new_h_e = np.ones(h_e.shape)*np.nan
+    for g in g_units:
+        new_h_e[GEO==g] = h_e[GEO==g]
+    new_h_e[ACTIVE!=1] = np.nan # Set cells outside model area to NaN
+    
+    # Find difference between nth and mth time steps
+    head_change = new_h_e - new_h_i
+    return head_change
+ 
+first_change = calc_head_change(first_heads, GEO, ACTIVE_LYR2,  n = (30,0), m = (30,359), g_units = [2,3,4,5], lyr = 1)
+
+for i, s_name in enumerate(scenario_list):
+    scen_heads = S_heads[s_name]
+    
+    scen_change = calc_head_change(scen_heads, GEO, ACTIVE_LYR2,  n = (30,0), m = (30,359), g_units = [2,3,4,5], lyr = 1)
+    
+    change_compare = scen_change - first_change
+    
+    fig, axes = plt.subplots()
+    cbar_ax = fig.add_axes()
+    
+    im = axes.imshow(change_compare,vmin=0,vmax=20)
+    CS = axes.contour(ACTIVE_LYR2, colors='k', linewidths=2)
+    
+    axes.xaxis.set_visible(False)
+    axes.yaxis.set_visible(False)
+    axes.set_title(mapTitles[i].format(i+1),fontweight="bold", size=20)
+    
+    fig.colorbar(im, cax=cbar_ax, label='Change in Groundwater Head (m)')
+#        plt.savefig('model_output\plots\head-change_'+s_name+'-'+scenario_list[0]+'.svg')
+    plt.savefig('model_output\plots\head-change_'+s_name+'-'+scenario_list[0]+'.png', dpi=600)
+    
+
 #%% Budget
 df_1Bdget = {}
 df_extra = {}
@@ -145,8 +211,9 @@ for s_name in scenario_list:
 
 
 #%% Cumulative overdraft
-i = 0
+plt.figure(figsize=(12,7.2))
 
+i = 0
 for s_name in scenario_list:
 
     df_extra[s_name]['IN'] = df_extra[s_name]['RECHARGE_IN'].divide(1000000) + df_extra[s_name]['WELLS_IN'].divide(1000000)
@@ -155,14 +222,17 @@ for s_name in scenario_list:
     
     df_extra[s_name].INOUTCUMSUM['01-31-1985':'12-31-2013'].plot(linewidth=l[i],color=c[i],style=mark[i])
     i+=1
-    
-plt.ylabel(r'Volume ($hm^3$)')
+
+
+plt.ylabel(r'Volume (million m$^3$)')
+#plt.xlabel(r'Year')
 #plt.ylim(-8,10)
 #plt.title('Cumulative In - Out')
-plt.legend(['Historical','Increase WW Reuse','Repair Leaks','Recharge Basins'])
+plt.legend(['Historical','Increase WW Reuse','Repair Leaks','Recharge Basins'],loc='upper right')
+plt.gcf().subplots_adjust(left=0.15,right=.95,bottom=0.1,top=.95)
 
-plt.savefig('model_output\plots\INOUTCumSum.png', dpi=600)
-plt.savefig('model_output\plots\INOUTCumSum.svg')
+plt.savefig('model_output\plots\INOUTCumSum_0607.png', dpi=600)
+plt.savefig('model_output\plots\INOUTCumSum_0607.svg')
 plt.show()
 
 #%% Time series by location
@@ -246,28 +316,29 @@ cells = (360-14)*np.sum(np.sum(ACTIVE_LYR2)) # Number of cells in Model Area ove
 
 barWidth = 0.5
 r = np.arange(n_scenario)*0.5 # bar position
-y_label = ['Kilowatt Hours','Average Head Below top of Clay Layer','Ratio to Historical Mounding']
-obj_title = ['Energy Use','Subsidence Avoidance','Mounding']
-ylims = [[4.5E9,6E9],[36,41],[0.9,1.25]]
+y_label = ['Cumulative Pumping Energy (kWh)','Average Depth to GW in Clay Layer (m)','Normalized GW Mounding in Urban Areas']
+obj_title = ['Energy Use','Subsidence Avoidance','Urban Mounding']
+#ylims = [[4.5E9,6E9],[36,41],[0.9,1.25]]
 
 normalized_o = np.zeros((n_scenario,n_obj))
 
-fig, axes = plt.subplots(nrows=1, ncols=3,figsize=(10,6))
+fig, axes = plt.subplots(nrows=1, ncols=3,figsize=(12,7.2))
 
 for o, obj in enumerate([energy,subs,mound]):
     normalized_o[:,o] = obj / (obj.max(axis=0) - obj.min(axis=0))
     plt.subplot(1,n_obj,o+1)
     plt.bar(r, obj, width=barWidth, edgecolor='white', color=c)
-    plt.xticks(r, ['Historical','WWTP','Leak','Basin'],rotation='vertical')
+    plt.xticks(r, ['Historical','WWTP','Leak','Basin'],rotation=35,ha='right')
     plt.ylabel(y_label[o])
-    plt.ylim(ylims[o])
-    plt.title(obj_title[o])
+#    plt.ylim(ylims[o])
+    plt.title(obj_title[o],fontweight='bold', y=1.04)
 
-fig.tight_layout()
+#fig.tight_layout()
 # Flip subsidence measure to be minimizing
 #normalized_o[:,1] = 1 - normalized_o[:,1]
-plt.savefig('model_output\plots\Objectives.svg')
-plt.savefig('model_output\plots\Objectives.png', dpi=600)
+plt.gcf().subplots_adjust(wspace=0.45,left=0.09,right=.97,bottom=0.15,top=.9)
+plt.savefig('model_output\plots\Objectives_190607.svg')
+plt.savefig('model_output\plots\Objectives_190607.png', dpi=600)
 plt.show()
 
 ##%%
@@ -286,3 +357,83 @@ plt.show()
 #    ctr = plt.contour(hdslayer, colors='k', linewidths=0.5)
 #
 #plt.colorbar(im, label='Groundwater Head (m)')
+
+#%% Head Obsevations
+obsformation = pd.read_csv('data_raw\obs_formation.csv')
+df = pd.read_fwf('model_output\VM_Historical-IH2750.hob.out')
+df.columns = ['simulated','observed','obs_name','nan']
+df = df.drop('nan',axis=1)
+df['time_series'] = np.nan
+df['obs_id'] = np.nan
+df['dem'] = np.nan
+df['geo'] = np.nan
+df['ddsimulated'] = np.nan
+df['ddobserved'] = np.nan
+
+obsinfo = hobs.obs_data
+for i in obsinfo:
+    oname = i.obsname
+    
+    t = np.ones(len(df[df['obs_name'].str.contains(oname)].index))*np.nan
+    t[:i.nobs] = i.time_series_data.astype(int).view(int)
+
+    df.loc[df['obs_name'].str.contains(oname),'time_series'] = t
+    df.loc[df['obs_name'].str.contains(oname),'obs_id'] = oname
+    
+    df.loc[df['obs_name'].str.contains(oname),'ddsimulated'] = df[df['obs_name'].str.contains(oname)]['simulated'] - df[df['obs_name'].str.contains(oname)]['simulated'].values[0]
+    df.loc[df['obs_name'].str.contains(oname),'ddobserved'] = df[df['obs_name'].str.contains(oname)]['observed'] - df[df['obs_name'].str.contains(oname)]['observed'].values[0]
+
+geology = ['Lacustrine','Alluvial','Basalt','Volcaniclastic','Andesite']
+for i, r in obsformation.iterrows():
+    df.loc[df['obs_id']==r['IDPOZO'],'dem'] = r['DEM_c3_INE']
+    df.loc[df['obs_id']==r['IDPOZO'],'geo'] = geology[r['GEOLOGY_ZO']-1]
+
+#%%
+ax = sns.scatterplot(x='simulated', y='observed', hue='geo',data=df)
+ax.set_ylim(2100,2700)
+ax.set_xlim(2100,2700)
+
+#%%
+sns.set_style("whitegrid")
+g = sns.lmplot(x='simulated', y='observed', hue='geo',data=df,legend=False,palette=dict(Alluvial=(1,0.867,0), Basalt=(0,0.788,0.498) ,Volcaniclastic=(0.9, 0, 0.455) ),size=5,aspect=1.2,scatter_kws={'edgecolor':None,'s':10})
+plt.plot(np.linspace(2000,2800,1000), np.linspace(2000,2800,1000), 'k',linestyle=':')
+plt.legend(['Tarango (Volcaniclastic)','Alluvial','Fractured Basalt','One-to-one'],loc='best')
+plt.xlim(2100,2650)
+plt.ylim(2100,2650)
+plt.ylabel('Observed Head (masl)')
+plt.xlabel('Simulated Head (masl)')
+plt.savefig('C:\Users\MM\Google Drive\Davis\Research\Papers\Multi-Objective_Spatial_ValleyMexico\Figures\Sim_vs_Obs-IH2750.jpeg', dpi=600)
+plt.close()
+#%%
+sns.set_style("whitegrid")
+g = sns.lmplot(x='ddsimulated', y='ddobserved', hue='geo',data=df,legend=False,palette=dict(Alluvial=(1,0.867,0), Basalt=(0,0.788,0.498) ,Volcaniclastic=(0.9, 0, 0.455) ),size=5,aspect=1.2,scatter_kws={'edgecolor':None,'s':10})
+plt.plot(np.linspace(-100,100,1000), np.linspace(-100,100,1000), 'k',linestyle=':')
+plt.legend(['Tarango (Volcaniclastic)','Alluvial','Fractured Basalt','One-to-one'],loc='best')
+plt.xlim(-60,60)
+plt.ylim(-60,60)
+plt.ylabel('Observed Head (masl)')
+plt.xlabel('Simulated Head (masl)')
+plt.savefig('C:\Users\MM\Google Drive\Davis\Research\Papers\Multi-Objective_Spatial_ValleyMexico\Figures\Sim_vs_Obs-ddn-IH2750.jpeg', dpi=600)
+plt.close()
+#%%
+
+for o in obsformation['IDPOZO'].values:
+    ddn_data = df[df['obs_id']==o].copy()
+    ddn_data['time_series'] = pd.to_timedelta(ddn_data['time_series'],'d') + pd.to_datetime('1984-01-01')
+    ddn_data = ddn_data.set_index('time_series')
+    fig, axes = plt.subplots(2, 1, figsize=(5,12))
+    ddn_data['simulated'].plot(ax=axes[0])
+    ddn_data['observed'].plot(ax=axes[0])
+    axes[0].legend(['Simulated','Observed'])
+    axes[0].xaxis.label.set_visible(False)
+    
+    ddn_data['ddsimulated'].plot(ax=axes[1])
+    ddn_data['ddobserved'].plot(ax=axes[1])
+    axes[1].set_ylim([-35, 10])
+    axes[1].legend(['Simulated','Observed'])
+    axes[1].xaxis.label.set_visible(False)
+    
+    plt.savefig('model_output\plots\observations\IH_2750\drawdown_'+o+'.jpeg', dpi=300)
+    plt.close()
+    
+#%%

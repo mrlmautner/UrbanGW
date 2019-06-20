@@ -33,8 +33,7 @@ def initializeFM(modelname,xll,yll,xur,yur,cellsize,STRT_YEAR,END_YEAR,ACTIVE1,A
     nstp = np.array(nstp)
     steady = np.zeros((nper),dtype=bool)
     
-    dis = flopy.modflow.ModflowDis(mf, nlay=nlay, nrow=nrow, ncol=ncol, nper=nper, delr=delr, delc=delc,
-                                   top=ztop, botm=botm, perlen=nstp, nstp=nstp, steady=steady, start_datetime='01/01/1984')
+    dis = flopy.modflow.ModflowDis(mf, nlay=nlay, nrow=nrow, ncol=ncol, nper=nper, delr=delr, delc=delc, top=ztop, botm=botm, perlen=nstp, nstp=nstp, steady=steady, start_datetime='01/01/1984')
         
     # Model Boundaries & initial conditions
     # Active areas

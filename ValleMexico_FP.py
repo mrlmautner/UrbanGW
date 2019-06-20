@@ -17,8 +17,8 @@ from platypus import Problem, Integer, Real, NSGAII
 
 def runscenariomodel(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
     np.random.seed(seed)
-#    timestart = time.time()
-#    print('Processing data...')
+    timestart = time.time()
+    print('Processing data...')
     cost = 0
     fixleak = fixleak/100 # convert from integer to decimal
     
@@ -38,7 +38,7 @@ def runscenariomodel(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
     TH2 = gen.openASC('data_output\THICK2_VM.asc')
     GEO = gen.openASC('data_output\GEO_VM.asc')
     DEM = gen.openASC('data_output\DEM_VM.asc')
-    IH = gen.openASC('data_output\IH_1984.asc')
+    IH = gen.openASC('data_output\IH_OK_Combined_1984_LT2750.asc')
     MUN = gen.openASC('data_output\MUN_VM.asc')
     
     # Assign name and create modflow model object
@@ -74,11 +74,9 @@ def runscenariomodel(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
     
     RCH_PAR = [1.000E-02,5.639E-01,5.000E-01] # Recharge multiplier for urban, natural, and water cover
     
-    ncol, nrow, mf, dis, bas, lpf = mod.initializeFM(modelname,xll,yll,xur,yur,cellsize,
-                                                     STRT_YEAR,END_YEAR,ACTIVE_LYR1,ACTIVE_LYR2,GEO,DEM,IH,
-                                                     ZoneParams,THICK1=TH1,THICK2=TH2)
+    ncol, nrow, mf, dis, bas, lpf = mod.initializeFM(modelname, xll, yll, xur, yur, cellsize, STRT_YEAR, END_YEAR, ACTIVE_LYR1, ACTIVE_LYR2, GEO, DEM, IH, ZoneParams, THICK1=TH1, THICK2=TH2)
     
-#    print('Basic, Discretization, and Layer packages generated in',str(time.time()-timestart),'seconds')
+    print('Basic, Discretization, and Layer packages generated in',str(time.time()-timestart),'seconds')
     
     #%% Land Use Type
     # Fill a land use dictionary with the ARRAYs that represent the % of each land use cover in each cell
@@ -109,9 +107,9 @@ def runscenariomodel(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
 #    winfofile = 'model_output\objective_data\LU_'+scenario+'.pickle'
 #    with open(winfofile, 'wb') as handle:
 #        pickle.dump(LU, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    
+#    
     #%% Recharge
-#    newtime = time.time()
+    newtime = time.time()
     
     start = [1984,1995,2005]
     end = [1995,2005,2014]
@@ -134,10 +132,10 @@ def runscenariomodel(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
     
     rch = flopy.modflow.ModflowRch(mf, nrchop=3,  ipakcb=9, rech=RCH_DICT)
     
-#    print('RCH_Dict generated in',str(time.time()-newtime),'seconds')
+    print('RCH_Dict generated in',str(time.time()-newtime),'seconds')
     
     #%% Well objects: supply wells, distribution leaks, injection wells, wastewater reuse, recharge basins
-#    newtime = time.time()
+    newtime = time.time()
     LEAK_MUN = np.loadtxt('data_output\leak\LEAK_TOT_MUN.csv',delimiter=',',skiprows=1) # Total recharge percent per municipality: equal to percent of total water use (1997 values) x percent leak (~35%) x recharge percent (15%)
     WWTPs = np.loadtxt(r'data_output\scenarios\WWTP.csv', delimiter=',', skiprows=1, usecols=[9,8,5,6,11])
     
@@ -162,7 +160,7 @@ def runscenariomodel(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
                                                   delimiter=',', skiprows=1, usecols=[1,2,7,8,11]) # pumping in m3 per day
     WEL_DICT, WEL_INFO = mod.addNewWells(PUMP_array,LYR=1,WEL_Dict=WEL_DICT,INFO_Dict=WEL_INFO,dateType='per',mun=MUN,munleak=LEAK_MUN,F=fixleak,G=gval)
      
-    for i, wellset in enumerate(['PUMP_RC_Q','PUMP_RC_Q','PUMP_RC_Q']):
+    for i, wellset in enumerate(['PUMP_RC_Q-Repeats','PUMP_RC_Q-Repeats','PUMP_RC_Q-Repeats']):
         PUMP_array = np.loadtxt(r'data_output\wells\\' + wellset + '.csv',
                                                   delimiter=',', skiprows=1, usecols=[1,2,4,5,11]) # pumping in m3 per day
         
@@ -252,21 +250,25 @@ def runscenariomodel(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
     
     wel = flopy.modflow.ModflowWel(mf, stress_period_data=WEL_DICT)
     
+    ## Create pickle file of Well Data to be available for post processing of well energy use objective
+#    winfofile = 'model_output\objective_data\WEL_INFO_' + scenario + '.pickle'
+#    with open(winfofile, 'wb') as handle:
+#        pickle.dump(WEL_INFO, handle, protocol=pickle.HIGHEST_PROTOCOL)    
     
     #%%
     oc, pcg = mod.outputControl(mf)
     
-#    hobs = flopy.modflow.ModflowHob.load('ValleMexicoTR_C.ob_hob', mf)
+    hobs = flopy.modflow.ModflowHob.load('model_output\ValleMexicoTR_C_heads.ob_hob', mf)
     
-#    print('Data processed in',str(time.time()-timestart),'seconds')
+    print('Data processed in',str(time.time()-timestart),'seconds')
     
-#    newtime = time.time()
-#    print('Writing input file...')
+    newtime = time.time()
+    print('Writing input file...')
     
     # Run Model and post processing
     # Write the MODFLOW model input files 
     mf.write_input()
-#    print('Input file written in',str(time.time()-newtime),'seconds')
+    print('Input file written in',str(time.time()-newtime),'seconds')
     
     # Run the MODFLOW model
     success, buff = mf.run_model()
@@ -274,15 +276,19 @@ def runscenariomodel(scenario,num_WWTP,num_RCHBASIN,fixleak,seed=1):
     return WWTPs, Basins, total_mthly_leak, cost, WEL_INFO, LU
 
 # AGU Model Runs
-WWTPs, Basins, total_pump_leak, cost, WEL_INFO, LU = runscenariomodel('Test',74,5,0.8)
-numscenarios = 4
-scenarioList = ['WWTP','Historical','Leak','Basin'] 
-fixleak = [1,1,0.8,1]
-num_WWTP = [74,0,0,0] # 74
-num_RCHBASIN = [0,0,0,5] # 5
-w = [0]*numscenarios
-b = [0]*numscenarios
-l = [0]*numscenarios
+WWTPs, Basins, total_pump_leak, cost, WEL_INFO, LU = runscenariomodel('Historical-IH2750',0,0,100)
+#WWTPs, Basins, total_pump_leak, cost, WEL_INFO, LU = runscenariomodel('Test',74,5,80)
+#numscenarios = 4
+#scenarioList = ['WWTP','Historical','Leak','Basin'] 
+#fixleak = [100,100,80,100]
+#num_WWTP = [74,0,0,0] # 74
+#num_RCHBASIN = [0,0,0,5] # 5
+#w = [0]*numscenarios
+#b = [0]*numscenarios
+#l = [0]*numscenarios
+#c = [0]*numscenarios
+#
+#for i in range(numscenarios):
+#    w[i],b[i],l[i],c[i],WEL_INFO,LU = runscenariomodel(scenarioList[i],num_WWTP[i],num_RCHBASIN[i],fixleak[i])
 
-for i in range(numscenarios):
-    w[i],b[i],l[i] = runscenariomodel(scenarioList[i],num_WWTP[i],num_RCHBASIN[i],fixleak[i])
+
