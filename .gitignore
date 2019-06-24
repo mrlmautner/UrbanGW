@@ -39,7 +39,6 @@ VM_Test.wel
 *.Bhd
 *.svg
 *.pickle
-\model_output\plots\*
 MPATH6.LOG
 *.chk
 *.mpbas
@@ -57,3 +56,5 @@ model_output/plots/head-change_Basin-Historical.png
 model_output/plots/head-change_Historical-Historical.png
 model_output/plots/head-change_Leak-Historical.png
 model_output/plots/head-change_WWTP-Historical.png
+model_output/plots/observations/drawdown*
+model_output/plots/observations/IH_2750/*
