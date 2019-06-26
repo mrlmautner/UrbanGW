@@ -503,10 +503,12 @@ class model():
         # Generate output control and solver MODFLOW packages 
         oc, pcg = self.outputControl(mf)
         
-        hob = flopy.modflow.ModflowHob.load('data_processed\MODFLOW_OBS.ob_hob', mf)
-        winfofile = 'model_output\VM_OBS.pickle'
-        with open(winfofile, 'wb') as handle:
-            pickle.dump(hob.obs_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        mf.add_existing_package('model_output\VM_OBS.ob_hob',ptype='HOB')
+        mf.add_output('model_output\VM_Test.hob.out',unit=1002)
+#        hob = flopy.modflow.ModflowHob.load('data_processed\VM_OBS.ob_hob', mf)
+#        winfofile = 'model_output\VM_OBS.pickle'
+#        with open(winfofile, 'wb') as handle:
+#            pickle.dump(hob.obs_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
     
         # Run Model and post processing
         ## Write the MODFLOW model input files
@@ -531,4 +533,3 @@ class model():
         self.cost = cost
         self.wells = WEL_INFO
         self.landuse = LU
-        self.obs = hob
