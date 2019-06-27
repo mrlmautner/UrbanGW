@@ -39,7 +39,7 @@ VM_Test.wel
 *.Bhd
 *.svg
 *.pickle
-\model_output\plots\*
+model_output/plots/observations/*
 MPATH6.LOG
 *.chk
 *.mpbas
