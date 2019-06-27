@@ -8,13 +8,13 @@ Created on Thu Apr  5 15:23:15 2018
 import flopy
 import numpy as np
 import time
-import pickle
+#import pickle
 import calendar
 
 class model():
 
     # Initializer / Instance attributes
-    def __init__(self, scenario, xll, yll, xur, yur, cellsize, strt_yr, end_yr, ACTIVE, THICKNESS, GEO, DEM, IH, MUN, exe_file = r'C:\WRDAPP\MF2005.1_12\bin\mf2005.exe'):
+    def __init__(self, scenario, xll, yll, xur, yur, cellsize, strt_yr, end_yr, ACTIVE, THICKNESS, GEO, DEM, IH, MUN, params, exe_file = r'C:\WRDAPP\MF2005.1_12\bin\mf2005.exe'):
         self.name = scenario # Assign name
         self.xll = xll # X coordinate of the lower left corner
         self.yll = yll # Y coordinate of the lower left corner
@@ -300,7 +300,6 @@ class model():
 #        winfofile = 'model_output\objective_data\LU_' + self.name + '.pickle'
 #        with open(winfofile, 'wb') as handle:
 #            pickle.dump(LU, handle, protocol=pickle.HIGHEST_PROTOCOL)
-        self.landuse = LU
         
         '''
         Recharge
@@ -418,7 +417,7 @@ class model():
                     # Set the new index to the previous index plus the number of cells added
                     j += tempLeak.shape[0]
                 
-            LEAK_arrays[leakset] = LEAK_arrays[leakset][(LEAK_arrays[leakset][:, 4] > 5), :] # Only include cells that contribute at least 5 m3/day
+#            LEAK_arrays[leakset] = LEAK_arrays[leakset][(LEAK_arrays[leakset][:, 4] > 5), :] # Only include cells that contribute at least 5 m3/day
                 
             WEL_DICT, WEL_INFO = self.addNewWells(LEAK_arrays[leakset], LYR=1, WEL_Dict=WEL_DICT, INFO_Dict=WEL_INFO, WEL_mult=LEAK_PAR[i], coordType='rc', wellType=1)
         
@@ -496,9 +495,7 @@ class model():
 #        winfofile = 'model_output\objective_data\WEL_INFO_' + self.name + '.pickle'
 #        with open(winfofile, 'wb') as handle:
 #            pickle.dump(WEL_INFO, handle, protocol=pickle.HIGHEST_PROTOCOL)
-        self.wells = WEL_INFO
-        
-        print('WEL_Dict saved in',str(time.time()-newtime),'seconds')
+#        print('WEL_Dict saved in',str(time.time()-newtime),'seconds')
         
         # Generate output control and solver MODFLOW packages 
         oc, pcg = self.outputControl(mf)
