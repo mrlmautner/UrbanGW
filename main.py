@@ -32,6 +32,7 @@ exefile = r'C:\WRDAPP\MF2005.1_12\bin\mf2005.exe'
 # Parameters
 ## Test Mode
 test = True
+test_name = 'Test'
 
 ## Scenario Mode
 plt_scen = False
@@ -52,7 +53,7 @@ opt_run = str(max_nfes)+'nfe'
 
 ####### DON'T MESS WITH ANYTHING BELOW THIS LINE IF YOU AREN'T SURE #######
 if test:
-    testModel = model('Test', 455000, 2107000, 539000, 2175000, 500, 1984, 2014, ['data_processed\ACTIVE_VM_LYR1.asc', 'data_processed\ACTIVE_VM_LYR2.asc'], ['data_processed\THICK1_VM.asc', 'data_processed\THICK2_VM.asc'], ['data_processed\GEO_VM_LYR1.asc', 'data_processed\GEO_VM_LYR2.asc'], 'data_processed\DEM_VM.asc', 'data_processed\IH_1984.asc','data_processed\MUN_VM.asc', exefile)
+    testModel = model(test_name, 455000, 2107000, 539000, 2175000, 500, 1984, 2014, ACTIVE=['data_processed\ACTIVE_VM_LYR1.asc', 'data_processed\ACTIVE_VM_LYR2.asc'], THICKNESS=['data_processed\THICK1_VM.asc', 'data_processed\THICK2_VM.asc'], GEO=['data_processed\GEO_VM_LYR1.asc', 'data_processed\GEO_VM_LYR2.asc'], DEM='data_processed\DEM_VM.asc', IH='data_processed\IH_1984.asc', MUN='data_processed\MUN_VM.asc', PAR='model_output\params.pval', exe_file=exefile)
     testModel.run_scenario_model(0,0,0)
 
 if plt_scen:
@@ -67,7 +68,7 @@ if plt_scen:
         for i, s_name in enumerate(scenario_names):
             print(s_name, 'Scenario')
             scen_time = time.time()
-            vmmodel[i] = model(s_name, 455000, 2107000, 539000, 2175000, 500, 1984, 2014, ['data_processed\ACTIVE_VM_LYR1.asc', 'data_processed\ACTIVE_VM_LYR2.asc'], ['data_processed\THICK1_VM.asc', 'data_processed\THICK2_VM.asc'], ['data_processed\GEO_VM_LYR1.asc', 'data_processed\GEO_VM_LYR2.asc'], 'data_processed\DEM_VM.asc', 'data_processed\IH_1984.asc','data_processed\MUN_VM.asc')
+            vmmodel[i] = model(s_name, 455000, 2107000, 539000, 2175000, 500, 1984, 2014, ACTIVE=['data_processed\ACTIVE_VM_LYR1.asc', 'data_processed\ACTIVE_VM_LYR2.asc'], THICKNESS=['data_processed\THICK1_VM.asc', 'data_processed\THICK2_VM.asc'], GEO=['data_processed\GEO_VM_LYR1.asc', 'data_processed\GEO_VM_LYR2.asc'], DEM='data_processed\DEM_VM.asc', IH='data_processed\IH_1984.asc', MUN='data_processed\MUN_VM.asc', PAR='model_output\params.pval', exe_file=exefile)
             vmmodel[i].run_scenario_model(num_wwplants[i], num_infbasins[i], leak_repair[i])
             print(s_name, 'Scenario completed in', str(time.time() - scen_time), 'seconds')
     else:
@@ -75,7 +76,7 @@ if plt_scen:
         for i, s_name in enumerate(scenario_names):
             print('Opening', s_name, 'Scenario')
             
-            vmmodel[i] = model(s_name, 455000, 2107000, 539000, 2175000, 500, 1984, 2014, ['data_processed\ACTIVE_VM_LYR1.asc', 'data_processed\ACTIVE_VM_LYR2.asc'], ['data_processed\THICK1_VM.asc', 'data_processed\THICK2_VM.asc'], ['data_processed\GEO_VM_LYR1.asc', 'data_processed\GEO_VM_LYR2.asc'], 'data_processed\DEM_VM.asc', 'data_processed\IH_1984.asc','data_processed\MUN_VM.asc')
+            vmmodel[i] = model(s_name, 455000, 2107000, 539000, 2175000, 500, 1984, 2014, ACTIVE=['data_processed\ACTIVE_VM_LYR1.asc', 'data_processed\ACTIVE_VM_LYR2.asc'], THICKNESS=['data_processed\THICK1_VM.asc', 'data_processed\THICK2_VM.asc'], GEO=['data_processed\GEO_VM_LYR1.asc', 'data_processed\GEO_VM_LYR2.asc'], DEM='data_processed\DEM_VM.asc', IH='data_processed\IH_1984.asc', MUN='data_processed\MUN_VM.asc', PAR='model_output\params.pval', exe_file=exefile)
             
 #            with open('model_output\objective_data\WEL_INFO_'+s_name+'.pickle', 'rb') as handle:
 #                vmmodel[i].wells = pickle.load(handle)
