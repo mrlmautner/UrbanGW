@@ -215,10 +215,11 @@ class model():
         data2record = ['save head', 'save drawdown', 'save budget', 'print budget']
         for y in range(0,30):
             for m in range(1,13):
-                spd[y * 12 + m - 1, calendar.monthrange(self.strt_yr + y, m)[1] - 1] = data2record.copy()
+                spd[y * 12 + m - 1, 8] = data2record.copy()
+#                spd[y * 12 + m - 1, calendar.monthrange(self.strt_yr + y, m)[1] - 1] = data2record.copy() # If time steps in month is equal to number of days
 #                for d in range(0,calendar.monthrange(self.strt_yr + y, m)[1]):
 #                    spd[y * 12 + m - 1, d] = data2record.copy()
-        spd[14,30] = ['save head', 'save drawdown', 'save budget', 'print budget', 'ddreference']
+        spd[14,9] = ['save head', 'save drawdown', 'save budget', 'print budget', 'ddreference']
         oc = flopy.modflow.ModflowOc(mf, stress_period_data=spd, compact=True)
 
         # Add PCG package to the MODFLOW model

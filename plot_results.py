@@ -12,16 +12,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import flopy.utils.binaryfile as bf
 from matplotlib import cm
-from mpl_toolkits.mplot3d import Axes3D
-from matplotlib.ticker import LinearLocator, FormatStrFormatter
-import matplotlib.dates as mdates
 import pandas as pd
 import calendar
 import pickle
-from gwscripts.dataprocessing import gengriddata as gen
+#from gwscripts.dataprocessing import gengriddata as gen
 from gwscripts.optimization import measureobjectives as mo
 import seaborn as sns
-import datetime
 
 sns.set(style="white", palette="muted", color_codes=True)
 plt.rcParams['legend.fontsize'] = 20
@@ -47,11 +43,11 @@ ncol = int((xur-xll)/cellsize) # Number of rows
 nrow = int((yur-yll)/cellsize) # Number of columns
 
 # Load datasets
-ACTIVE_LYR1 = gen.openASC('data_processed\ACTIVE_VM_LYR1.asc')
-ACTIVE_LYR2 = gen.openASC('data_processed\ACTIVE_VM_LYR2.asc')
-TH1 = gen.openASC('data_processed\THICK1_VM.asc')
-DEM = gen.openASC('data_processed\DEM_VM.asc')
-GEO = gen.openASC('data_processed\GEO_VM.asc')
+ACTIVE_LYR1 = np.loadtxt('data_processed\ACTIVE_VM_LYR1.asc',skiprows=6)
+ACTIVE_LYR2 = np.loadtxt('data_processed\ACTIVE_VM_LYR2.asc',skiprows=6)
+TH1 = np.loadtxt('data_processed\THICK1_VM.asc',skiprows=6)
+DEM = np.loadtxt('data_processed\DEM_VM.asc',skiprows=6)
+GEO = np.loadtxt('data_processed\GEO_VM_LYR2.asc',skiprows=6)
 
 # Plotting defaults
 l = [4,2,2,2]
@@ -62,69 +58,7 @@ scenario_list = ['Historical','WWTP','Leak','Basin']
 #%% Head Dictionary
 S_heads = {}
 for s_name in scenario_list:
-    S_heads[s_name] = bf.HeadFile('model_output\VM_'+s_name+'.hds')
-    
-#%% Heads Contour
-fig, axes = plt.subplots(2, 2, figsize=(7,6.3))
-a=0
-mapTitle = ['Historical','Increased WW Reuse','Repair Leaks','Recharge Basins']
-plt.set_cmap('rainbow_r')
-axes = axes.flat
-cbar_ax = fig.add_axes([0.85, 0.15, 0.03, 0.7])
-
-hds = S_heads['Historical']
-hist_i = hds.get_data(mflay=1,kstpkper=(30,0))
-hist_e = hds.get_data(mflay=1,kstpkper=(30,359))
-
-new_hist_i = np.ones(hist_i.shape)*np.nan#min(h[h>0])
-new_hist_i[GEO==2] = hist_i[GEO==2]
-#new_hist_i[GEO==3] = hist_i[GEO==3]
-new_hist_i[GEO==4] = hist_i[GEO==4]
-#new_hist_i[GEO==5] = hist_i[GEO==5]
-new_hist_i[ACTIVE_LYR2!=1] = np.nan
-new_hist_e = np.ones(hist_e.shape)*np.nan#min(h[h>0])
-new_hist_e[GEO==2] = hist_e[GEO==2]
-#new_hist_e[GEO==3] = hist_e[GEO==3]
-new_hist_e[GEO==4] = hist_e[GEO==4]
-#new_hist_e[GEO==5] = hist_e[GEO==5]
-new_hist_e[ACTIVE_LYR2!=1] = np.nan
-
-hist_change = new_hist_e-new_hist_i
-
-for i,s_name in enumerate(scenario_list):
-    hds = S_heads[s_name]
-    h_i = hds.get_data(mflay=1,kstpkper=(30,0))
-    h_e = hds.get_data(mflay=1,kstpkper=(30,359))
-    
-    new_h_i = np.ones(h_i.shape)*np.nan#min(h[h>0])
-    new_h_i[GEO==2] = h_i[GEO==2]
-#    new_h_i[GEO==3] = h_i[GEO==3]
-    new_h_i[GEO==4] = h_i[GEO==4]
-#    new_h_i[GEO==5] = h_i[GEO==5]
-    new_h_i[ACTIVE_LYR2!=1] = np.nan
-    new_h_e = np.ones(h_e.shape)*np.nan#min(h[h>0])
-    new_h_e[GEO==2] = h_e[GEO==2]
-#    new_h_e[GEO==3] = h_e[GEO==3]
-    new_h_e[GEO==4] = h_e[GEO==4]
-#    new_h_e[GEO==5] = h_e[GEO==5]
-    new_h_e[ACTIVE_LYR2!=1] = np.nan
-    
-    h_change = new_h_e-new_h_i
-    hist_compare = h_change - hist_change
-    
-    im = axes[a].imshow(hist_compare,vmin=0,vmax=20)
-    CS = axes[a].contour(ACTIVE_LYR1, colors='k', linewidths=2)
-    axes[a].xaxis.set_visible(False)
-    axes[a].yaxis.set_visible(False)
-    axes[a].set_title(mapTitle[a].format(i+1))
-    
-    a+=1
-    
-fig.subplots_adjust(right=0.8)
-fig.colorbar(im, cax=cbar_ax, label='Change in Groundwater Head (m)')
-plt.savefig('model_files\output\plots\Hist_change_all.svg')
-plt.savefig('model_files\output\plots\Hist_change_all.png', dpi=600)
-plt.show()
+    S_heads[s_name] = bf.HeadFile('model_files\modflow\VM_'+s_name+'.hds')
 
 #%% Multi-Heads Countour
 
@@ -155,12 +89,12 @@ def calc_head_change(hds, GEO, ACTIVE, n, m, g_units, lyr):
     head_change = new_h_e - new_h_i
     return head_change
  
-first_change = calc_head_change(first_heads, GEO, ACTIVE_LYR2,  n = (30,0), m = (30,359), g_units = [2,3,4,5], lyr = 1)
+first_change = calc_head_change(first_heads, GEO, ACTIVE_LYR2,  n = (9,14), m = (9,359), g_units = [2,3,4,5], lyr = 1)
 
 for i, s_name in enumerate(scenario_list):
     scen_heads = S_heads[s_name]
     
-    scen_change = calc_head_change(scen_heads, GEO, ACTIVE_LYR2,  n = (30,0), m = (30,359), g_units = [2,3,4,5], lyr = 1)
+    scen_change = calc_head_change(scen_heads, GEO, ACTIVE_LYR2,  n = (9,14), m = (9,359), g_units = [2,3,4,5], lyr = 1)
     
     change_compare = scen_change - first_change
     
@@ -175,7 +109,7 @@ for i, s_name in enumerate(scenario_list):
     axes.set_title(mapTitles[i].format(i+1),fontweight="bold", size=20)
     
     fig.colorbar(im, cax=cbar_ax, label='Change in Groundwater Head (m)')
-#        plt.savefig('model_output\plots\head-change_'+s_name+'-'+scenario_list[0]+'.svg')
+#        plt.savefig('model_files\output\plots\head-change_'+s_name+'-'+scenario_list[0]+'.svg')
     plt.savefig('model_files\output\plots\head-change_'+s_name+'-'+scenario_list[0]+'.png', dpi=600)
     
 
@@ -184,7 +118,7 @@ df_1Bdget = {}
 df_extra = {}
 
 for s_name in scenario_list:
-    mf_list = flopy.utils.MfListBudget('model_output\VM_'+s_name+".list")
+    mf_list = flopy.utils.MfListBudget('model_files\modflow\VM_'+s_name+".list")
     incremental, cumulative = mf_list.get_budget()
 
     df_1Bdget[s_name], df_extra[s_name] = mf_list.get_dataframes(start_datetime="04-30-1984")
@@ -205,8 +139,8 @@ for s_name in scenario_list:
 #    plt.title('Groundwater Budget')
 #    plt.legend(['Leaks','Precipitation','Storage: In','Pumping','Storage: Out'],loc=4)
 #    
-#    plt.savefig('model_output\plots\WB_'+modelname+'.png')
-#    plt.savefig('model_output\plots\WB_'+modelname+'.svg')
+#    plt.savefig('model_files\output\plots\WB_'+modelname+'.png')
+#    plt.savefig('model_files\output\plots\WB_'+modelname+'.svg')
 #    plt.close()
 
 
@@ -265,7 +199,7 @@ fig = plt.figure()
 ax = fig.gca(projection='3d')
 
 #for s_name in ['Historical','WWTP','Leak','Basin']:
-hds = bf.HeadFile('model_output\VM_Test.hds')
+hds = bf.HeadFile('model_files\modflow\VM_Test.hds')
 h = hds.get_data(mflay=[0,1],kstpkper=(30,359))
 
 HNEW = np.ones(h.shape)*2100#min(h[h>0])
@@ -337,30 +271,13 @@ for o, obj in enumerate([energy,subs,mound]):
 # Flip subsidence measure to be minimizing
 #normalized_o[:,1] = 1 - normalized_o[:,1]
 plt.gcf().subplots_adjust(wspace=0.45,left=0.09,right=.97,bottom=0.15,top=.9)
-plt.savefig('model_files\output\plots\Objectives_190607.svg')
-plt.savefig('model_files\output\plots\Objectives_190607.png', dpi=600)
+plt.savefig('model_files\output\plots\Objectives_190702.svg')
+plt.savefig('model_files\output\plots\Objectives_190702.png', dpi=600)
 plt.show()
-
-##%%
-#modelname = 'model_output\VM_WWTP'
-#heads = bf.HeadFile(modelname+'.hds')
-#
-#h = heads.get_data(mflay=[0,1],kstpkper=(30,24))
-#plt.set_cmap('coolwarm_r')
-#
-#HNEW = np.ones(h.shape)*np.nan#min(h[h>0])
-#for i, head in enumerate(h):
-#    HNEW[i][head>-900] = head[head>-900]
-#
-#for i, hdslayer in enumerate(HNEW):
-#    im = plt.imshow(hdslayer, vmin=2100)
-#    ctr = plt.contour(hdslayer, colors='k', linewidths=0.5)
-#
-#plt.colorbar(im, label='Groundwater Head (m)')
 
 #%% Head Obsevations
 obsformation = pd.read_csv('data_raw\obs_formation.csv')
-df = pd.read_fwf('model_files\output\VM_Historical-IH2750.hob.out')
+df = pd.read_fwf('model_files\modflow\VM_Test.hob.out')
 df.columns = ['simulated','observed','obs_name','nan']
 df = df.drop('nan',axis=1)
 df['time_series'] = np.nan
@@ -402,7 +319,7 @@ plt.xlim(2100,2650)
 plt.ylim(2100,2650)
 plt.ylabel('Observed Head (masl)')
 plt.xlabel('Simulated Head (masl)')
-plt.savefig('C:\Users\MM\Google Drive\Davis\Research\Papers\Multi-Objective_Spatial_ValleyMexico\Figures\Sim_vs_Obs-IH2750.jpeg', dpi=600)
+plt.savefig(r'C:\Users\MM\Google Drive\Davis\Research\Papers\Multi-Objective_Spatial_ValleyMexico\Figures\Sim_vs_Obs-IH2750.jpeg', dpi=600)
 plt.close()
 #%%
 sns.set_style("whitegrid")
@@ -413,7 +330,7 @@ plt.xlim(-60,60)
 plt.ylim(-60,60)
 plt.ylabel('Observed Head (masl)')
 plt.xlabel('Simulated Head (masl)')
-plt.savefig('C:\Users\MM\Google Drive\Davis\Research\Papers\Multi-Objective_Spatial_ValleyMexico\Figures\Sim_vs_Obs-ddn-IH2750.jpeg', dpi=600)
+plt.savefig(r'C:\Users\MM\Google Drive\Davis\Research\Papers\Multi-Objective_Spatial_ValleyMexico\Figures\Sim_vs_Obs-ddn-IH2750.jpeg', dpi=600)
 plt.close()
 #%%
 
