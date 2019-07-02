@@ -42,6 +42,13 @@ mapTitles = ['Historical','Increased WW Reuse','Repair Leaks','Recharge Basins']
 leak_repair = [0,0,20,0]
 num_wwplants = [0,74,0,0]
 num_infbasins = [0,0,0,5]
+cutz = np.loadtxt('model_files\optimization_data\decisions\cutz.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Imports from Cutzamala reservoir system
+lerm = np.loadtxt('model_files\optimization_data\decisions\lerm.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Imports from Lerma groundwater system
+pai = np.loadtxt('model_files\optimization_data\decisions\pai.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Imports from PAI groundwater system external to the model
+int_sw = np.loadtxt('model_files\optimization_data\decisions\int_sw.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Surface water sources within the basin
+int_ww = np.loadtxt('model_files\optimization_data\decisions\int_ww.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Wastewater reuse within the basin
+new_other = cutz + lerm + pai + int_sw + int_ww # Total of all other water supplies except local groundwater (m3/s)
+new_other = new_other.sum(axis=0) # Total of all other supplies (m3/s)
 
 ## Optimization mode
 run_optimization = False
@@ -53,7 +60,7 @@ opt_run = str(max_nfes)+'nfe'
 
 ####### DON'T MESS WITH ANYTHING BELOW THIS LINE IF YOU AREN'T SURE #######
 if test:
-    testModel = model(test_name, 455000, 2107000, 539000, 2175000, 500, 1984, 2014, ACTIVE=['data_processed\ACTIVE_VM_LYR1.asc', 'data_processed\ACTIVE_VM_LYR2.asc'], THICKNESS=['data_processed\THICK1_VM.asc', 'data_processed\THICK2_VM.asc'], GEO=['data_processed\GEO_VM_LYR1.asc', 'data_processed\GEO_VM_LYR2.asc'], DEM='data_processed\DEM_VM.asc', IH='data_processed\IH_1984.asc', MUN='data_processed\MUN_VM.asc', PAR='model_output\params.pval', exe_file=exefile)
+    testModel = model(test_name, 455000, 2107000, 539000, 2175000, 500, 1984, 2014, ACTIVE=['data_processed\ACTIVE_VM_LYR1.asc', 'data_processed\ACTIVE_VM_LYR2.asc'], THICKNESS=['data_processed\THICK1_VM.asc', 'data_processed\THICK2_VM.asc'], GEO=['data_processed\GEO_VM_LYR1.asc', 'data_processed\GEO_VM_LYR2.asc'], DEM='data_processed\DEM_VM.asc', IH='data_processed\IH_1984.asc', MUN='data_processed\MUN_VM.asc', PAR='model_files\modflow\params.pval', exe_file=exefile)
     testModel.run_scenario_model(0,0,0)
 
 if plt_scen:
@@ -68,7 +75,7 @@ if plt_scen:
         for i, s_name in enumerate(scenario_names):
             print(s_name, 'Scenario')
             scen_time = time.time()
-            vmmodel[i] = model(s_name, 455000, 2107000, 539000, 2175000, 500, 1984, 2014, ACTIVE=['data_processed\ACTIVE_VM_LYR1.asc', 'data_processed\ACTIVE_VM_LYR2.asc'], THICKNESS=['data_processed\THICK1_VM.asc', 'data_processed\THICK2_VM.asc'], GEO=['data_processed\GEO_VM_LYR1.asc', 'data_processed\GEO_VM_LYR2.asc'], DEM='data_processed\DEM_VM.asc', IH='data_processed\IH_1984.asc', MUN='data_processed\MUN_VM.asc', PAR='model_output\params.pval', exe_file=exefile)
+            vmmodel[i] = model(s_name, 455000, 2107000, 539000, 2175000, 500, 1984, 2014, ACTIVE=['data_processed\ACTIVE_VM_LYR1.asc', 'data_processed\ACTIVE_VM_LYR2.asc'], THICKNESS=['data_processed\THICK1_VM.asc', 'data_processed\THICK2_VM.asc'], GEO=['data_processed\GEO_VM_LYR1.asc', 'data_processed\GEO_VM_LYR2.asc'], DEM='data_processed\DEM_VM.asc', IH='data_processed\IH_1984.asc', MUN='data_processed\MUN_VM.asc', PAR='model_files\modflow\params.pval', exe_file=exefile)
             vmmodel[i].run_scenario_model(num_wwplants[i], num_infbasins[i], leak_repair[i])
             print(s_name, 'Scenario completed in', str(time.time() - scen_time), 'seconds')
     else:
@@ -76,7 +83,7 @@ if plt_scen:
         for i, s_name in enumerate(scenario_names):
             print('Opening', s_name, 'Scenario')
             
-            vmmodel[i] = model(s_name, 455000, 2107000, 539000, 2175000, 500, 1984, 2014, ACTIVE=['data_processed\ACTIVE_VM_LYR1.asc', 'data_processed\ACTIVE_VM_LYR2.asc'], THICKNESS=['data_processed\THICK1_VM.asc', 'data_processed\THICK2_VM.asc'], GEO=['data_processed\GEO_VM_LYR1.asc', 'data_processed\GEO_VM_LYR2.asc'], DEM='data_processed\DEM_VM.asc', IH='data_processed\IH_1984.asc', MUN='data_processed\MUN_VM.asc', PAR='model_output\params.pval', exe_file=exefile)
+            vmmodel[i] = model(s_name, 455000, 2107000, 539000, 2175000, 500, 1984, 2014, ACTIVE=['data_processed\ACTIVE_VM_LYR1.asc', 'data_processed\ACTIVE_VM_LYR2.asc'], THICKNESS=['data_processed\THICK1_VM.asc', 'data_processed\THICK2_VM.asc'], GEO=['data_processed\GEO_VM_LYR1.asc', 'data_processed\GEO_VM_LYR2.asc'], DEM='data_processed\DEM_VM.asc', IH='data_processed\IH_1984.asc', MUN='data_processed\MUN_VM.asc', PAR='model_files\modflow\params.pval', exe_file=exefile)
             
 #            with open('model_output\objective_data\WEL_INFO_'+s_name+'.pickle', 'rb') as handle:
 #                vmmodel[i].wells = pickle.load(handle)
@@ -129,12 +136,12 @@ if plot_opt:
                 var_list.append(int_list[v].decode(var))
             variable_list.append(var_list)
         
-        pickle.dump(results_list, open(r'model_output\opt\objectives_' + opt_run + '.pkl', "wb" ))
-        pickle.dump(variable_list, open(r'model_output\opt\dvariables_' + opt_run + '.pkl', "wb" ))
+        pickle.dump(results_list, open(r'model_files\output\opt\objectives_' + opt_run + '.pkl', "wb" ))
+        pickle.dump(variable_list, open(r'model_files\output\opt\dvariables_' + opt_run + '.pkl', "wb" ))
     else:
-        with open(r'model_output\opt\objectives_' + opt_run + '.pkl', 'rb') as handle:
+        with open(r'model_files\output\opt\objectives_' + opt_run + '.pkl', 'rb') as handle:
             results_list = pickle.load(handle)
-        with open(r'model_output\opt\dvariables_' + opt_run + '.pkl', 'rb') as handle:
+        with open(r'model_files\output\opt\dvariables_' + opt_run + '.pkl', 'rb') as handle:
             variable_list = pickle.load(handle)
     
     nondom_VM = opt.nondom_sort(results_list)

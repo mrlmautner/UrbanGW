@@ -50,7 +50,7 @@ class model():
     
     def initializeFM(self):
         # modelname to set the file root 
-        mf = flopy.modflow.Modflow('model_output\VM_' + self.name, exe_name=self.exe)
+        mf = flopy.modflow.Modflow(r'model_files\modflow\VM_' + self.name, exe_name=self.exe)
         
         # Model domain and grid definition
         botm = np.zeros((self.nlay, self.nrow, self.ncol))
@@ -69,7 +69,7 @@ class model():
         nstp = np.array(nstp)
         steady = np.zeros((nper),dtype=bool)
         
-        dis = flopy.modflow.ModflowDis(mf, nlay=self.nlay, nrow=self.nrow, ncol=self.ncol, nper=nper, delr=self.cellsize, delc=self.cellsize, top=self.dem, botm=botm, perlen=nstp, nstp=nstp, steady=steady, start_datetime='01/01/1984')
+        dis = flopy.modflow.ModflowDis(mf, nlay=self.nlay, nrow=self.nrow, ncol=self.ncol, nper=nper, delr=self.cellsize, delc=self.cellsize, top=self.dem, botm=botm, perlen=nstp, nstp=9, tsmult=1.3, steady=steady, start_datetime='01/01/1984')
             
         # Model Boundaries & initial conditions
         # Active areas
@@ -88,7 +88,7 @@ class model():
         geoarrays = {}
         
         # Loop through the layers and formations for each layer to apply the geologic parameters to each array
-        for p in ['HK', 'VANI', 'SS', 'SY']:   
+        for p in ['HK', 'VANI', 'SS']:   
             geoarrays[p] = np.zeros((self.nlay,self.nrow,self.ncol))
             
             for l in range(self.nlay):
@@ -97,20 +97,19 @@ class model():
         
         layvka = [1]*self.nlay # Indicates that VANI represents the ratio of H:V hydraulic conductivity
         
-        lpf = flopy.modflow.mflpf.ModflowLpf(mf, ipakcb=9, laytyp=[0,0], layvka=layvka, hk=geoarrays['HK'], vka=geoarrays['VANI'], ss=geoarrays['SS'], sy=geoarrays['SY'])
+        lpf = flopy.modflow.mflpf.ModflowLpf(mf, ipakcb=9, laytyp=[0,0], layvka=layvka, hk=geoarrays['HK'], vka=geoarrays['VANI'], ss=geoarrays['SS'])
         
         return mf, dis, bas, lpf
     
-    def addNewWells(self, New_WEL, LYR, WEL_Dict=0, INFO_Dict=0, WEL_mult=1, start=0, end=0, dateType='per', coordType='xy', wellType=0, munleak=1, F=1, G=1):
+    def addNewWells(self, New_WEL, LYR, WEL_Dict=0, INFO_Dict=0, WEL_mult=1, start=0, end=0, dateType='per', coordType='xy', pumpwell=False, changepumping=False):
         '''
         New_WEL is an np array of the following format: X (or C), Y (or R), Start Year, End Year, Flow (m3/d)
-        WEL_PAR is a scalar multiplier to be applied to all wells in the data set New_WEL
+        WEL_mult is a scalar multiplier to be applied to all wells in the data set New_WEL
         WEL_Dict is a dictionary that contains dictionary for each stress period, each dictionary contains an entry for each well with the layer, row, column, and pumping rate
         coordType is a marker that should be either 'xy' or 'rc' depending on the coordinate definition in the New_WEL array
         dateType is a marker that should be either 'yr' or 'per' depending on whether a value of year or stress period is passed in the Start and End time columns
-        wellType is a marker that corresponds to the well source/sink type as follows: 0=pumping, 1=good quality (recharge basin,LID surface,WWTP injection), -1=poor quality(leak,LID deep,WWTP surface)
-        munleak is an array with leak % by municipality if the data set is pumping wells and 1 otherwise
-        F is the percentage of leak that has been fixed (ie 1 means all leaks are fixed)
+        pumpwell
+        changepumping
         '''
         
         # Initialize dictionary    
@@ -119,7 +118,7 @@ class model():
         if INFO_Dict == 0:
             INFO_Dict = {}
         
-        # Assign start year and end year if defined in input
+        # Assign start period and end period if defined in input
         if start > 0:
             New_WEL[:,2] = np.ones((New_WEL.shape[0]))*start
             
@@ -148,24 +147,22 @@ class model():
             c = New_WEL[w,0]
             wellmun = self.mun[int(r),int(c)]
                     
-            # Reduce the pumping amount by the amount saved by fixing leaks
-            if type(munleak) is not int:
-                P = float(munleak[np.where(munleak==wellmun)[0],4]) # the percent of the total usage that is made up of leaks
+            # Reduce the pumping amount by a percentage by municipality
+            if changepumping:
+                P = float(self.altpump[np.where(self.altpump==wellmun)[0],1]) # the ratio of new pumping to old pumping
+            else:
+                P = 1
                                 
             # Assign flow rate for each well to all stress periods indicated by start and end years
             for per in range(int(New_WEL[w,2] - 1),int(New_WEL[w,3] - 1)):
-                # Determine whether the dataset is a pumping set or any other type
-                if type(munleak) is not int:
-                    LEAK_mult = 1 - (1 / G[per]) * P * F # Apply a multiplier that subtracts the leak averted from the total water use from the groundwater pumping
-                else:
-                    LEAK_mult = 1
-                
+                if pumpwell:
+                    P *= self.ratiogn['PER'][per]
                 try:
-                    WEL_Dict[per].append([LYR,r,c,New_WEL[w,4]*WEL_mult*LEAK_mult])
-                    INFO_Dict[per].append([LYR,r,c,New_WEL[w,4]*WEL_mult*LEAK_mult,wellmun,wellType]) # layer, row, column, volume (m3/d), municipality, well type
+                    WEL_Dict[per].append([LYR,r,c,New_WEL[w,4]*WEL_mult*P])
+                    INFO_Dict[per].append([LYR,r,c,New_WEL[w,4]*WEL_mult*P,wellmun]) # layer, row, column, volume (m3/d), municipality, well type
                 except:
-                    WEL_Dict[per] = [[LYR,r,c,New_WEL[w,4]*WEL_mult*LEAK_mult]]
-                    INFO_Dict[per]= [[LYR,r,c,New_WEL[w,4]*WEL_mult*LEAK_mult,wellmun,wellType]]
+                    WEL_Dict[per] = [[LYR,r,c,New_WEL[w,4]*WEL_mult*P]]
+                    INFO_Dict[per]= [[LYR,r,c,New_WEL[w,4]*WEL_mult*P,wellmun]]
                     
         return WEL_Dict,INFO_Dict
     
@@ -252,9 +249,36 @@ class model():
         drains = True
         fixleak = fixleak/100 # convert from integer to decimal
         cost = 0 # Initial cost
-        GW_to_WU = [0.7131,0.644,0.574966] # Percentage of groundwater pumping as ratio of total water use
         sec2day = 60*60*24 # Second to day conversion
         LID_PAR = [1, 1, 1] # Phase LID increase multiplier
+        
+        # Water supply data
+        hist_water_use = np.loadtxt(r'model_files\optimization_data\decisions\twu.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Initial (original) all other supplies before alternatives, matrix of size municipalities by phases (m3/s)
+        total_water_use = hist_water_use*self.params['TWU']*sec2day # Multiply by total water use parameters (m3/d)
+        self.twateruse = total_water_use.sum(axis=0) # Total water use for each model phase (m3/d)
+        
+        i_other = np.loadtxt(r'model_files\optimization_data\decisions\initial_supply.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Initial (original) all other supplies before alternatives (m3/s)
+        i_other = i_other.sum(axis=0)*sec2day # Initial other water supply for each model phase (m3/d)
+        new_other = i_other.copy() # New other water supply for each model phase (m3/d)
+        
+        # Alternatives changes to supply
+        # Import alternative pumping scheme (percentage changes in pumping), total groundwater pumping must be equal to original
+        self.altpump = np.loadtxt(r'model_files\optimization_data\decisions\altpump.csv', delimiter=',', skiprows=1)
+        
+        # Calculate historical quantity of leaks in each municipality
+        LEAK_MUN = np.loadtxt(r'data_processed\leak\LEAK_TOT_MUN.csv',delimiter=',',skiprows=1) # Total recharge percent per municipality: equal to percent of total water use (1997 values) x percent leak (~35%) x recharge percent (15%)
+        leaks = np.zeros((LEAK_MUN.shape[0],phases+1))
+        leaks[:,0] = LEAK_MUN[:,0]
+        for i in range(phases):
+            leaks[:,i+1] = self.params['LK'][i]*LEAK_MUN[:,1]*total_water_use[:,i] # Total leak per municipality by model phase (m3/d)
+        
+        new_other += leaks[:,1:].sum(axis=0) * fixleak # Add the leaks averted as an alternative supply
+        self.ratiogn = {}
+        self.ratiogn['PHASE'] = (self.twateruse - new_other)/(self.twateruse - i_other) # Create a ratio of groundwater use with new other supplies to groundwater use with initial other supplies to apply to all groundwater pumping (dimensionless)
+        self.ratiogn['PER'] = np.zeros(PHASE_PER[phases])
+        for i, LUset in enumerate(LU_PAR):
+            for p in range(PHASE_PER[i],PHASE_PER[i+1]):
+                self.ratiogn['PER'][p] = self.ratiogn['PHASE'][i]
         
         # Initialize the modflow model with the boundary conditions input above
         mf, dis, bas, lpf = self.initializeFM()
@@ -283,13 +307,13 @@ class model():
                             LU[LUset]['LIST'][LUtype][l,2] = perarea[row,col]
                         LU[LUset]['LIST'][LUtype][l,0] = col
                         LU[LUset]['LIST'][LUtype][l,1] = row
-                        LU[LUset]['LIST'][LUtype][l,3] = 1 - self.actv[0][row,col] # 0 if clay layer, 1 if no clay layer
+                        LU[LUset]['LIST'][LUtype][l,3] = 1 - self.geo[0][row,col] # 0 if clay layer, 1 if no clay layer
                         LU[LUset]['LIST'][LUtype][l,4] = self.mun[row,col]
                         l += 1
                 LU[LUset]['LIST'][LUtype] = LU[LUset]['LIST'][LUtype][LU[LUset]['LIST'][LUtype][:,2]>0,:]
     
         # Save land use database for use in mounding objective
-#        winfofile = 'model_output\objective_data\LU_' + self.name + '.pickle'
+#        winfofile = r'model_files\optimization_data\objectives\LU_' + self.name + '.pickle'
 #        with open(winfofile, 'wb') as handle:
 #            pickle.dump(LU, handle, protocol=pickle.HIGHEST_PROTOCOL)
         
@@ -310,7 +334,7 @@ class model():
                 Precip_Dict[per] = np.loadtxt(filename,skiprows=6)
         
         for i, LUset in enumerate(LU_PAR):
-            RCH_DICT = self.addRecharge(LU_arrays=LU[LUset]['ARRAY'], PRECIP=Precip_Dict, start=S_per[i] + 1, end=E_per[i] + 1, RCH_Dict=RCH_DICT, RCH_mult=self.params['RCH'])
+            RCH_DICT = self.addRecharge(LU_arrays=LU[LUset]['ARRAY'], PRECIP=Precip_Dict, start=S_per[i]+1, end=E_per[i]+1, RCH_Dict=RCH_DICT, RCH_mult=self.params['RCH'])
         
         # Create MODFLOW RCH package
         rch = flopy.modflow.ModflowRch(mf, nrchop=3,  ipakcb=9, rech=RCH_DICT)
@@ -321,100 +345,90 @@ class model():
         Well objects: supply wells, distribution leaks, injection wells, wastewater reuse, recharge basins
         '''
         newtime = time.time()
-        LEAK_MUN = np.loadtxt('data_processed\leak\LEAK_TOT_MUN.csv',delimiter=',',skiprows=1) # Total recharge percent per municipality: equal to percent of total water use (1997 values) x percent leak (~35%) x recharge percent (15%)
         
-        # Get groundwater percentage of total based on time period
-        gval = np.zeros(360)
-        gval[:PHASE_PER[1]] = GW_to_WU[0]
-        gval[PHASE_PER[1]:PHASE_PER[2]] = GW_to_WU[1]
-        gval[PHASE_PER[2]:] = GW_to_WU[2]
-            
         WEL_DICT = {}
         WEL_INFO = {}
         
-        # Add supply wells, includes the fixleak and LEAK_MUN terms to reduce pumping when leaks are fixed
-        
+        # Add supply wells, includes the ratioGn multiplier to reduce pumping when new supplies are added
         # Import CONAGUA and SACM pumping datasets
-        PUMP_array = np.loadtxt(r'data_processed\wells\PUMP_C.csv',
-                                                      delimiter=',', skiprows=1, usecols=[1,2,7,8,11]) # pumping in m3 per day
-        WEL_DICT, WEL_INFO = self.addNewWells(PUMP_array, LYR=1, WEL_Dict=WEL_DICT, INFO_Dict=WEL_INFO, munleak=LEAK_MUN, F=fixleak, G=gval)
-        PUMP_array = np.loadtxt(r'data_processed\wells\PUMP_S.csv',
-                                                      delimiter=',', skiprows=1, usecols=[1,2,7,8,11]) # pumping in m3 per day
-        WEL_DICT, WEL_INFO = self.addNewWells(PUMP_array, LYR=1, WEL_Dict=WEL_DICT, INFO_Dict=WEL_INFO, munleak=LEAK_MUN, F=fixleak, G=gval)
-        
-        # Generate monthly pumping datasets for REPDA data in single pumping value format
-        for i in range(phases):
-            PUMP_array = np.loadtxt(r'data_processed\wells\PUMP_RC_Q-Repeats.csv', delimiter=',', skiprows=1, usecols=[1,2,4,5,11,16]) # pumping in m3 per day
+        CAEM_array = np.loadtxt(r'data_processed\wells\PUMP_C.csv', delimiter=',', skiprows=1, usecols=[1,2,7,8,11]) # pumping in m3 per day
+        WEL_DICT, WEL_INFO = self.addNewWells(CAEM_array, LYR=1, WEL_Dict=WEL_DICT, INFO_Dict=WEL_INFO, pumpwell=True)
             
-            # Urban wells
-            WEL_DICT, WEL_INFO = self.addNewWells(New_WEL=PUMP_array[PUMP_array[:,5]==1,:4], LYR=1, WEL_Dict=WEL_DICT, INFO_Dict=WEL_INFO, WEL_mult=self.params['Q'][i], start=S_per[i] + 1, end=E_per[i] + 1, munleak=LEAK_MUN, F=fixleak, G=gval)
+        SACM_array = np.loadtxt(r'data_processed\wells\PUMP_S.csv',delimiter=',', skiprows=1, usecols=[1,2,7,8,11]) # pumping in m3 per day
+        WEL_DICT, WEL_INFO = self.addNewWells(SACM_array, LYR=1, WEL_Dict=WEL_DICT, INFO_Dict=WEL_INFO, pumpwell=True)
         
-            # Peri-urban wells
-            WEL_DICT, WEL_INFO = self.addNewWells(New_WEL=PUMP_array[PUMP_array[:,5]==0,:4], LYR=1, WEL_Dict=WEL_DICT, INFO_Dict=WEL_INFO, WEL_mult=self.params['Q'][i+3], start=S_per[i] + 1, end=E_per[i] + 1, munleak=LEAK_MUN, F=fixleak, G=gval)
-            
-        # Sum total pumping
-        total_mthly_pumping = np.zeros(PHASE_PER[phases])
-        for i in range(total_mthly_pumping.shape[0]):
-            total_mthly_pumping[i] = np.sum(list(zip(*WEL_INFO[i]))[3])
+        REPDA_array = np.loadtxt(r'data_processed\wells\PUMP_RC_Q-Repeats.csv', delimiter=',', skiprows=1, usecols=[1,2,4,5,11,16]) # pumping in m3 per day
+        total_urban_repda = REPDA_array[REPDA_array[:,5]==1,4].sum() * -1 # Pumping sum is negative
+        total_periurban_repda = REPDA_array[REPDA_array[:,5]==0,4].sum() * -1 # Pumping sum is negative
         
         # Include only municipalities with urban land cover
         mun = np.unique(self.mun)[1:].copy()
-        mun = np.delete(mun,29)
-        mun = np.delete(mun,21)
         
-        '''
-        Leak Repair
-        
-        Create a well dictionary for all the leak cells. The leak cells will be treated
-        as an injection well at each cell in which there is urban land cover. MODFLOW
-        distributes injection wells evenly across the area of the cell. The leak
-        percentage is based on the leak percentage determined by municipality. Then
-        the leak amount determined for each cell is multiplied by the percent of
-        urban land cover in that cell. Finally, leaks in cells that are located in the
-        lacustrine zone are reduced by 90% assuming that the low hydraulic
-        conductivity does not allow for high levels of infiltration and the sewer
-        provides a preferential flow path out of the basin
-        '''
-        LEAK_arrays = {}
-        for i, leakset in enumerate(LU_PAR):
-            LEAK_arrays[leakset] = np.zeros((LU[leakset]['LIST']['URBAN'].shape[0] * (PHASE_PER[i + 1] - PHASE_PER[i]),5))
+        # Loop through model phases
+        for i, l in enumerate(LU_PAR):
+            # Calculate unaccounted for water supply by subtraction to determine pumping in REPDA dataset
+            total_mthly_pumping = self.twateruse[i] - i_other[i] # Monthly pumping is equal to the total water use minus other supply (m3/d)
+            
+            LEAK_array = np.zeros((LU[l]['LIST']['URBAN'].shape[0] * (PHASE_PER[i + 1] - PHASE_PER[i]),5))
             j = 0
             
-            # Loop through each period model period
-            for p in range(PHASE_PER[i] + 1,PHASE_PER[i + 1] + 1):
+            # Generate monthly pumping datasets for REPDA data in single pumping value format
+            # Loop through monthly periods in each model phase
+            for p in range(S_per[i]+1,E_per[i]+1):
+                unknown_pumping = total_mthly_pumping - (-1 * np.sum(list(zip(*WEL_INFO[p-1]))[3])) # Unknown pumping is the total monthly pumping for each model period minus the known pumping from SACM and CAEM (which are negative)
+                                
+                # Urban wells
+                WEL_DICT, WEL_INFO = self.addNewWells(New_WEL=REPDA_array[REPDA_array[:,5]==1,:5], LYR=1, WEL_Dict=WEL_DICT, INFO_Dict=WEL_INFO, WEL_mult=self.params['Q'][i], start=p, end=(p + 1), pumpwell=True)                
+                
+                p_multiplier = (unknown_pumping - total_urban_repda*self.params['Q'][i]*self.ratiogn['PHASE'][i])/total_periurban_repda # Determine the monthly multiplier by dividing the estimated unknown pumping by the total pumping in the REPDA dataset
+                # Peri-urban wells
+                WEL_DICT, WEL_INFO = self.addNewWells(New_WEL=REPDA_array[REPDA_array[:,5]==0,:5], LYR=1, WEL_Dict=WEL_DICT, INFO_Dict=WEL_INFO, WEL_mult=p_multiplier, start=p, end=(p + 1), pumpwell=True)
+
+                '''
+                Leak Repair
+                
+                Create a well dictionary for all the leak cells. The leak cells will be treated
+                as an injection well at each cell in which there is urban land cover. MODFLOW
+                distributes injection wells evenly across the area of the cell. The leak
+                percentage is based on the leak percentage determined by municipality. Then
+                the leak amount determined for each cell is multiplied by the percent of
+                urban land cover in that cell. Finally, leaks in cells that are located in the
+                lacustrine zone are reduced by 90% assuming that the low hydraulic
+                conductivity does not allow for high levels of infiltration and the sewer
+                provides a preferential flow path out of the basin
+                '''
+                
                 for n,m in enumerate(mun):
-                    # Calculate the total urban area in normalized cell area (1 cell = 1) per municipality
-                    tempLeak = LU[leakset]['LIST']['URBAN'][(LU[leakset]['LIST']['URBAN'][:,4]==m), :4]
-                    u_area = tempLeak[:, 2].sum()
-                    
-                    # Use total pumping for each stress period to determine leak quantities
-                    LperArea = (-1 * total_mthly_pumping[p - 1] / GW_to_WU[i]) * (1 - fixleak) * LEAK_MUN[n, i + 1] / u_area # Divide total pumping by GW ratio to get total usage, multiply by leak status percent, multiply by % recharge by municipality (FIX)
-                    tempLeak[:,2] *= LperArea
-                    
-                    # apply 90% returns to sewer under clay layer (Geologic formation 1)
-                    tempLeak[tempLeak[:,3]==1, 2] *= 0.1
-                    
-                    # Get rows of all cells of urban land use type from list
-                    LEAK_arrays[leakset][j:(j + tempLeak.shape[0]), 0] = tempLeak[:, 0]
-                    
-                    # Get columns of all cells of urban land use type from list
-                    LEAK_arrays[leakset][j:(j + tempLeak.shape[0]), 1] = tempLeak[:, 1]
-                    
-                    # Set the period to the current stress period for all urban cells
-                    LEAK_arrays[leakset][j:(j + tempLeak.shape[0]), 2] = p
-                    
-                    # Set the end of the period to the next stress period
-                    LEAK_arrays[leakset][j:(j + tempLeak.shape[0]), 3] = p + 1
-                    
-                    # Set the multiplier to the percentage of urban land use type stored in list
-                    LEAK_arrays[leakset][j:(j + tempLeak.shape[0]), 4] = tempLeak[:,2]
-                    
-                    # Set the new index to the previous index plus the number of cells added
-                    j += tempLeak.shape[0]
-                
-#            LEAK_arrays[leakset] = LEAK_arrays[leakset][(LEAK_arrays[leakset][:, 4] > 5), :] # Only include cells that contribute at least 5 m3/day
-                
-            WEL_DICT, WEL_INFO = self.addNewWells(LEAK_arrays[leakset], LYR=1, WEL_Dict=WEL_DICT, INFO_Dict=WEL_INFO, WEL_mult=self.params['Q'][i+6], coordType='rc', wellType=1)
+                    # Create an array for all urban model cells in this municipality
+                    tempLeak = LU[l]['LIST']['URBAN'][(LU[l]['LIST']['URBAN'][:,4]==m),:4]
+                    if len(tempLeak) > 0:
+                        u_cells = tempLeak[:, 2].sum() # Number of urban model cells in municipality m
+                        # Use total pumping for each stress period to determine leak quantities
+                        LperCell = float(leaks[np.where(leaks==m)[0],i+1]) * (1 - fixleak) * self.params['IN'][0] / u_cells # Reference the leaks in the municipality (m3/d) multiply by (1 - fixleak), multiply by infiltration rate, divide by the number of urban cells
+                        tempLeak[:,2] *= LperCell
+                        
+                        # apply 90% returns to sewer under clay layer (Geologic formation 1)
+                        tempLeak[tempLeak[:,3]==1, 2] *= 0.1
+                        
+                        # Get rows of all cells of urban land use type from list
+                        LEAK_array[j:(j + tempLeak.shape[0]), 0] = tempLeak[:, 0]
+                        
+                        # Get columns of all cells of urban land use type from list
+                        LEAK_array[j:(j + tempLeak.shape[0]), 1] = tempLeak[:, 1]
+                        
+                        # Set the period to the current stress period for all urban cells
+                        LEAK_array[j:(j + tempLeak.shape[0]), 2] = p
+                        
+                        # Set the end of the period to the next stress period
+                        LEAK_array[j:(j + tempLeak.shape[0]), 3] = p + 1
+                        
+                        # Set the multiplier to the percentage of urban land use type stored in list
+                        LEAK_array[j:(j + tempLeak.shape[0]), 4] = tempLeak[:,2]
+                        
+                        # Set the new index to the previous index plus the number of cells added
+                        j += tempLeak.shape[0]
+          
+            WEL_DICT, WEL_INFO = self.addNewWells(LEAK_array, LYR=1, WEL_Dict=WEL_DICT, INFO_Dict=WEL_INFO, WEL_mult=self.params['LK'][i], coordType='rc')
         
         total_mthly_leak = np.zeros(PHASE_PER[3])
         for i in range(total_mthly_leak.shape[0]):
@@ -435,17 +449,17 @@ class model():
         At the end of the data processing WWTP has the following columns: X, Y, 
         start year, end year, difference between installed and actual capacity
         '''
-        WWTPs = np.loadtxt(r'data_processed\scenarios\WWTP.csv', delimiter=',', skiprows=1, usecols=[9,8,5,6,11])
+        WWTPs = np.loadtxt(r'data_processed\alternatives\WWTP.csv', delimiter=',', skiprows=1, usecols=[9,8,5,6,11])
         
         if num_WWTP > 0:
-            WWTPs[:, 3] = WWTPs[:,2] - WWTPs[:,3] # Col 2 is installed treatment capacity and Col 3 is actual treatment quantity
-            WWTPs = np.insert(WWTPs, 2, PHASE_PER[0] + 1, axis=1) # Insert starting period
+            WWTPs[:, 3] = (WWTPs[:,2] - WWTPs[:,3]) # Col 2 is installed treatment capacity and Col 3 is actual treatment quantity
+            WWTPs = np.insert(WWTPs, 2, PHASE_PER[0], axis=1) # Insert starting period
             WWTPs[:, 3] = np.ones(WWTPs.shape[0]) * PHASE_PER[phases] # Replace Col 3 with ending period
             WWTPs[WWTPs[:, 4] < 0.01, 4] = 0.01 # For any WWTPs with a difference of
             # less than 0.01 m3/s in capacity, assign an injection of 0.01 m3/s
             
             WWTPs = WWTPs[np.random.choice(WWTPs.shape[0], size=num_WWTP, replace=False), :]
-            WEL_DICT, WEL_INFO = self.addNewWells(WWTPs, LYR=1, WEL_Dict=WEL_DICT, INFO_Dict=WEL_INFO, WEL_mult=sec2day, wellType=-1) # Mult used to convert to m3/d
+            WEL_DICT, WEL_INFO = self.addNewWells(WWTPs, LYR=1, WEL_Dict=WEL_DICT, INFO_Dict=WEL_INFO, WEL_mult=sec2day) # Mult used to convert to m3/d
             
             ## Cost attributed to each exapanded WWTPs
             for i in range(WWTPs.shape[0]):
@@ -466,7 +480,7 @@ class model():
         '''
         Recharge Basins
         '''
-        Basin_Array = np.loadtxt(r'data_processed\scenarios\RCH_BASIN.csv', delimiter=',', skiprows=1)
+        Basin_Array = np.loadtxt(r'data_processed\alternatives\RCH_BASIN.csv', delimiter=',', skiprows=1)
         Basins = np.zeros((num_RCHBASIN, 2))
         for b in range(0, num_RCHBASIN):
             randBasin = np.random.randint(0, Basin_Array.shape[0])
@@ -487,22 +501,33 @@ class model():
         print('WEL_Dict generated in', str(time.time() - newtime), 'seconds')
         
 #        ## Create pickle file of Well Data to be available for post processing of well energy use objective
-#        winfofile = 'model_output\objective_data\WEL_INFO_' + self.name + '.pickle'
+#        winfofile = r'model_files\optimization_data\objectives\WEL_INFO_' + self.name + '.pickle'
 #        with open(winfofile, 'wb') as handle:
 #            pickle.dump(WEL_INFO, handle, protocol=pickle.HIGHEST_PROTOCOL)
 #        print('WEL_Dict saved in',str(time.time()-newtime),'seconds')
         
         ## Drains
+        drain_data = np.loadtxt(r'data_processed\drains\DRN_order3.csv', delimiter=',', skiprows=1)
+        DRN_DICT = {}
         if drains:
+            drain_list = []
+            for drn in range(0,drain_data.shape[0]):
+                r = int(drain_data[drn,0])
+                c = int(drain_data[drn,1])
+                drain_list.append([0,r,c,self.dem[r,c],drain_data[drn,2]*self.params['DRN'][0]])
+            for per in range(PHASE_PER[phases]):
+                DRN_DICT[per] = drain_list
+            self.drains = DRN_DICT
             
-        
+            drn = flopy.modflow.ModflowDrn(mf, stress_period_data=DRN_DICT)
+                    
         # Generate output control and solver MODFLOW packages 
         oc, pcg = self.outputControl(mf)
         
-        mf.add_existing_package('model_output\VM_OBS.ob_hob',ptype='HOB')
-        mf.add_output('model_output\VM_Test.hob.out',unit=1002)
+        mf.add_existing_package(r'model_files\modflow\VM_OBS.ob_hob',ptype='HOB', copy_to_model_ws=False)
+        mf.add_output(r'model_files\modflow\VM_Test.hob.out',unit=1002)
 #        hob = flopy.modflow.ModflowHob.load('data_processed\VM_OBS.ob_hob', mf)
-#        winfofile = 'model_output\VM_OBS.pickle'
+#        winfofile = r'model_files\modflow\VM_OBS.pickle'
 #        with open(winfofile, 'wb') as handle:
 #            pickle.dump(hob.obs_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
     
@@ -519,7 +544,7 @@ class model():
         newtime = time.time()
         print('Running MODFLOW model...')
         # Run the MODFLOW model
-        success, buff = mf.run_model(silent=True)
+        success, buff = mf.run_model()
         
         print('MODFLOW model completed run in', str(time.time() - newtime), 'seconds')
         
