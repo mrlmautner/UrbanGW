@@ -47,11 +47,11 @@ ncol = int((xur-xll)/cellsize) # Number of rows
 nrow = int((yur-yll)/cellsize) # Number of columns
 
 # Load datasets
-ACTIVE_LYR1 = gen.openASC('data_output\ACTIVE_VM_LYR1.asc')
-ACTIVE_LYR2 = gen.openASC('data_output\ACTIVE_VM_LYR2.asc')
-TH1 = gen.openASC('data_output\THICK1_VM.asc')
-DEM = gen.openASC('data_output\DEM_VM.asc')
-GEO = gen.openASC('data_output\GEO_VM.asc')
+ACTIVE_LYR1 = gen.openASC('data_processed\ACTIVE_VM_LYR1.asc')
+ACTIVE_LYR2 = gen.openASC('data_processed\ACTIVE_VM_LYR2.asc')
+TH1 = gen.openASC('data_processed\THICK1_VM.asc')
+DEM = gen.openASC('data_processed\DEM_VM.asc')
+GEO = gen.openASC('data_processed\GEO_VM.asc')
 
 # Plotting defaults
 l = [4,2,2,2]
@@ -122,8 +122,8 @@ for i,s_name in enumerate(scenario_list):
     
 fig.subplots_adjust(right=0.8)
 fig.colorbar(im, cax=cbar_ax, label='Change in Groundwater Head (m)')
-plt.savefig('model_output\plots\Hist_change_all.svg')
-plt.savefig('model_output\plots\Hist_change_all.png', dpi=600)
+plt.savefig('model_files\output\plots\Hist_change_all.svg')
+plt.savefig('model_files\output\plots\Hist_change_all.png', dpi=600)
 plt.show()
 
 #%% Multi-Heads Countour
@@ -176,7 +176,7 @@ for i, s_name in enumerate(scenario_list):
     
     fig.colorbar(im, cax=cbar_ax, label='Change in Groundwater Head (m)')
 #        plt.savefig('model_output\plots\head-change_'+s_name+'-'+scenario_list[0]+'.svg')
-    plt.savefig('model_output\plots\head-change_'+s_name+'-'+scenario_list[0]+'.png', dpi=600)
+    plt.savefig('model_files\output\plots\head-change_'+s_name+'-'+scenario_list[0]+'.png', dpi=600)
     
 
 #%% Budget
@@ -231,8 +231,8 @@ plt.ylabel(r'Volume (million m$^3$)')
 plt.legend(['Historical','Increase WW Reuse','Repair Leaks','Recharge Basins'],loc='upper right')
 plt.gcf().subplots_adjust(left=0.15,right=.95,bottom=0.1,top=.95)
 
-plt.savefig('model_output\plots\INOUTCumSum_0607.png', dpi=600)
-plt.savefig('model_output\plots\INOUTCumSum_0607.svg')
+plt.savefig('model_files\output\plots\INOUTCumSum_0607.png', dpi=600)
+plt.savefig('model_files\output\plots\INOUTCumSum_0607.svg')
 plt.show()
 
 #%% Time series by location
@@ -257,7 +257,7 @@ plt.xlabel('Year')
 plt.ylabel('Head Elevation')
 plt.title('Head elevation over time at pumping location')
 plt.legend(['Historical','Increased WW Reuse','Repair Leaks','Recharge Basins'])
-plt.savefig('model_output\plots\HDS_Indicator_Pump.svg')
+plt.savefig('model_files\output\plots\HDS_Indicator_Pump.svg')
 plt.close()
 
 #%%
@@ -298,9 +298,9 @@ mound_array = np.zeros((n_scenario,3))
 
 for s, s_name in enumerate(scenario_list):
     
-    with open('model_output\objective_data\WEL_INFO_'+s_name+'.pickle', 'rb') as handle:
+    with open('model_files\output\objective_data\WEL_INFO_'+s_name+'.pickle', 'rb') as handle:
         WEL_INFO = pickle.load(handle)
-    with open('model_output\objective_data\LU_'+s_name+'.pickle', 'rb') as handle:
+    with open('model_files\output\objective_data\LU_'+s_name+'.pickle', 'rb') as handle:
         LU = pickle.load(handle)
     heads = S_heads[s_name]
     
@@ -337,8 +337,8 @@ for o, obj in enumerate([energy,subs,mound]):
 # Flip subsidence measure to be minimizing
 #normalized_o[:,1] = 1 - normalized_o[:,1]
 plt.gcf().subplots_adjust(wspace=0.45,left=0.09,right=.97,bottom=0.15,top=.9)
-plt.savefig('model_output\plots\Objectives_190607.svg')
-plt.savefig('model_output\plots\Objectives_190607.png', dpi=600)
+plt.savefig('model_files\output\plots\Objectives_190607.svg')
+plt.savefig('model_files\output\plots\Objectives_190607.png', dpi=600)
 plt.show()
 
 ##%%
@@ -360,7 +360,7 @@ plt.show()
 
 #%% Head Obsevations
 obsformation = pd.read_csv('data_raw\obs_formation.csv')
-df = pd.read_fwf('model_output\VM_Historical-IH2750.hob.out')
+df = pd.read_fwf('model_files\output\VM_Historical-IH2750.hob.out')
 df.columns = ['simulated','observed','obs_name','nan']
 df = df.drop('nan',axis=1)
 df['time_series'] = np.nan
@@ -433,6 +433,6 @@ for o in obsformation['IDPOZO'].values:
     axes[1].legend(['Simulated','Observed'])
     axes[1].xaxis.label.set_visible(False)
     
-    plt.savefig('model_output\plots\observations\IH_2750\drawdown_'+o+'.jpeg', dpi=300)
+    plt.savefig('model_files\output\plots\observations\IH_2750\drawdown_'+o+'.jpeg', dpi=300)
     plt.close()
     
