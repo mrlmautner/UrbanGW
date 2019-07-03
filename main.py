@@ -31,12 +31,12 @@ exefile = r'C:\WRDAPP\MF2005.1_12\bin\mf2005.exe'
 
 # Parameters
 ## Test Mode
-test = True
+test = False
 test_name = 'Test'
 
 ## Scenario Mode
-plt_scen = False
-run_scenarios = False
+plt_scen = True
+run_scenarios = True
 scenario_names = ['Historical_U','WWTP_U','Leak_U','Basin_U']
 mapTitles = ['Historical','Increased WW Reuse','Repair Leaks','Recharge Basins']
 leak_repair = [0,0,20,0]
