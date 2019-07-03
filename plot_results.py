@@ -277,9 +277,8 @@ plt.show()
 
 #%% Head Obsevations
 obsformation = pd.read_csv('data_raw\obs_formation.csv')
-df = pd.read_fwf('model_files\modflow\VM_Test.hob.out')
-df.columns = ['simulated','observed','obs_name','nan']
-df = df.drop('nan',axis=1)
+df = pd.read_fwf('model_files\modflow\VM_Test.hob.out',widths=[22,19,22])
+df.columns = ['simulated','observed','obs_name']
 df['time_series'] = np.nan
 df['obs_id'] = np.nan
 df['dem'] = np.nan
@@ -287,7 +286,9 @@ df['geo'] = np.nan
 df['ddsimulated'] = np.nan
 df['ddobserved'] = np.nan
 
-obsinfo = hobs.obs_data
+with open(r'model_files\modflow\VM_OBS.pickle', 'rb') as handle:
+    obsinfo = pickle.load(handle)
+
 for i in obsinfo:
     oname = i.obsname
     
@@ -297,8 +298,12 @@ for i in obsinfo:
     df.loc[df['obs_name'].str.contains(oname),'time_series'] = t
     df.loc[df['obs_name'].str.contains(oname),'obs_id'] = oname
     
-    df.loc[df['obs_name'].str.contains(oname),'ddsimulated'] = df[df['obs_name'].str.contains(oname)]['simulated'] - df[df['obs_name'].str.contains(oname)]['simulated'].values[0]
-    df.loc[df['obs_name'].str.contains(oname),'ddobserved'] = df[df['obs_name'].str.contains(oname)]['observed'] - df[df['obs_name'].str.contains(oname)]['observed'].values[0]
+    df.loc[df['obs_name'].str.contains(oname),'ddsimulated'] = df[df['obs_name'].str.contains(oname)][1:]['simulated'] + df[df['obs_name'].str.contains(oname)]['simulated'].values[0]
+    df.loc[df['obs_name']==(oname+'_1'),'ddsimulated'] = df[df['obs_name']==(oname+'_1')]['simulated']
+    df.loc[df['obs_name']==(oname),'ddsimulated'] = df[df['obs_name']==oname]['simulated']
+    df.loc[df['obs_name'].str.contains(oname),'ddobserved'] = df[df['obs_name'].str.contains(oname)][1:]['observed'] + df[df['obs_name'].str.contains(oname)]['observed'].values[0]
+    df.loc[df['obs_name']==(oname+'_1'),'ddobserved'] = df[df['obs_name']==(oname+'_1')]['observed']
+    df.loc[df['obs_name']==(oname),'ddobserved'] = df[df['obs_name']==oname]['observed']
 
 geology = ['Lacustrine','Alluvial','Basalt','Volcaniclastic','Andesite']
 for i, r in obsformation.iterrows():
@@ -306,50 +311,68 @@ for i, r in obsformation.iterrows():
     df.loc[df['obs_id']==r['IDPOZO'],'geo'] = geology[r['GEOLOGY_ZO']-1]
 
 #%%
-ax = sns.scatterplot(x='simulated', y='observed', hue='geo',data=df)
-ax.set_ylim(2100,2700)
-ax.set_xlim(2100,2700)
+from scipy import stats
+
+# get coeffs of linear fit
+x = df['ddsimulated'].values
+y = df['ddobserved'].values
+slope, intercept, r_value, p_value, std_err = stats.linregress(x,y)
+
+# use line_kws to set line label for legend
+ax = sns.regplot(x='ddsimulated', y='ddobserved', data=df, color='b', 
+ line_kws={'label':"y={0:.1f}x+{1:.1f}".format(slope,intercept)})
+ax.legend()
+
+plt.show()
+#sns.scatterplot(x='ddsimulated', y='ddobserved', hue='geo',data=df)
+#ax.set_ylim(2100,2700)
+#ax.set_xlim(2100,2700)
+
 
 #%%
 sns.set_style("whitegrid")
-g = sns.lmplot(x='simulated', y='observed', hue='geo',data=df,legend=False,palette=dict(Alluvial=(1,0.867,0), Basalt=(0,0.788,0.498) ,Volcaniclastic=(0.9, 0, 0.455) ),size=5,aspect=1.2,scatter_kws={'edgecolor':None,'s':10})
+g = sns.lmplot(x='ddsimulated', y='ddobserved', hue='geo',data=df,legend=False,palette=dict(Alluvial=(1,0.867,0), Basalt=(0,0.788,0.498) ,Volcaniclastic=(0.9, 0, 0.455) ),size=5,aspect=1.2,scatter_kws={'edgecolor':None,'s':10})
 plt.plot(np.linspace(2000,2800,1000), np.linspace(2000,2800,1000), 'k',linestyle=':')
-plt.legend(['Tarango (Volcaniclastic)','Alluvial','Fractured Basalt','One-to-one'],loc='best')
+plt.plot(np.linspace(2000,2800,1000), intercept + slope*np.linspace(2000,2800,1000), 'r')
+plt.legend(['Tarango (Volcaniclastic)','Alluvial','Fractured Basalt','One-to-one',"y = {0:.3f}x + {1:.1f}".format(slope,intercept)], loc='lower right')
 plt.xlim(2100,2650)
 plt.ylim(2100,2650)
 plt.ylabel('Observed Head (masl)')
 plt.xlabel('Simulated Head (masl)')
-plt.savefig(r'C:\Users\MM\Google Drive\Davis\Research\Papers\Multi-Objective_Spatial_ValleyMexico\Figures\Sim_vs_Obs-IH2750.jpeg', dpi=600)
-plt.close()
+plt.savefig(r'C:\Users\MM\Google Drive\Davis\Research\Papers\Multi-Objective_Spatial_ValleyMexico\Figures\Sim_vs_Obs-Params-IH2750.png', dpi=600)
+#plt.close()
 #%%
 sns.set_style("whitegrid")
-g = sns.lmplot(x='ddsimulated', y='ddobserved', hue='geo',data=df,legend=False,palette=dict(Alluvial=(1,0.867,0), Basalt=(0,0.788,0.498) ,Volcaniclastic=(0.9, 0, 0.455) ),size=5,aspect=1.2,scatter_kws={'edgecolor':None,'s':10})
+g = sns.lmplot(x='simulated', y='observed', hue='geo',data=df,legend=False,palette=dict(Alluvial=(1,0.867,0), Basalt=(0,0.788,0.498) ,Volcaniclastic=(0.9, 0, 0.455) ),size=5,aspect=1.2,scatter_kws={'edgecolor':None,'s':10})
 plt.plot(np.linspace(-100,100,1000), np.linspace(-100,100,1000), 'k',linestyle=':')
-plt.legend(['Tarango (Volcaniclastic)','Alluvial','Fractured Basalt','One-to-one'],loc='best')
-plt.xlim(-60,60)
-plt.ylim(-60,60)
+plt.legend(['Tarango (Volcaniclastic)','Alluvial','Fractured Basalt','One-to-one'],loc='lower right')
+plt.xlim(-100,100)
+plt.ylim(-100,100)
 plt.ylabel('Observed Head (masl)')
 plt.xlabel('Simulated Head (masl)')
-plt.savefig(r'C:\Users\MM\Google Drive\Davis\Research\Papers\Multi-Objective_Spatial_ValleyMexico\Figures\Sim_vs_Obs-ddn-IH2750.jpeg', dpi=600)
-plt.close()
+plt.savefig(r'C:\Users\MM\Google Drive\Davis\Research\Papers\Multi-Objective_Spatial_ValleyMexico\Figures\Sim_vs_Obs-ddn-Params-IH2750.png', dpi=600)
+#plt.close()
 #%%
-
-for o in obsformation['IDPOZO'].values:
+for o in obsformation['IDPOZO']:
     ddn_data = df[df['obs_id']==o].copy()
     ddn_data['time_series'] = pd.to_timedelta(ddn_data['time_series'],'d') + pd.to_datetime('1984-01-01')
     ddn_data = ddn_data.set_index('time_series')
+    ddn_data['simulated'][0] = 0
+    ddn_data['observed'][0] = 0
+    
     fig, axes = plt.subplots(2, 1, figsize=(5,12))
-    ddn_data['simulated'].plot(ax=axes[0])
-    ddn_data['observed'].plot(ax=axes[0])
+    ddn_data['ddsimulated'].plot(ax=axes[0])
+    ddn_data['ddobserved'].plot(ax=axes[0])
     axes[0].legend(['Simulated','Observed'])
     axes[0].xaxis.label.set_visible(False)
     
-    ddn_data['ddsimulated'].plot(ax=axes[1])
-    ddn_data['ddobserved'].plot(ax=axes[1])
-    axes[1].set_ylim([-35, 10])
+    ddn_data['simulated'].plot(ax=axes[1])
+    ddn_data['observed'].plot(ax=axes[1])
+    axes[1].set_ylim([-50, 20])
     axes[1].legend(['Simulated','Observed'])
     axes[1].xaxis.label.set_visible(False)
     
-    plt.savefig('model_files\output\plots\observations\IH_2750\drawdown_'+o+'.jpeg', dpi=300)
+    plt.tight_layout()
+    plt.savefig('model_files\output\plots\observations\IH_2750\drawdown_'+o+'.png', dpi=300)
     plt.close()
     
