@@ -6,7 +6,7 @@ Created on Mon Feb 18 20:27:21 2019
 """
 
 from ValleMexico_setup import *
-#import plot_results as pltvm
+import plot_results as pltvm
 from objective_function import *
 from gwscripts.optimization import opttools as opt
 from gwscripts.optimization import measureobjectives as mo
@@ -39,7 +39,7 @@ plt_scen = True
 run_scenarios = True
 scenario_names = ['Historical_U','WWTP_U','Leak_U','Basin_U']
 mapTitles = ['Historical','Increased WW Reuse','Repair Leaks','Recharge Basins']
-leak_repair = [0,0,20,0]
+leak_repair = [0,0,15,0]
 num_wwplants = [0,74,0,0]
 num_infbasins = [0,0,0,5]
 cutz = np.loadtxt('model_files\optimization_data\decisions\cutz.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Imports from Cutzamala reservoir system
@@ -49,6 +49,7 @@ int_sw = np.loadtxt('model_files\optimization_data\decisions\int_sw.csv', delimi
 int_ww = np.loadtxt('model_files\optimization_data\decisions\int_ww.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Wastewater reuse within the basin
 new_other = cutz + lerm + pai + int_sw + int_ww # Total of all other water supplies except local groundwater (m3/s)
 new_other = new_other.sum(axis=0) # Total of all other supplies (m3/s)
+x = [0]*4
 
 ## Optimization mode
 run_optimization = False
@@ -77,6 +78,7 @@ if plt_scen:
             scen_time = time.time()
             vmmodel[i] = model(s_name, 455000, 2107000, 539000, 2175000, 500, 1984, 2014, ACTIVE=['data_processed\ACTIVE_VM_LYR1.asc', 'data_processed\ACTIVE_VM_LYR2.asc'], THICKNESS=['data_processed\THICK1_VM.asc', 'data_processed\THICK2_VM.asc'], GEO=['data_processed\GEO_VM_LYR1.asc', 'data_processed\GEO_VM_LYR2.asc'], DEM='data_processed\DEM_VM.asc', IH='data_processed\IH_1984_LT2750.asc', MUN='data_processed\MUN_VM.asc', PAR='model_files\modflow\params.pval', exe_file=exefile)
             vmmodel[i].run_scenario_model(num_wwplants[i], num_infbasins[i], leak_repair[i])
+            x[i] = vmmodel[i].ratiogn
             print(s_name, 'Scenario completed in', str(time.time() - scen_time), 'seconds')
     else:
         # If the results have already been generated, open results from saved files
@@ -85,22 +87,22 @@ if plt_scen:
             
             vmmodel[i] = model(s_name, 455000, 2107000, 539000, 2175000, 500, 1984, 2014, ACTIVE=['data_processed\ACTIVE_VM_LYR1.asc', 'data_processed\ACTIVE_VM_LYR2.asc'], THICKNESS=['data_processed\THICK1_VM.asc', 'data_processed\THICK2_VM.asc'], GEO=['data_processed\GEO_VM_LYR1.asc', 'data_processed\GEO_VM_LYR2.asc'], DEM='data_processed\DEM_VM.asc', IH='data_processed\IH_1984_LT2750.asc', MUN='data_processed\MUN_VM.asc', PAR='model_files\modflow\params.pval', exe_file=exefile)
             
-#            with open('model_output\objective_data\WEL_INFO_'+s_name+'.pickle', 'rb') as handle:
-#                vmmodel[i].wells = pickle.load(handle)
-#            with open('model_output\objective_data\LU_'+s_name+'.pickle', 'rb') as handle:
-#                vmmodel[i].landuse = pickle.load(handle)
+            with open('model_files\optimization_data\objectives\WEL_INFO_'+s_name+'.pickle', 'rb') as handle:
+                vmmodel[i].wells = pickle.load(handle)
+            with open('model_files\optimization_data\objectives\LU_'+s_name+'.pickle', 'rb') as handle:
+                vmmodel[i].landuse = pickle.load(handle)
 
     # Retrieve and plot head changes over model period  
     s_heads = pltvm.get_heads(scenario_names)
     
-    pltvm.plt_head_change(scenario_names, mapTitles, s_heads, vmmodel[0].geo, vmmodel[0].actv2)
+    pltvm.plt_head_change(scenario_names, mapTitles, s_heads, vmmodel[0].geo[1], vmmodel[0].actv[1])
     
     # Calculate and plot objective performance
     print('Calculating scenario performance under objectives')
     energy, subs, mound = (np.zeros(num_scenarios) for i in range(3))
     
     for i, s_name in enumerate(scenario_names):
-        energy[i], subs[i], mound[i] = mo.get_objectives(s_heads[s_name], vmmodel[i].wells, vmmodel[i].landuse, vmmodel[i].dem, vmmodel[i].actv1, vmmodel[i].th1)
+        energy[i], subs[i], mound[i] = mo.get_objectives(s_heads[s_name], vmmodel[i].wells, vmmodel[i].landuse, vmmodel[i].dem, vmmodel[i].actv[0], vmmodel[i].thck[0])
     
     mound = mound/min(mound)
     

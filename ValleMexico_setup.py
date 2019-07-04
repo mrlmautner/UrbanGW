@@ -8,7 +8,7 @@ Created on Thu Apr  5 15:23:15 2018
 import flopy
 import numpy as np
 import time
-#import pickle
+import pickle
 import calendar
 
 class model():
@@ -152,17 +152,20 @@ class model():
                 P = float(self.altpump[np.where(self.altpump==wellmun)[0],1]) # the ratio of new pumping to old pumping
             else:
                 P = 1
-                                
+                    
             # Assign flow rate for each well to all stress periods indicated by start and end years
             for per in range(int(New_WEL[w,2] - 1),int(New_WEL[w,3] - 1)):
                 if pumpwell:
-                    P *= self.ratiogn['PER'][per]
+                    R = self.ratiogn['PER'][per]
+                else:
+                    R = 1
+                
                 try:
-                    WEL_Dict[per].append([LYR,r,c,New_WEL[w,4]*WEL_mult*P])
-                    INFO_Dict[per].append([LYR,r,c,New_WEL[w,4]*WEL_mult*P,wellmun]) # layer, row, column, volume (m3/d), municipality, well type
+                    WEL_Dict[per].append([LYR,r,c,New_WEL[w,4]*WEL_mult*P*R])
+                    INFO_Dict[per].append([LYR,r,c,New_WEL[w,4]*WEL_mult*P*R,wellmun]) # layer, row, column, volume (m3/d), municipality, well type
                 except:
-                    WEL_Dict[per] = [[LYR,r,c,New_WEL[w,4]*WEL_mult*P]]
-                    INFO_Dict[per]= [[LYR,r,c,New_WEL[w,4]*WEL_mult*P,wellmun]]
+                    WEL_Dict[per] = [[LYR,r,c,New_WEL[w,4]*WEL_mult*P*R]]
+                    INFO_Dict[per]= [[LYR,r,c,New_WEL[w,4]*WEL_mult*P*R,wellmun]]
                     
         return WEL_Dict,INFO_Dict
     
@@ -314,9 +317,9 @@ class model():
                 LU[LUset]['LIST'][LUtype] = LU[LUset]['LIST'][LUtype][LU[LUset]['LIST'][LUtype][:,2]>0,:]
     
         # Save land use database for use in mounding objective
-#        winfofile = r'model_files\optimization_data\objectives\LU_' + self.name + '.pickle'
-#        with open(winfofile, 'wb') as handle:
-#            pickle.dump(LU, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        winfofile = r'model_files\optimization_data\objectives\LU_' + self.name + '.pickle'
+        with open(winfofile, 'wb') as handle:
+            pickle.dump(LU, handle, protocol=pickle.HIGHEST_PROTOCOL)
         
         '''
         Recharge
@@ -355,7 +358,7 @@ class model():
         CAEM_array = np.loadtxt(r'data_processed\wells\PUMP_C.csv', delimiter=',', skiprows=1, usecols=[1,2,7,8,11]) # pumping in m3 per day
         WEL_DICT, WEL_INFO = self.addNewWells(CAEM_array, LYR=1, WEL_Dict=WEL_DICT, INFO_Dict=WEL_INFO, pumpwell=True)
             
-        SACM_array = np.loadtxt(r'data_processed\wells\PUMP_S.csv',delimiter=',', skiprows=1, usecols=[1,2,7,8,11]) # pumping in m3 per day
+        SACM_array = np.loadtxt(r'data_processed\wells\PUMP_S-ERRORS.csv',delimiter=',', skiprows=1, usecols=[1,2,7,8,11]) # pumping in m3 per day
         WEL_DICT, WEL_INFO = self.addNewWells(SACM_array, LYR=1, WEL_Dict=WEL_DICT, INFO_Dict=WEL_INFO, pumpwell=True)
         
         REPDA_array = np.loadtxt(r'data_processed\wells\PUMP_RC_Q-Repeats.csv', delimiter=',', skiprows=1, usecols=[1,2,4,5,11,16]) # pumping in m3 per day
@@ -368,7 +371,7 @@ class model():
         # Loop through model phases
         for i, l in enumerate(LU_PAR):
             # Calculate unaccounted for water supply by subtraction to determine pumping in REPDA dataset
-            total_mthly_pumping = self.twateruse[i] - i_other[i] # Monthly pumping is equal to the total water use minus other supply (m3/d)
+            total_mthly_pumping = self.twateruse[i] - new_other[i] # Monthly pumping is equal to the total water use minus other supply (m3/d)
             
             LEAK_array = np.zeros((LU[l]['LIST']['URBAN'].shape[0] * (PHASE_PER[i + 1] - PHASE_PER[i]),5))
             j = 0
@@ -382,6 +385,7 @@ class model():
                 WEL_DICT, WEL_INFO = self.addNewWells(New_WEL=REPDA_array[REPDA_array[:,5]==1,:5], LYR=1, WEL_Dict=WEL_DICT, INFO_Dict=WEL_INFO, WEL_mult=self.params['Q'][i], start=p, end=(p + 1), pumpwell=True)                
                 
                 p_multiplier = (unknown_pumping - total_urban_repda*self.params['Q'][i]*self.ratiogn['PHASE'][i])/total_periurban_repda # Determine the monthly multiplier by dividing the estimated unknown pumping by the total pumping in the REPDA dataset
+                
                 # Peri-urban wells
                 WEL_DICT, WEL_INFO = self.addNewWells(New_WEL=REPDA_array[REPDA_array[:,5]==0,:5], LYR=1, WEL_Dict=WEL_DICT, INFO_Dict=WEL_INFO, WEL_mult=p_multiplier, start=p, end=(p + 1), pumpwell=True)
 
@@ -501,11 +505,11 @@ class model():
             
         print('WEL_Dict generated in', str(time.time() - newtime), 'seconds')
         
-#        ## Create pickle file of Well Data to be available for post processing of well energy use objective
-#        winfofile = r'model_files\optimization_data\objectives\WEL_INFO_' + self.name + '.pickle'
-#        with open(winfofile, 'wb') as handle:
-#            pickle.dump(WEL_INFO, handle, protocol=pickle.HIGHEST_PROTOCOL)
-#        print('WEL_Dict saved in',str(time.time()-newtime),'seconds')
+        ## Create pickle file of Well Data to be available for post processing of well energy use objective
+        winfofile = r'model_files\optimization_data\objectives\WEL_INFO_' + self.name + '.pickle'
+        with open(winfofile, 'wb') as handle:
+            pickle.dump(WEL_INFO, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        print('WEL_Dict saved in',str(time.time()-newtime),'seconds')
         
         ## Drains
         drain_data = np.loadtxt(r'data_processed\drains\DRN_order3.csv', delimiter=',', skiprows=1)

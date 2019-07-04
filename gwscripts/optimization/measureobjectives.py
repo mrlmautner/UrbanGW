@@ -23,7 +23,7 @@ def measureEnergy(heads,SUPPLY_DICT,DEM):
         # Start in year 2
         if i > 12:
             d = calendar.monthrange(1984+math.floor(i/12),(i%12)+1)[1] # number of days in stress period
-            h = heads.get_data(kstpkper=((d-1),i),mflay=1) # heads binary file for dth day of stress period
+            h = heads.get_data(kstpkper=(8,i),mflay=1) # heads binary file for dth day of stress period
             
             # loop through all well values
             for n in p:
@@ -46,7 +46,7 @@ def measureSubidence(heads,DEM,ACTIVE_LYR1,THICK1):
 #    lyr2top = DEM-THICK1 # the elevation of the top of layer 2
     
     # check during the reference month of the last year (March)
-    h = heads.get_data(kstpkper=(30,350),mflay=1) # heads binary file for dth day of stress period
+    h = heads.get_data(kstpkper=(8,350),mflay=1) # heads binary file for dth day of stress period
     # loop through all cells
     for i in range(int(ACTIVE_LYR1.shape[0])):    
         for j in range(int(ACTIVE_LYR1.shape[1])):
@@ -66,7 +66,7 @@ def measureMound(heads,DEM,ACTIVE_LYR1,LU,PhasePer):
     
     for t in range(14,360):
         d = calendar.monthrange(1984+math.floor(t/12),(t%12)+1)[1] # number of days in stress period
-        h = heads.get_data(kstpkper=((d-1),t),mflay=1) # heads binary file for dth day of stress period
+        h = heads.get_data(kstpkper=(8,t),mflay=1) # heads binary file for dth day of stress period
         
         if t < PhasePer[0]:
             LUset = '1990'
