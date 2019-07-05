@@ -97,7 +97,7 @@ class model():
         
         layvka = [1]*self.nlay # Indicates that VANI represents the ratio of H:V hydraulic conductivity
         
-        lpf = flopy.modflow.mflpf.ModflowLpf(mf, ipakcb=9, laytyp=[0,0], layvka=layvka, hk=geoarrays['HK'], vka=geoarrays['VANI'], ss=geoarrays['SS'])
+        lpf = flopy.modflow.mflpf.ModflowLpf(mf, ipakcb=9, laytyp=[1,0], layvka=layvka, hk=geoarrays['HK'], vka=geoarrays['VANI'], ss=geoarrays['SS'])
         
         return mf, dis, bas, lpf
     
@@ -222,7 +222,7 @@ class model():
 #                spd[y * 12 + m - 1, calendar.monthrange(self.strt_yr + y, m)[1] - 1] = data2record.copy() # If time steps in month is equal to number of days
 #                for d in range(0,calendar.monthrange(self.strt_yr + y, m)[1]):
 #                    spd[y * 12 + m - 1, d] = data2record.copy()
-        spd[14,9] = ['save head', 'save drawdown', 'save budget', 'print budget', 'ddreference']
+        spd[26,8] = ['save head', 'save drawdown', 'save budget', 'print budget', 'ddreference']
         oc = flopy.modflow.ModflowOc(mf, stress_period_data=spd, compact=True)
 
         # Add PCG package to the MODFLOW model
@@ -552,6 +552,8 @@ class model():
         success, buff = mf.run_model()
         
         print('MODFLOW model completed run in', str(time.time() - newtime), 'seconds')
+        
+        print('Wrapper completed run in', str(time.time() - timestart), 'seconds')
         
         self.wwtps = WWTPs
         self.basins = Basins

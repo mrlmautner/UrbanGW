@@ -435,19 +435,19 @@ def plt_simvsobs(s_name, filename, df=0, obsformation=0):
         df, obsformation = process_hobs(s_name)
         
     # get coeffs of linear fit
-    y = df['absobserved'].values
-    x = df['abssimulated'].values
+    x = df['absobserved'].values
+    y = df['abssimulated'].values
     slope, intercept, r_value, p_value, std_err = stats.linregress(x,y)
     
     sns.set_style("whitegrid")
-    g = sns.lmplot(y='absobserved', x='abssimulated', hue='geo',data=df,legend=False,palette=dict(Alluvial=(1,0.867,0), Basalt=(0,0.788,0.498) ,Volcaniclastic=(0.9, 0, 0.455) ),size=5,aspect=1.2,scatter_kws={'edgecolor':"none",'s':10, 'alpha':0.3})
+    g = sns.lmplot(x='absobserved', y='abssimulated', hue='geo',data=df,legend=False,palette=dict(Alluvial=(1,0.867,0), Basalt=(0,0.788,0.498) ,Volcaniclastic=(0.9, 0, 0.455) ),size=5,aspect=1.2,scatter_kws={'edgecolor':"none",'s':10, 'alpha':0.3})
     plt.plot(np.linspace(2000,2800,1000), np.linspace(2000,2800,1000), 'k',linestyle=':')
     plt.plot(np.linspace(2000,2800,1000), intercept + slope*np.linspace(2000,2800,1000), 'grey', linewidth=2)
     plt.legend(['Tarango (Volcaniclastic)','Alluvial','Fractured Basalt','One-to-one',"y = {0:.3f}x + {1:.1f}".format(slope,intercept)], loc='upper left')
     plt.xlim(2100,2650)
     plt.ylim(2100,2650)
-    plt.ylabel('Observed Head (masl)')
-    plt.xlabel('Simulated Head (masl)')
+    plt.xlabel('Observed Head (masl)')
+    plt.ylabel('Simulated Head (masl)')
     plt.savefig(filename, dpi=600)
     #plt.close()
     
@@ -462,19 +462,19 @@ def plt_simvsobsddn(s_name, filename, df=0, obsformation=0):
     df.loc[df['observed']>1000, 'observed'] = 0
     
     # get coeffs of linear fit
-    y = df['observed'].values
-    x = df['simulated'].values
+    x = df['observed'].values
+    y = df['simulated'].values
     slope, intercept, r_value, p_value, std_err = stats.linregress(x,y)
     
     sns.set_style("whitegrid")
-    g = sns.lmplot(y='observed', x='simulated', hue='geo',data=df,legend=False,palette=dict(Alluvial=(1,0.867,0), Basalt=(0,0.788,0.498) ,Volcaniclastic=(0.9, 0, 0.455) ),size=5,aspect=1.2,scatter_kws={'edgecolor':None,'s':10, 'alpha':0.3})
-    plt.plot(np.linspace(-150,50,1000), np.linspace(-100,50,1000), 'k',linestyle=':')
-    plt.plot(np.linspace(-150,50,1000), intercept + slope*np.linspace(-100,50,1000), 'grey', linewidth=2)
-    plt.legend(['Tarango (Volcaniclastic)','Alluvial','Fractured Basalt','One-to-one'],loc='lower left')
-    plt.xlim(-150,50)
-    plt.ylim(-150,50)
-    plt.ylabel('Observed Drawdown (m)')
-    plt.xlabel('Simulated Drawdown (m)')
+    g = sns.lmplot(x='observed', y='simulated', hue='geo',data=df,legend=False,palette=dict(Alluvial=(1,0.867,0), Basalt=(0,0.788,0.498) ,Volcaniclastic=(0.9, 0, 0.455) ),size=5,aspect=1.2,scatter_kws={'edgecolor':"none",'s':10, 'alpha':0.3})
+    plt.plot(np.linspace(-60,60,1000), np.linspace(-60,60,1000), 'k',linestyle=':')
+    plt.plot(np.linspace(-60,60,1000), intercept + slope*np.linspace(-60,60,1000), 'grey', linewidth=2)
+    plt.legend(['Tarango (Volcaniclastic)','Alluvial','Fractured Basalt','One-to-one',"y = {0:.3f}x + {1:.1f}".format(slope,intercept)],loc='upper left')
+    plt.xlim(-60,60)
+    plt.ylim(-60,60)
+    plt.xlabel('Observed Drawdown (m)')
+    plt.ylabel('Simulated Drawdown (m)')
     plt.savefig(filename, dpi=600)
     
     return slope, intercept, r_value, p_value, std_err 
