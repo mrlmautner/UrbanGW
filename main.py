@@ -31,17 +31,18 @@ exefile = r'C:\WRDAPP\MF2005.1_12\bin\mf2005.exe'
 
 # Parameters
 ## Test Mode
-test = True
+test = False
 test_name = 'Test'
 
 ## Scenario Mode
-plt_scen = False
-run_scenarios = False
-scenario_names = ['Historical_U','WWTP_U','Leak_U','Basin_U']
+plt_scen = True
+run_scenarios = True
+scenario_names = ['Historical','WWTP','Leak','Basin']
 mapTitles = ['Historical','Increased WW Reuse','Repair Leaks','Recharge Basins']
-leak_repair = [0,0,15,0]
+leak_repair = [0,0,20,0]
 num_wwplants = [0,74,0,0]
 num_infbasins = [0,0,0,5]
+clay_layer = np.loadtxt('data_processed\ACTIVE_VM_LYR1.asc',skiprows=6)
 cutz = np.loadtxt('model_files\optimization_data\decisions\cutz.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Imports from Cutzamala reservoir system
 lerm = np.loadtxt('model_files\optimization_data\decisions\lerm.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Imports from Lerma groundwater system
 pai = np.loadtxt('model_files\optimization_data\decisions\pai.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Imports from PAI groundwater system external to the model
@@ -61,7 +62,7 @@ opt_run = str(max_nfes)+'nfe'
 
 ####### DON'T MESS WITH ANYTHING BELOW THIS LINE IF YOU AREN'T SURE #######
 if test:
-    testModel = model(test_name, 455000, 2107000, 539000, 2175000, 500, 1984, 2014, ACTIVE=['data_processed\ACTIVE_VM_LYR2.asc', 'data_processed\ACTIVE_VM_LYR2.asc'], THICKNESS=['data_processed\THICK1_VM.asc', 'data_processed\THICK2_VM.asc'], GEO=['data_processed\GEO_VM_LYR1.asc', 'data_processed\GEO_VM_LYR2.asc'], DEM='data_processed\DEM_VM.asc', IH='data_processed\IH_1984_LT2750.asc', MUN='data_processed\MUN_VM.asc', PAR='model_files\modflow\params.pval', exe_file=exefile)
+    testModel = model(test_name, 455000, 2107000, 539000, 2175000, 500, 1984, 2014, ACTIVE=['data_processed\ACTIVE_VM_LYR1.asc', 'data_processed\ACTIVE_VM_LYR2.asc'], THICKNESS=['data_processed\THICK1_VM.asc', 'data_processed\THICK2_VM.asc'], GEO=['data_processed\GEO_VM_LYR1.asc', 'data_processed\GEO_VM_LYR2.asc'], DEM='data_processed\DEM_VM.asc', IH='data_processed\IH_1984_LT2750.asc', MUN='data_processed\MUN_VM.asc', PAR='model_files\modflow\params.pval', exe_file=exefile)
     testModel.run_scenario_model(0,0,0)
 
 if plt_scen:
@@ -102,9 +103,9 @@ if plt_scen:
     energy, subs, mound = (np.zeros(num_scenarios) for i in range(3))
     
     for i, s_name in enumerate(scenario_names):
-        energy[i], subs[i], mound[i] = mo.get_objectives(s_heads[s_name], vmmodel[i].wells, vmmodel[i].landuse, vmmodel[i].dem, vmmodel[i].actv[0], vmmodel[i].thck[0])
+        energy[i], subs[i], mound[i] = mo.get_objectives(s_heads[s_name], vmmodel[i].wells, vmmodel[i].landuse, vmmodel[i].dem, vmmodel[i].geo[0], vmmodel[i].thck[0])
     
-    mound = mound/min(mound)
+    mound = mound*100# mound/min(mound)
     
     pltvm.plt_scen_objectives(scenario_names, num_scenarios, [energy, subs, mound])
     

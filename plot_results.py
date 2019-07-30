@@ -16,6 +16,13 @@ import pickle
 from scipy import stats
 
 sns.set(style="white", palette="muted", color_codes=True)
+plt.rcParams['legend.fontsize'] = 20
+plt.rcParams['axes.titlesize'] = 22
+plt.rcParams['axes.labelsize'] = 22
+plt.rcParams['xtick.labelsize'] = 18
+plt.rcParams['ytick.labelsize'] = 18
+plt.rcParams['figure.titlesize'] = 24
+plt.rcParams.update({'font.size': 20})
 
 def get_heads(scenario_list):
     S_heads = {}
@@ -87,10 +94,18 @@ def plt_scen_objectives(scenario_names, num_scen, objectives):
     objectives is a list with an array of length number of scenarios for each objective
     '''
     print('Plotting scenario performance under objectives...')
+    plt.rcParams['legend.fontsize'] = 20
+    plt.rcParams['axes.titlesize'] = 22
+    plt.rcParams['axes.labelsize'] = 22
+    plt.rcParams['xtick.labelsize'] = 18
+    plt.rcParams['ytick.labelsize'] = 18
+    plt.rcParams['figure.titlesize'] = 24
+    plt.rcParams.update({'font.size': 20})
+    
     c = ['k','goldenrod','blue','darkgreen']
     barWidth = 0.1
     r = np.arange(num_scen)*0.1 # bar position
-    y_label = ['Kilowatt Hours','Average Head Below top of Clay Layer','Ratio to Historical Mounding']
+    y_label = ['Pumping Energy (kWh)','Depth to Groundwater in Clay (m)','Percent of Urban Cells Flooded']
     obj_title = ['Energy Use','Subsidence Avoidance','Urban Mounding']
 
     normalized_o = np.zeros((num_scen, len(objectives)))
@@ -122,53 +137,59 @@ def parallel_axis(nondom_results, obj_labels, opt_run):
     plt.savefig('parallelaxis_' + opt_run + '.png')
     plt.close()
 
-#import flopy
-#import numpy as np
-#import matplotlib.pyplot as plt
-#import flopy.utils.binaryfile as bf
-#from matplotlib import cm
-#import pandas as pd
-#import calendar
-#import pickle
+def get_budgets(scenario_list, mapTitles, s_heads):
+    # Budget
+    df_Bdget = {}
+    df_CumSum = {}
+    
+    for s_name in scenario_list:
+        mf_list = flopy.utils.MfListBudget('model_files\modflow\VM_'+s_name+".list")
+        incremental, cumulative = mf_list.get_budget()
+    
+        df_Bdget[s_name], df_CumSum[s_name] = mf_list.get_dataframes(start_datetime="04-30-1984")
+        
+        mthly_Bdget = df_Bdget[s_name].drop(['CONSTANT_HEAD_IN', 'TOTAL_IN', 'CONSTANT_HEAD_OUT', 'RECHARGE_OUT', 'TOTAL_OUT', 'IN-OUT', 'PERCENT_DISCREPANCY'], axis=1)
+        
+        mthly_Bdget['STORAGE_OUT'] = mthly_Bdget['STORAGE_OUT'].apply(lambda x: x*-1)
+        mthly_Bdget['WELLS_OUT'] = mthly_Bdget['WELLS_OUT'].apply(lambda x: x*-1)
+#        mthly_Bdget['DRAINS_OUT'] = mthly_Bdget['DRAINS_OUT'].apply(lambda x: x*-1)
+        mthly_Bdget = mthly_Bdget.multiply(30/1000000)
+        cols = mthly_Bdget.columns.tolist()
+        # reorder columns
+        cols = [cols[1]] + [cols[2]] + [cols[0]] + [cols[4]] + [cols[3]] 
+        # "commit" the reordering
+        mthly_Bdget = mthly_Bdget[cols]
+        
+    for s_name in scenario_list:
+        df_CumSum[s_name]['IN'] = df_CumSum[s_name]['RECHARGE_IN'].divide(1000000) + df_CumSum[s_name]['WELLS_IN'].divide(1000000)
+        df_CumSum[s_name]['OUT'] = df_CumSum[s_name]['WELLS_OUT'].divide(1000000) #+ df_CumSum[s_name]['DRAINS_OUT'].divide(1000000)
+        df_CumSum[s_name]['INOUTCUMSUM'] = df_CumSum[s_name]['IN'] - df_CumSum[s_name]['OUT']
+    
+    return df_Bdget, mthly_Bdget, df_CumSum
+    
+def plt_cum_sum(filename, scenario_list, mapTitles, df_CumSum, start='01-31-1985', end='12-31-2013'):
+    # Plotting defaults
+    l = [4,2,2,2]
+    c = ['k','goldenrod','blue','darkgreen']
+    mark = ['-','-','-','--']
+    
+    for i,s_name in enumerate(scenario_list):
+        df_CumSum[s_name].INOUTCUMSUM[start:end].plot(linewidth=l[i],color=c[i],style=mark[i])
+        
+    plt.ylabel(r'Volume (million m$^3$)')
+    #plt.xlabel(r'Year')
+    #plt.ylim(-8,10)
+    #plt.title('Cumulative In - Out')
+    plt.legend(mapTitles,loc='lower left')
+    plt.gcf().subplots_adjust(left=0.15,right=.95,bottom=0.1,top=.95)
+    
+    plt.savefig(filename, dpi=600)
+    plt.show()
+    
 ##from gwscripts.dataprocessing import gengriddata as gen
 #from gwscripts.optimization import measureobjectives as mo
-#import seaborn as sns
 #
-#sns.set(style="white", palette="muted", color_codes=True)
-#plt.rcParams['legend.fontsize'] = 20
-#plt.rcParams['axes.titlesize'] = 22
-#plt.rcParams['axes.labelsize'] = 22
-#plt.rcParams['xtick.labelsize'] = 18
-#plt.rcParams['ytick.labelsize'] = 18
-#plt.rcParams['figure.titlesize'] = 24
-#plt.rcParams.update({'font.size': 20})
-#
-##%%
-#
-#xll = 455000
-#yll = 2107000
-#xur = 539000
-#yur = 2175000
-#cellsize = 500
-#
-#STRT_YEAR = 1984
-#END_YEAR = 2014
-#
-#ncol = int((xur-xll)/cellsize) # Number of rows
-#nrow = int((yur-yll)/cellsize) # Number of columns
-#
-## Load datasets
-#ACTIVE_LYR1 = np.loadtxt('data_processed\ACTIVE_VM_LYR1.asc',skiprows=6)
-#ACTIVE_LYR2 = np.loadtxt('data_processed\ACTIVE_VM_LYR2.asc',skiprows=6)
-#TH1 = np.loadtxt('data_processed\THICK1_VM.asc',skiprows=6)
-#DEM = np.loadtxt('data_processed\DEM_VM.asc',skiprows=6)
-#GEO = np.loadtxt('data_processed\GEO_VM_LYR2.asc',skiprows=6)
-#
-## Plotting defaults
-#l = [4,2,2,2]
-#c = ['k','goldenrod','blue','darkgreen']
-#mark = ['-','-','-','--']
-#
+
 #scenario_list = ['Historical','WWTP','Leak','Basin']
 ##%% Head Dictionary
 #S_heads = {}
@@ -403,6 +424,8 @@ def process_hobs(s_name):
     df['geo'] = np.nan
     df['abssimulated'] = np.nan
     df['absobserved'] = np.nan
+    df['abssimulated1'] = np.nan
+    df['absobserved1'] = np.nan
     
     with open(r'model_files\modflow\VM_OBS.pickle', 'rb') as handle:
         obsinfo = pickle.load(handle)
@@ -417,11 +440,12 @@ def process_hobs(s_name):
         df.loc[df['obs_name'].str.contains(oname),'obs_id'] = oname
         
         df.loc[df['obs_name'].str.contains(oname),'abssimulated'] = df[df['obs_name'].str.contains(oname)][1:]['simulated'] + df[df['obs_name'].str.contains(oname)]['simulated'].values[0]
-        df.loc[df['obs_name']==(oname+'_1'),'abssimulated'] = df[df['obs_name']==(oname+'_1')]['simulated']
         df.loc[df['obs_name']==(oname),'abssimulated'] = df[df['obs_name']==oname]['simulated']
         df.loc[df['obs_name'].str.contains(oname),'absobserved'] = df[df['obs_name'].str.contains(oname)][1:]['observed'] + df[df['obs_name'].str.contains(oname)]['observed'].values[0]
-        df.loc[df['obs_name']==(oname+'_1'),'absobserved'] = df[df['obs_name']==(oname+'_1')]['observed']
         df.loc[df['obs_name']==(oname),'absobserved'] = df[df['obs_name']==oname]['observed']
+        
+        df.loc[df['obs_name']==(oname+'_1'),'abssimulated1'] = df[df['obs_name']==(oname+'_1')]['simulated']
+        df.loc[df['obs_name']==(oname+'_1'),'absobserved1'] = df[df['obs_name']==(oname+'_1')]['observed']
     
     geology = ['Lacustrine','Alluvial','Basalt','Volcaniclastic','Andesite']
     for i, r in obsformation.iterrows():
@@ -435,12 +459,14 @@ def plt_simvsobs(s_name, filename, df=0, obsformation=0):
         df, obsformation = process_hobs(s_name)
         
     # get coeffs of linear fit
-    x = df['absobserved'].values
-    y = df['abssimulated'].values
+    x = df['absobserved1'].values
+    x = x[~np.isnan(x)]
+    y = df['abssimulated1'].values
+    y = y[~np.isnan(y)]
     slope, intercept, r_value, p_value, std_err = stats.linregress(x,y)
     
     sns.set_style("whitegrid")
-    g = sns.lmplot(x='absobserved', y='abssimulated', hue='geo',data=df,legend=False,palette=dict(Alluvial=(1,0.867,0), Basalt=(0,0.788,0.498) ,Volcaniclastic=(0.9, 0, 0.455) ),size=5,aspect=1.2,scatter_kws={'edgecolor':"none",'s':10, 'alpha':0.3})
+    g = sns.lmplot(x='absobserved1', y='abssimulated1', hue='geo',data=df,legend=False,palette=dict(Alluvial=(1,0.867,0), Basalt=(0,0.788,0.498) ,Volcaniclastic=(0.9, 0, 0.455) ),size=5,aspect=1.2,scatter_kws={'edgecolor':"none",'s':10, 'alpha':0.3})
     plt.plot(np.linspace(2000,2800,1000), np.linspace(2000,2800,1000), 'k',linestyle=':')
     plt.plot(np.linspace(2000,2800,1000), intercept + slope*np.linspace(2000,2800,1000), 'grey', linewidth=2)
     plt.legend(['Tarango (Volcaniclastic)','Alluvial','Fractured Basalt','One-to-one',"y = {0:.3f}x + {1:.1f}".format(slope,intercept)], loc='upper left')

@@ -75,7 +75,7 @@ class model():
         # Active areas
         ibound = np.ones((self.nlay, self.nrow, self.ncol), dtype=np.int32)
         for a, active in enumerate(self.actv):
-            ibound[b,:,:] = active # Current layer active area
+            ibound[a,:,:] = active # Current layer active area
         
         # Variables for the BAS package
         strt = np.array([self.ih]*2)
@@ -88,16 +88,16 @@ class model():
         geoarrays = {}
         
         # Loop through the layers and formations for each layer to apply the geologic parameters to each array
-        for p in ['HK', 'VANI', 'SS']:   
+        for p in ['HK', 'VANI', 'SS', 'SY']:   
             geoarrays[p] = np.zeros((self.nlay,self.nrow,self.ncol))
             
             for l in range(self.nlay):
                 for f, fval in enumerate(self.params[p]):
-                    geoarrays[p][l,:,:] += (self.geo[l] == f) * fval
-        
+                    geoarrays[p][l,:,:] += (self.geo[l] == f+1) * fval
+            
         layvka = [1]*self.nlay # Indicates that VANI represents the ratio of H:V hydraulic conductivity
         
-        lpf = flopy.modflow.mflpf.ModflowLpf(mf, ipakcb=9, laytyp=[1,0], layvka=layvka, hk=geoarrays['HK'], vka=geoarrays['VANI'], ss=geoarrays['SS'])
+        lpf = flopy.modflow.mflpf.ModflowLpf(mf, ipakcb=9, laytyp=[0,0], layvka=layvka, hk=geoarrays['HK'], vka=geoarrays['VANI'], ss=geoarrays['SS'], sy=geoarrays['SY'])#, laywet=[1,1])
         
         return mf, dis, bas, lpf
     
@@ -501,7 +501,7 @@ class model():
         ## Cost attributed to building recharge basins
         cost += num_RCHBASIN * 20
         
-        wel = flopy.modflow.ModflowWel(mf, stress_period_data=WEL_DICT)
+        wel = flopy.modflow.ModflowWel(mf, stress_period_data=WEL_DICT, options=['NOPRINT'])
             
         print('WEL_Dict generated in', str(time.time() - newtime), 'seconds')
         
@@ -511,21 +511,21 @@ class model():
             pickle.dump(WEL_INFO, handle, protocol=pickle.HIGHEST_PROTOCOL)
         print('WEL_Dict saved in',str(time.time()-newtime),'seconds')
         
-        ## Drains
-        drain_data = np.loadtxt(r'data_processed\drains\DRN_order3.csv', delimiter=',', skiprows=1)
-        DRN_DICT = {}
-        if drains:
-            drain_list = []
-            for drn in range(0,drain_data.shape[0]):
-                r = int(drain_data[drn,0])
-                c = int(drain_data[drn,1])
-                drain_list.append([0,r,c,self.dem[r,c],drain_data[drn,2]*self.params['DRN'][0]])
-            for per in range(PHASE_PER[phases]):
-                DRN_DICT[per] = drain_list
-            self.drains = DRN_DICT
-            
-            drn = flopy.modflow.ModflowDrn(mf, stress_period_data=DRN_DICT)
-                    
+#        ## Drains
+#        drain_data = np.loadtxt(r'data_processed\drains\DRN_order3.csv', delimiter=',', skiprows=1)
+#        DRN_DICT = {}
+#        if drains:
+#            drain_list = []
+#            for drn in range(0,drain_data.shape[0]):
+#                r = int(drain_data[drn,0])
+#                c = int(drain_data[drn,1])
+#                drain_list.append([0,r,c,self.dem[r,c],drain_data[drn,2]*self.params['DRN'][0]])
+#            for per in range(PHASE_PER[phases]):
+#                DRN_DICT[per] = drain_list
+#            self.drains = DRN_DICT
+#            
+#            drn = flopy.modflow.ModflowDrn(mf, stress_period_data=DRN_DICT, options=['NOPRINT'])
+#                    
         # Generate output control and solver MODFLOW packages 
         oc, pcg = self.outputControl(mf)
         
