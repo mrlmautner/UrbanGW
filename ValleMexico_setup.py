@@ -169,7 +169,7 @@ class model():
                     
         return WEL_Dict,INFO_Dict
     
-    def addRecharge(self,LU_arrays, PRECIP, start=0, end=0, RCH_Dict=0, RCH_mult=[1,1,1], dateType='per'):
+    def addRecharge(self,LU_arrays, PRECIP, start=0, end=0, RCH_Dict=0, RCH_mult=[1,1,1,1], dateType='per'):
         '''
         Outputs a dictionary of recharge arrays based on land use multiplier, land use cover, and precipitation input
         LU_arrays: dictionary with 3 eantries, one for each land use type which contains gridded percent amounts for each land use type
@@ -183,7 +183,7 @@ class model():
         
         # If the recharge is for the first time step, apply only to the first time step
         if start == 0:
-            for l, landuse in enumerate(['URBAN','NATURAL','WATER']):
+            for l, landuse in enumerate(['URBAN','NATURAL-H','NATURAL-L','WATER']):
                 # If there is not already an entry for the selected stress period, create a new array
                 try:
                     RCH_Dict[0] += PRECIP[0] * LU_arrays[landuse] * RCH_mult[l]
@@ -200,7 +200,7 @@ class model():
             for per in range(int(start - 1), int(end - 1)):
                 
                 # Apply recharge amounts for each land use type                
-                for l, landuse in enumerate(['URBAN','NATURAL','WATER']):                    
+                for l, landuse in enumerate(['URBAN','NATURAL-H','NATURAL-L','WATER']):                    
                     # If there is not already an entry for the selected stress period, create a new array
                     try:
                         RCH_Dict[per] += PRECIP[per]*LU_arrays[landuse]*RCH_mult[l]
@@ -297,7 +297,7 @@ class model():
         for i, LUset in enumerate(LU_PAR):
             LU[LUset] = {'ARRAY':{},'LIST':{}}
             
-            for l, LUtype in enumerate(['URBAN','NATURAL','WATER']):
+            for l, LUtype in enumerate(['URBAN','NATURAL-H','NATURAL-L','WATER']):
                 filename = r'data_processed\landuse\LU-' + LUset + '-' + LUtype + '.asc'
                 perarea =  np.loadtxt(filename,skiprows=6)
                 LU[LUset]['ARRAY'][LUtype] = perarea
