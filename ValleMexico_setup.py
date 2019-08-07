@@ -97,7 +97,8 @@ class model():
             
         layvka = [1]*self.nlay # Indicates that VANI represents the ratio of H:V hydraulic conductivity
         
-        lpf = flopy.modflow.mflpf.ModflowLpf(mf, ipakcb=9, laytyp=[0,0], layvka=layvka, hk=geoarrays['HK'], vka=geoarrays['VANI'], ss=geoarrays['SS'], sy=geoarrays['SY'])#, laywet=[1,1])
+        lpf = flopy.modflow.mflpf.ModflowLpf(mf, ipakcb=9, laytyp=[0,0], layvka=layvka, hk=geoarrays['HK'], vka=geoarrays['VANI'], ss=geoarrays['SS'], sy=geoarrays['SY'])
+        #lpf = flopy.modflow.mflpf.ModflowLpf(mf, ipakcb=9, laytyp=[1,1], layvka=layvka, hk=geoarrays['HK'], vka=geoarrays['VANI'], ss=geoarrays['SS'], sy=geoarrays['SY'], laywet=[1,1])
         
         return mf, dis, bas, lpf
     
