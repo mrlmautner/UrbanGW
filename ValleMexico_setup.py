@@ -97,7 +97,8 @@ class model():
             
         layvka = [1]*self.nlay # Indicates that VANI represents the ratio of H:V hydraulic conductivity
         
-        lpf = flopy.modflow.mflpf.ModflowLpf(mf, ipakcb=9, laytyp=[0,0], layvka=layvka, hk=geoarrays['HK'], vka=geoarrays['VANI'], ss=geoarrays['SS'], sy=geoarrays['SY'])#, laywet=[1,1])
+        lpf = flopy.modflow.mflpf.ModflowLpf(mf, ipakcb=9, laytyp=[1,1], layvka=layvka, hk=geoarrays['HK'], vka=geoarrays['VANI'], ss=geoarrays['SS'], sy=geoarrays['SY'], laywet=[1,1])
+#        lpf = flopy.modflow.mflpf.ModflowLpf(mf, ipakcb=9, laytyp=[0,0], layvka=layvka, hk=geoarrays['HK'], vka=geoarrays['VANI'], ss=geoarrays['SS'], sy=geoarrays['SY'])
         
         return mf, dis, bas, lpf
     
@@ -529,12 +530,12 @@ class model():
         # Generate output control and solver MODFLOW packages 
         oc, pcg = self.outputControl(mf)
         
-        mf.add_existing_package(r'model_files\modflow\VM_OBS.ob_hob',ptype='HOB', copy_to_model_ws=False)
+        mf.add_existing_package(r'model_files\modflow\OBS.ob_hob',ptype='HOB', copy_to_model_ws=False)
         mf.add_output(r'model_files\modflow\VM_Test.hob.out',unit=1002)
-#        hob = flopy.modflow.ModflowHob.load('data_processed\VM_OBS.ob_hob', mf)
-#        winfofile = r'model_files\modflow\VM_OBS.pickle'
-#        with open(winfofile, 'wb') as handle:
-#            pickle.dump(hob.obs_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        hob = flopy.modflow.ModflowHob.load(r'model_files\modflow\OBS.ob_hob', mf)
+        winfofile = r'model_files\modflow\OBS.pickle'
+        with open(winfofile, 'wb') as handle:
+            pickle.dump(hob.obs_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
     
         # Run Model and post processing
         ## Write the MODFLOW model input files

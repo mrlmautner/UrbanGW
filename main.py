@@ -31,7 +31,7 @@ exefile = r'C:\WRDAPP\MF2005.1_12\bin\mf2005.exe'
 
 # Parameters
 ## Test Mode
-test = False
+test = True
 test_name = 'Test'
 
 ## Scenario Mode
