@@ -7,17 +7,10 @@ Created on Mon Nov 26 14:02:08 2018
 import flopy
 import numpy as np
 import matplotlib.pyplot as plt
-import flopy.utils.binaryfile as bf
-from matplotlib import cm
-from mpl_toolkits.mplot3d import Axes3D
-from matplotlib.ticker import LinearLocator, FormatStrFormatter
-import matplotlib.dates as mdates
 import pandas as pd
-import calendar
-import pickle
-from gwscripts.dataprocessing import gengriddata as gen
-from gwscripts.optimization import measureobjectives as mo
 import seaborn as sns
+import pickle
+import flopy.utils.binaryfile as bf
 
 sns.set(style="white", palette="muted", color_codes=True)
 
@@ -33,13 +26,6 @@ END_YEAR = 2014
 ncol = int((xur-xll)/cellsize) # Number of rows
 nrow = int((yur-yll)/cellsize) # Number of columns
 
-# Load datasets
-ACTIVE_LYR1 = gen.openASC('data_output\ACTIVE_VM_LYR1.asc')
-ACTIVE_LYR2 = gen.openASC('data_output\ACTIVE_VM_LYR2.asc')
-TH1 = gen.openASC('data_output\THICK1_VM.asc')
-DEM = gen.openASC('data_output\DEM_VM.asc')
-GEO = gen.openASC('data_output\GEO_VM.asc')
-
 #%% Head Dictionary
 def get_heads(scenario_list):
     S_heads = {}
@@ -49,7 +35,7 @@ def get_heads(scenario_list):
     return S_heads
     
 #%% Heads Contour
-def plt_head_change(s_heads, GEO, ACTIVE n=(30,0), m=(30,359), g_units = [2,3,4], lyr = 1):
+def plt_head_change(s_heads, GEO, ACTIVE_LYR1, ACTIVE_LYR2, n=(30,0), m=(30,359), g_units = [2,3,4], lyr = 1):
     '''
     Calculates the raster of the change in head from the nth time step to the
     mth time step for each model in S_heads. Then plots the difference between
@@ -83,7 +69,7 @@ def plt_head_change(s_heads, GEO, ACTIVE n=(30,0), m=(30,359), g_units = [2,3,4]
     hist_change = new_hist_e-new_hist_i
     
     for i,s_name in enumerate(scenario_list):
-        hds = S_heads[s_name]
+        hds = s_heads[s_name]
         h_i = hds.get_data(mflay=1,kstpkper=n)
         h_e = hds.get_data(mflay=1,kstpkper=m)
         
@@ -107,7 +93,7 @@ def plt_head_change(s_heads, GEO, ACTIVE n=(30,0), m=(30,359), g_units = [2,3,4]
         CS = axes[i].contour(ACTIVE_LYR1, colors='k', linewidths=2)
         axes[i].xaxis.set_visible(False)
         axes[i].yaxis.set_visible(False)
-        axes[i].set_title(mapTitle[a].format(i+1))
+        axes[i].set_title(mapTitle[i].format(i+1))
         
         fig.subplots_adjust(right=0.8)
         fig.colorbar(im, cax=cbar_ax, label='Change in Groundwater Head (m)')
