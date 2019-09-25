@@ -31,8 +31,9 @@ exefile = r'C:\WRDAPP\MF2005.1_12\bin\mf2005.exe'
 
 # Parameters
 ## Test Mode
-test = True
+test = False
 test_name = 'Test'
+hydrographloc = 'NoDRN_U_20190909'
 
 ## Scenario Mode
 plt_scen = True
@@ -64,6 +65,9 @@ opt_run = str(max_nfes)+'nfe'
 if test:
     testModel = model(test_name, 455000, 2107000, 539000, 2175000, 500, 1984, 2014, ACTIVE=['data_processed\ACTIVE_VM_LYR1.asc', 'data_processed\ACTIVE_VM_LYR2.asc'], THICKNESS=['data_processed\THICK1_VM.asc', 'data_processed\THICK2_VM.asc'], GEO=['data_processed\GEO_VM_LYR1.asc', 'data_processed\GEO_VM_LYR2.asc'], DEM='data_processed\DEM_VM.asc', IH='data_processed\IH_1984_LT2750.asc', MUN='data_processed\MUN_VM.asc', PAR='model_files\modflow\params.pval', exe_file=exefile)
     testModel.run_scenario_model(0,0,0)
+    
+    pltvm.plt_wellhydrographs(test_name, hydrographloc, df=0, obsformation=0)
+
 
 if plt_scen:
     '''
@@ -152,4 +156,3 @@ if plot_opt:
     nondom_results = npresults[nondom_VM]
     
     pltvm.parallel_axis(nondom_results, obj_labels = ['Energy Use\n(kWh)','Subsidence Avoidance\n(mbgs)','Urban Mounding\n(m)', 'Cost'], opt_run = opt_run)
-

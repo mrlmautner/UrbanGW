@@ -251,7 +251,7 @@ class model():
         LU_PAR = ['1990', '2000', '2010']
         
         # Model internal variables
-        drains = True
+#        drains = False
         fixleak = fixleak/100 # convert from integer to decimal
         cost = 0 # Initial cost
         sec2day = 60*60*24 # Second to day conversion
@@ -531,7 +531,7 @@ class model():
         oc, pcg = self.outputControl(mf)
         
         mf.add_existing_package(r'model_files\modflow\OBS.ob_hob',ptype='HOB', copy_to_model_ws=False)
-        mf.add_output(r'model_files\modflow\VM_Test.hob.out',unit=1002)
+        mf.add_output(r'model_files\modflow\VM_' + self.name + '.hob.out',unit=1002)
         hob = flopy.modflow.ModflowHob.load(r'model_files\modflow\OBS.ob_hob', mf)
         winfofile = r'model_files\modflow\OBS.pickle'
         with open(winfofile, 'wb') as handle:

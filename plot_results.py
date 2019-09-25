@@ -86,6 +86,7 @@ def plt_head_change(scenario_list, mapTitles, s_heads, GEO, ACTIVE, n = (8,23), 
         fig.colorbar(im, cax=cbar_ax, label='Change in Groundwater Head (m)')
 
         plt.savefig('model_files\output\plots\head-change_'+s_name+'-'+scenario_list[0]+'.eps', dpi=600)
+        plt.savefig('model_files\output\plots\head-change_'+s_name+'-'+scenario_list[0]+'.png', dpi=600)
         plt.close()
 
 def plt_scen_objectives(scenario_names, num_scen, objectives):
@@ -122,6 +123,7 @@ def plt_scen_objectives(scenario_names, num_scen, objectives):
     # Flip subsidence measure to be minimizing
     plt.gcf().subplots_adjust(wspace=0.45,left=0.09,right=.97,bottom=0.15,top=.9)
     plt.savefig('model_files\output\plots\Objectives.eps', dpi=600)
+    plt.savefig('model_files\output\plots\Objectives.png', dpi=600)
     plt.close()
 
 def parallel_axis(nondom_results, obj_labels, opt_run):
@@ -182,7 +184,9 @@ def plt_cum_sum(filename, scenario_list, mapTitles, df_CumSum, start='01-31-1985
     plt.legend(mapTitles,loc='lower left')
     plt.gcf().subplots_adjust(left=0.15,right=.95,bottom=0.1,top=.95)
     
-    plt.savefig(filename, dpi=600)
+    plt.savefig(filename+'.png', dpi=600)
+    plt.savefig(filename+'.eps', dpi=600)
+    
     plt.show()
     
 ##%% Budget
@@ -322,8 +326,10 @@ def plt_wellhydrographs(s_name, filelocation, df=0, obsformation=0, obsinfo_load
     if not isinstance(df, pd.DataFrame):
         df, obsformation = process_hobs(s_name, legend=legend, obsinfo_loaded=obsinfo_loaded)
     
+    filelocation = Path.cwd().joinpath('model_files').joinpath('output').joinpath('plots').joinpath('observations').joinpath(filelocation)
+    
     for l in legend:
-        Path.cwd().joinpath('output').joinpath(l).mkdir(exist_ok=True)
+        filelocation.joinpath(l).mkdir(exist_ok=True)
     
     for o in obsformation['IDPOZO']:
         print(o)
@@ -369,12 +375,13 @@ def plt_simvsobs(s_name, filename, legend=['Lacustrine','Alluvial','Basalt','Vol
     g = sns.lmplot(x='absobserved1', y='abssimulated1', hue='legend',data=df,legend=False,palette=dict(Alluvial=(1,0.867,0), Basalt=(0,0.788,0.498), Volcaniclastic=(0.9, 0, 0.455) ), size=8, aspect=1.2, scatter_kws={'edgecolor':"none",'s':10, 'alpha':0.3})
     plt.plot(np.linspace(2000,2800,1000), np.linspace(2000,2800,1000), 'k',linestyle=':')
     plt.plot(np.linspace(2000,2800,1000), intercept + slope*np.linspace(2000,2800,1000), 'grey', linewidth=2)
-    plt.legend(['Tarango (Volcaniclastic)','Alluvial','Fractured Basalt','One-to-one',"y = {0:.3f}x + {1:.1f}, $R^2$ = {2:.3f} ".format(slope, intercept, r_value**2)], loc='upper left')
+    plt.legend(['Tarango (Volcaniclastic)','Alluvial','Fractured Basalt','One-to-one',"y = {0:.3f}x + {1:.1f}, R = {2:.3f} ".format(slope, intercept, r_value)], loc='upper left')
     plt.xlim(2100,2650)
     plt.ylim(2100,2650)
     plt.xlabel('Observed Head (masl)')
     plt.ylabel('Simulated Head (masl)')
-    plt.savefig(filename, dpi=600)
+    plt.savefig(filename+'.png', dpi=600)
+    plt.savefig(filename+'.eps', dpi=600)
     #plt.close()
     
     return slope, intercept, r_value, p_value, std_err 
@@ -398,11 +405,12 @@ def plt_simvsobsddn(s_name, filename, legend=['Lacustrine','Alluvial','Basalt','
     g = sns.lmplot(x='observed', y='simulated', hue='legend',data=df,legend=False,palette=dict(Alluvial=(1,0.867,0), Basalt=(0,0.788,0.498), Volcaniclastic=(0.9, 0, 0.455)), size=8, aspect=1.2, scatter_kws={'edgecolor':"none",'s':10, 'alpha':0.3})
     plt.plot(np.linspace(-60,60,1000), np.linspace(-60,60,1000), 'k',linestyle=':')
     plt.plot(np.linspace(-60,60,1000), intercept + slope*np.linspace(-60,60,1000), 'grey', linewidth=2)
-    plt.legend(['Tarango (Volcaniclastic)','Alluvial','Fractured Basalt','One-to-one',"y = {0:.3f}x + {1:.1f}, $R^2$ = {2:.3f} ".format(slope, intercept, r_value**2)],loc='upper left')
+    plt.legend(['Tarango (Volcaniclastic)','Alluvial','Fractured Basalt','One-to-one',"y = {0:.3f}x + {1:.1f}, R = {2:.3f} ".format(slope, intercept, r_value)],loc='upper left')
     plt.xlim(-60,60)
     plt.ylim(-60,60)
     plt.xlabel('Observed Drawdown (m)')
     plt.ylabel('Simulated Drawdown (m)')
-    plt.savefig(filename, dpi=600)
+    plt.savefig(filename+'.png', dpi=600)
+    plt.savefig(filename+'.eps', dpi=600)
     
     return slope, intercept, r_value, p_value, std_err 
