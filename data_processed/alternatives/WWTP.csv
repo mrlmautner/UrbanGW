@@ -1,0 +1,75 @@
+STATE,MUNI,CVE_LOC,LOC,NAME,INSTALLED,CURRENT,R,Y,X,TREATMENT,LEVEL,USE,USE_TYPE,COMMENTS
+DF,Azcapotzalco,2,Azcapotzalco,El Rosario,0.025,0.01,1,2157204.467,479977.2521,Tertiary,3,Lake,Infiltrating,Lago Tezozomoc
+DF,Coyoacan,3,Coyoacan,Ciudad Universitaria FCPS,0.0075,0.003,1,2137194.325,480704.8851,Activated Sludge,2,Indoor,Consumptive,Instituto de Ingenieria
+DF,Coyoacan,3,Coyoacan,Ciudad Universitaria,0.04,0.025,1,2132151.495,485865.4647,Activated Sludge,2,Irrigation,Infiltrating,
+DF,Coyoacan,3,Coyoacan,Coyoacan,0.4,0.179,1,2139110.822,487545.7943,Activated Sludge,2,Irrigation,Infiltrating,IT
+DF,Gustavo A. Madero,5,Gustavo A. Madero,Acueducto de Guadalupe,0.08,0.059,1,2159028.342,483754.4493,Activated Sludge,2,Industrial,Consumptive,IT
+DF,Gustavo A. Madero,5,Gustavo A. Madero,San Juan de Aragon,0.5,0.167,1,2151362.14,489749.6574,Activated Sludge,2,Lake,Evaporative,Lago de San Juan de Aragon
+DF,Iztacalco,6,Iztacalco,Ciudad Deportiva,0.23,0.093,1,2145995.636,489831.7617,Activated Sludge,2,Irrigation,Infiltrating,
+DF,Iztacalco,6,Iztacalco,Iztacalco,0.013,0.01,1,2143355.483,488854.7732,Activated Sludge,2,Irrigation,Infiltrating,
+DF,Iztapalapa,7,Iztapalapa,Santa Martha Acatitla,0.014,0.011,1,2140022.591,498520.6153,Activated Sludge,2,Irrigation,Infiltrating,
+DF,Iztapalapa,7,Iztapalapa,Cerro de la Estrella,4,2.19,1,2138170.091,491764.0281,Activated Sludge,2,Unlined Canals,Infiltrating,"IT, Xochimilco"
+DF,La Magdalena Contreras,8,La Magdalena Contreras,Magdalena Contreras,0.05,0.023,,2134337.591,475732.3648,Activated Sludge,2,River,Drainage,Rio Magdalena y Eslava
+DF,Milpa Alta,9,San Pedro Atocpan,San Pedro Atocpan,0.06,0.015,1,2124688.133,494743.7952,Activated Sludge,2,Irrigation,Infiltrating,agricola
+DF,Alvaro Obregon,10,Alvaro Obregon,Santa Fe,0.28,0.059,1,2142599.701,475162.0538,Activated Sludge,2,Industrial,Consumptive,
+DF,Tlahuac,11,San Juan Ixtayopan,El Llano,0.25,0.013,1,2126311.147,501753.349,Activated Sludge,2,Irrigation,Infiltrating,agricola
+DF,Tlahuac,11,San Juan Ixtayopan,San Juan Ixtayopan (La Lupita),0.015,0.015,1,2128290.502,500578.326,Activated Sludge,2,Irrigation,Infiltrating,agricola
+DF,Tlahuac,11,Tlahuac,San Lorenzo,0.225,0.059,1,2131654.486,494743.5929,Activated Sludge,2,Irrigation,Infiltrating,agricola
+DF,Tlahuac,11,San Nicolas Tetelco,Tetelco,0.015,0.01,1,2124144.724,503354.484,Activated Sludge,2,Irrigation,Infiltrating,agricola
+DF,Tlalpan,12,Tlalpan,Abasolo,0.015,0.003,1,2126799.945,479662.094,Activated Sludge,2,Irrigation,Infiltrating,
+DF,Tlalpan,12,Tlalpan,H. Colegio Militar,0.03,0.026,1,2129957.347,483662.9977,Activated Sludge,2,Irrigation,Infiltrating,
+DF,Tlalpan,12,Parres (El Guarda),Parres,0.007,0.003,1,2124120.619,483782.1333,Activated Sludge,2,Irrigation,Infiltrating,IT
+DF,Tlalpan,12,Tlalpan,San Miguel Xicalco,0.0075,0.005,1,2126811.09,483539.9467,Activated Sludge,2,Irrigation,Infiltrating,
+DF,Tlalpan,12,Tlalpan,U. H. Pemex Picacho,0.026,0.013,1,2134835.054,477211.4815,Activated Sludge,2,Irrigation,Infiltrating,IT
+DF,Xochimilco,13,Xochimilco,Reclusorio Sur,0.03,0.012,1,2127045.851,486417.3863,Activated Sludge,2,Irrigation,Infiltrating,
+DF,Xochimilco,13,Xochimilco,San Luis Tlaxialtemalco,0.225,0.053,1,2129390.734,496908.9847,Activated Sludge,2,Unlined Canals,Infiltrating,"IT, Xochimilco"
+DF,Cuauhtemoc,15,Cuauhtemoc,Tlatelolco,0.022,0.01,1,2150929.828,485255.9806,Activated Sludge,2,Irrigation,Infiltrating,
+DF,Miguel Hidalgo,16,Miguel Hidalgo,Bosques de las Lomas,0.055,0.014,1,2146918.659,475456.5823,Activated Sludge,2,Irrigation,Infiltrating,IT
+DF,Miguel Hidalgo,16,Miguel Hidalgo,Campo Militar No. 1-A,0.03,0.03,,2148953.607,476693.0022,Activated Sludge,2,Irrigation,Infiltrating,
+DF,Miguel Hidalgo,16,Miguel Hidalgo,Chapultepec,0.16,0.053,1,2147754.312,478784.1512,Activated Sludge,2,Lined Lake,Drainage,Lago Chapultepec
+Mexico,Cocotitlan,22,Cocotitlan,Cabecera Municipal,0.024,0.014,,2126570.337,514244.8959,Activated Sludge,2,River,Drainage,Rio Amecameca
+Mexico,Chalco,25,Chalco de Diaz Covarrubias,Centro de Desarrollo Comunitario Juan Diego. I.A.P.,0.0016,0.0015,,2131603.718,505691.9528,Activated Sludge,2,Sewerage,Drainage,
+Mexico,Chiautla,28,Chiautla,Cabecera Municipal,0.01,0.0015,,2161818.586,512748.3237,Activated Sludge,2,NA,Drainage,
+Mexico,Chicoloapan,29,Chicoloapan de Juarez,Desarrollo Habitacional Camel,0.021,0.021,,2146603.209,510117.507,Activated Sludge,2,Sewerage,Drainage,
+Mexico,Chicoloapan,29,Chicoloapan de Juarez,Desarrollo Habitacional Piedras Negras,0.02,0.011,,2146561.319,508015.9931,Activated Sludge,2,Sewerage,Drainage,
+Mexico,Chicoloapan,29,Chicoloapan de Juarez,Desarrollo Habitacional Sare I,0.02,0.009,,2147736.596,512708.6327,Activated Sludge,2,Sewerage,Drainage,
+Mexico,Chicoloapan,29,Chicoloapan de Juarez,Desarrollo Habitacional Sare II,0.02,0.009,,2147736.596,512708.6327,Activated Sludge,2,Sewerage,Drainage,
+Mexico,Chimalhuacan,31,Chimalhuacan,Lago de Texcoco II,0.5,0.4,1,2150871.368,500552.9413,Facultative Lake,2,Lake,Infiltrating,Lago Texcoco
+Mexico,Chimalhuacan,31,Chimalhuacan,Lago de Texcoco I,1,0.8,1,2150286.009,499575.0989,Activated Sludge,2,Lake,Infiltrating,Lago Texcoco
+Mexico,Ecatepec de Morelos,33,Ecatepec de Morelos,Papelera San Cristobal,0.4,0.25,,2164003.642,495785.5115,Activated Sludge,2,Industrial,Consumptive,
+Mexico,Ecatepec de Morelos,33,Ecatepec de Morelos,Termoelectrica Valle de Mexico,0.75,0.5,,2169048.472,502386.9465,Activated Sludge,2,Sewerage,Drainage,Emisor Gran Canal
+Mexico,Huixquilucan,37,Huixquilucan de Degollado,Huixquilucan,0.022,0.022,,2140819.502,463549.2886,Activated Sludge,2,Irrigation,Infiltrating,Club de golf Bosques
+Mexico,Huixquilucan,37,Huixquilucan de Degollado,Cabecera Municipal,0.04,0.03,,2140932.162,463502.7042,Activated Sludge,2,River,Drainage,Rio Huixquilucan
+Mexico,Huixquilucan,37,Huixquilucan de Degollado,Cabecera Municipal,0.006,0.0028,,2140932.162,463502.7042,Activated Sludge,2,River,Drainage,Rio xinte
+Mexico,Ixtapaluca,39,San Jeronimo Cuatro Vientos (San Jeronimo),Cuatro Vientos,0.108,0.05,1,2132842.476,516089.8218,Activated Sludge,2,NA,Drainage,
+Mexico,Ixtapaluca,39,Ixtapaluca,Fraccionamiento Palmas II,0.02,0.014,,2134171.376,511175.3408,Activated Sludge,2,Sewerage,Drainage,
+Mexico,Ixtapaluca,39,Santa Barbara,Fraccionamiento Santa Barbara,0.063,0.0613,,2135598.894,511355.7824,Activated Sludge,2,Sewerage,Drainage,
+Mexico,Ixtapaluca,39,Ixtapaluca,Tlalpizahuac,0.022,0.018,,2136861.661,505713.5242,Activated Sludge,2,Sewerage,Drainage,
+Mexico,Jilotzingo,46,San Luis Ayucan,San Luis Ayucan,0.009,0.004,,2155736.386,462166.2416,Activated Sludge,2,Lake,Infiltrating,Presa Madin
+Mexico,Naucalpan de Juarez,57,Naucalpan de Juarez,Naucali,0.04,0.02,,2155368.184,474836.8682,Activated Sludge,2,Irrigation,Infiltrating,
+Mexico,Naucalpan de Juarez,57,Naucalpan de Juarez,Parque Los Remedios,0.0018,0.0018,1,2152979.684,473162.2928,Activated Sludge,2,Irrigation,Infiltrating,
+Mexico,Naucalpan de Juarez,57,Naucalpan de Juarez,Pintores,0.005,0.005,,2157317.453,476493.2208,Activated Sludge,2,Irrigation,Infiltrating,
+Mexico,Naucalpan de Juarez,57,Naucalpan de Juarez,Conjunto Hab. La Cuspide,0.004,0.0016,1,2157711.355,471672.813,Activated Sludge,2,NA,Drainage,
+Mexico,Naucalpan de Juarez,57,Naucalpan de Juarez,Hospital IMSS Naucalpan,0.001,0.001,,2153253.599,475788.7461,Activated Sludge,2,NA,Drainage,
+Mexico,Naucalpan de Juarez,57,Naucalpan de Juarez,U. H. Campo Militar No. 1,0.03,0.02,,2155658.586,473047.0738,Activated Sludge,2,NA,Drainage,
+Mexico,Naucalpan de Juarez,57,Las Granjas,Molino Granjas,0.05,0.025,1,2150010.825,473387.025,Activated Sludge,2,Sewerage,Drainage,
+Mexico,Naucalpan de Juarez,57,San Jose Tejamanil,Satelite San Jose,0.003,0.003,,2148735.769,462352.2185,Activated Sludge,2,Sewerage,Drainage,
+Mexico,Nezahualcoyotl,58,Ciudad Nezahualcoyotl,Nezahualcoyotl/Jorge Ayanegui,0.145,0.1,,2147109.273,497654.8649,Activated Sludge,2,Irrigation,Infiltrating,
+Mexico,Tlalnepantla de Baz,104,Tlanepantla,San Juan Ixhuatepec,0.15,0.1,,2158134.739,488948.7706,Activated Sludge,2,Industrial,Consumptive,
+Mexico,Tlalnepantla de Baz,104,Tlanepantla,Los Reyes Iztacala,0.1,0.1,,2159027.217,479348.9483,Activated Sludge,2,NA,Drainage,
+DF,Tlahuac,11,San Andre Mixquic,San Andres Mixquic,0.03,0.015,1,2126349.777,503960.7402,Advanced Primary,1,Irrigation,Infiltrating,agricola
+Mexico,Atenco,11,Santa Isabel Ixtapan,Santa Isabel Ixtapan,0.14,0.01,,2165535.724,505744.1789,Anaerobic Digestion,1,NA,Drainage,
+Mexico,Atenco,11,San Salvador Atenco,Santa Isabel Ixtapan Club de Golf,0.005,0.001,,2161356.886,507905.8805,Anaerobic Digestion,1,NA,Drainage,
+Mexico,Atizapan de Zaragoza,13,Ciudad Lopez Mateos,Club de Golf Bellavista,0.02,0.01,1,2159314.236,473762.2924,Anaerobic Digestion,1,Irrigation,Infiltrating,
+Mexico,Atizapan de Zaragoza,13,Ciudad Lopez Mateos,Club de Golf Hacienda,0.025,0.02,1,2163502.188,476410.789,Advanced Primary,1,Irrigation,Infiltrating,
+Mexico,Huixquilucan,37,Huixquilucan de Degollado,Presa El Capulin,0.05,0.04,,2146891.958,473142.8546,NA,1,Lake,Infiltrating,Presa El Capulin
+Mexico,Huixquilucan,37,Huixquilucan de Degollado,Escuela en Trejo,0.0005,0.0005,1,2145198.122,465940.0867,Anaerobic Digestion,1,Sewerage,Drainage,
+Mexico,Naucalpan de Juarez,57,Naucalpan de Juarez,Conjunto Hab. Sedena Col. Santiago,0.002,0.002,,2156137.465,473070.7706,Septic Tank,1,NA,Drainage,
+Mexico,Naucalpan de Juarez,57,Naucalpan de Juarez,Conjunto Hab. Sedena Sta. Cruz Acatlan,0.002,0.002,,2154515.022,474532.0793,Anaerobic Digestion,1,NA,Drainage,
+Mexico,Naucalpan de Juarez,57,Naucalpan de Juarez,San Rafael Chamapa,0.002,0.0018,,2151527.074,473046.1462,Anaerobic Digestion,1,NA,Drainage,
+Mexico,Naucalpan de Juarez,57,Naucalpan de Juarez,U. H. Lomas Canteras,0.003,0.003,,2152813.007,474479.9283,Anaerobic Digestion,1,NA,Drainage,
+Mexico,Papalotla,69,Papalotla,Cabecera Municipal/ Coxotla,0.01,0.003,,2162911.023,514884.4008,Anaerobic Digestion,1,Sewerage,Drainage,
+Mexico,Tepetlaoxtoc,93,Tepetlaoxtoc de Hidalgo,Cabecera Municipal de Tepetlaoxtoc,0.016,0.01,,2164392.828,519031.2424,Anaerobic Digestion,1,River,Drainage,Rio Hondo
+Mexico,Tepetlaoxtoc,93,San Andres de las Peras,San Andres de las Peras,0.006,0.006,,2162386.466,522099.4616,Anaerobic Digestion,1,River,Drainage,Rio Papalotla
+Mexico,Tepetlaoxtoc,93,San Pedro Chiautzingo,San Pedro Chiautzingo,0.006,0.006,,2163634.233,522279.5311,Anaerobic Digestion,1,River,Drainage,Rio Papalotla
+Mexico,Texcoco,99,Texcoco de Mora,Universidad de Chapingo,0.01,0.01,1,2155342.583,511016.0056,Anaerobic Digestion,1,NA,Drainage,

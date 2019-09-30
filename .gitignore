@@ -47,3 +47,15 @@ mp6.exe
 *.mpnam
 *.mpsim
 RunModflow.Bat
+model_files/output/plots/head_change_Basin-Historical.png
+model_files/output/plots/head_change_Historical-Historical.png
+model_files/output/plots/head_change_Leak-Historical.png
+model_files/output/plots/head_change_WWTP-Historical.png
+model_files/output/plots/*
+model_output/plots/*
+model_files/output/plots/head-change_Basin-Historical.png
+model_files/output/plots/head-change_Historical-Historical.png
+model_files/output/plots/head-change_Leak-Historical.png
+model_files/output/plots/head-change_WWTP-Historical.png
+model_files/output/plots/observations/drawdown*
+model_files/output/plots/observations/IH_2750/*

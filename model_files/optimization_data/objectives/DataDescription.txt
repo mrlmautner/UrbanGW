@@ -1,0 +1,5 @@
+LU:
+Dictionary with a dictionary for each model period (1990, 2000, 2010). In each model period dictionary is an ARRAY dictionary and a LIST dictionary. In each of these there is a dictionary for each land use type (URBAN, NATURAL, WATER), that contains data in the format of a list of cells and their percentages or a raster with percentages.
+
+WEL_INFO:
+Dictionary with a list for each stress period in the model. Each list contains an entry for each specified flux boundary condition. In this case, they are either negative (pumping) or positive (leaks, wastewater plants, basins). Each entry is a list with the layer, row, column, flow (m3/d), municipality, and well quality type (unused).
