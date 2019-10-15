@@ -41,11 +41,11 @@ run_scenarios = True
 scenario_names = ['Historical','WWTP','Basin','Leak']
 mapTitles = ['Historical','Increased WW Reuse','Repair Leaks','Recharge Basins']
 
-cutz = np.loadtxt('model_files\optimization_data\decisions\cutz.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Imports from Cutzamala reservoir system
-lerm = np.loadtxt('model_files\optimization_data\decisions\lerm.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Imports from Lerma groundwater system
-pai = np.loadtxt('model_files\optimization_data\decisions\pai.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Imports from PAI groundwater system external to the model
-int_sw = np.loadtxt('model_files\optimization_data\decisions\int_sw.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Surface water sources within the basin
-int_ww = np.loadtxt('model_files\optimization_data\decisions\int_ww.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Wastewater reuse within the basin
+cutz = np.loadtxt('model_files\optimization_data\decisions\new_cutz.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Imports from Cutzamala reservoir system
+lerm = np.loadtxt('model_files\optimization_data\decisions\new_lerm.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Imports from Lerma groundwater system
+pai = np.loadtxt('model_files\optimization_data\decisions\new_pai.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Imports from PAI groundwater system external to the model
+int_sw = np.loadtxt('model_files\optimization_data\decisions\new_int_sw.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Surface water sources within the basin
+int_ww = np.loadtxt('model_files\optimization_data\decisions\new_int_ww.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Wastewater reuse within the basin
 new_other = cutz + lerm + pai + int_sw + int_ww # Total of all other water supplies except local groundwater (m3/s)
 new_other = new_other.sum(axis=0) # Total of all other supplies (m3/s)
 x = [0]*4
