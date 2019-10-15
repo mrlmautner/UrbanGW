@@ -36,19 +36,10 @@ model_name = 'Test'
 hydrographloc = 'Test_v1'
 
 ## Scenario Mode
-plt_scen = True
-run_scenarios = True
+plt_scen = False
+run_scenarios = False
 scenario_names = ['Historical','WWTP','Basin','Leak']
 mapTitles = ['Historical','Increased WW Reuse','Repair Leaks','Recharge Basins']
-
-cutz = np.loadtxt('model_files\optimization_data\decisions\new_cutz.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Imports from Cutzamala reservoir system
-lerm = np.loadtxt('model_files\optimization_data\decisions\new_lerm.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Imports from Lerma groundwater system
-pai = np.loadtxt('model_files\optimization_data\decisions\new_pai.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Imports from PAI groundwater system external to the model
-int_sw = np.loadtxt('model_files\optimization_data\decisions\new_int_sw.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Surface water sources within the basin
-int_ww = np.loadtxt('model_files\optimization_data\decisions\new_int_ww.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Wastewater reuse within the basin
-new_other = cutz + lerm + pai + int_sw + int_ww # Total of all other water supplies except local groundwater (m3/s)
-new_other = new_other.sum(axis=0) # Total of all other supplies (m3/s)
-x = [0]*4
 
 ## Optimization mode
 run_optimization = False
@@ -58,7 +49,26 @@ recharge_objectives = 4
 max_nfes = 200
 opt_run = str(max_nfes)+'nfe'
 
+## Sensitivity Analysis Mode
+SA_mode = True
+
 ####### DON'T MESS WITH ANYTHING BELOW THIS LINE IF YOU AREN'T SURE #######
+## Assign supply source quantities
+cutz = np.loadtxt('model_files\optimization_data\decisions\new_cutz.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Imports from Cutzamala reservoir system
+lerm = np.loadtxt('model_files\optimization_data\decisions\new_lerm.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Imports from Lerma groundwater system
+pai = np.loadtxt('model_files\optimization_data\decisions\new_pai.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Imports from PAI groundwater system external to the model
+int_sw = np.loadtxt('model_files\optimization_data\decisions\new_int_sw.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Surface water sources within the basin
+int_ww = np.loadtxt('model_files\optimization_data\decisions\new_int_ww.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Wastewater reuse within the basin
+new_other = cutz + lerm + pai + int_sw + int_ww # Total of all other water supplies except local groundwater (m3/s)
+new_other = new_other.sum(axis=0) # Total of all other supplies (m3/s)
+
+if SA_mode:
+    num_scenarios = len(scenario_names)
+    vmmodel = [0]*num_scenarios
+    
+    vmmodel[0] = model(scenario_names[0], 455000, 2107000, 539000, 2175000, 500, 1984, 2014, ACTIVE=['data_processed\ACTIVE_VM_LYR1.asc', 'data_processed\ACTIVE_VM_LYR2.asc'], THICKNESS=['data_processed\THICK1_VM.asc', 'data_processed\THICK2_VM.asc'], GEO=['data_processed\GEO_VM_LYR1.asc', 'data_processed\GEO_VM_LYR2.asc'], DEM='data_processed\DEM_VM.asc', IH='data_processed\IH_1984_LT2750.asc', MUN='data_processed\MUN_VM.asc', PAR='model_files\modflow\params.pval', exe_file=exefile)
+    hydModel.run_scenario_model(0,0,0)
+
 if plt_hydrograph:
     hydModel = model(model_name, 455000, 2107000, 539000, 2175000, 500, 1984, 2014, ACTIVE=['data_processed\ACTIVE_VM_LYR1.asc', 'data_processed\ACTIVE_VM_LYR2.asc'], THICKNESS=['data_processed\THICK1_VM.asc', 'data_processed\THICK2_VM.asc'], GEO=['data_processed\GEO_VM_LYR1.asc', 'data_processed\GEO_VM_LYR2.asc'], DEM='data_processed\DEM_VM.asc', IH='data_processed\IH_1984_LT2750.asc', MUN='data_processed\MUN_VM.asc', PAR='model_files\modflow\params.pval', exe_file=exefile)
     hydModel.run_scenario_model(0,0,0)
@@ -80,7 +90,6 @@ if plt_scen:
             scen_time = time.time()
             vmmodel[i] = model(s_name, 455000, 2107000, 539000, 2175000, 500, 1984, 2014, ACTIVE=['data_processed\ACTIVE_VM_LYR2.asc', 'data_processed\ACTIVE_VM_LYR2.asc'], THICKNESS=['data_processed\THICK1_VM.asc', 'data_processed\THICK2_VM.asc'], GEO=['data_processed\GEO_VM_LYR1.asc', 'data_processed\GEO_VM_LYR2.asc'], DEM='data_processed\DEM_VM.asc', IH='data_processed\IH_1984_LT2750.asc', MUN='data_processed\MUN_VM.asc', PAR='model_files\modflow\params.pval', exe_file=exefile)
             vmmodel[i].run_scenario_model(num_wwplants[i], num_infbasins[i], leak_repair[i])
-            x[i] = vmmodel[i].ratiogn
             print(s_name, 'Scenario completed in', str(time.time() - scen_time), 'seconds')
     else:
         # If the results have already been generated, open results from saved files

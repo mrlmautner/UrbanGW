@@ -240,7 +240,7 @@ class model():
         
         np.random.seed(seed)
         timestart = time.time()
-        print('Processing data...')
+#        print('Processing data...')
         
         # Phase starting stress period
         PHASE_PER = [0, 132, 252, 360]
@@ -288,7 +288,7 @@ class model():
         # Initialize the modflow model with the boundary conditions input above
         mf, dis, bas, lpf = self.initializeFM()
         
-        print('Basic, Discretization, and Layer packages generated in', str(time.time() - timestart), 'seconds')
+#        print('Basic, Discretization, and Layer packages generated in', str(time.time() - timestart), 'seconds')
         
         '''
         Land Use Type
@@ -317,16 +317,16 @@ class model():
                         l += 1
                 LU[LUset]['LIST'][LUtype] = LU[LUset]['LIST'][LUtype][LU[LUset]['LIST'][LUtype][:,2]>0,:]
     
-        # Save land use database for use in mounding objective
-        winfofile = r'model_files\optimization_data\objectives\LU_' + self.name + '.pickle'
-        with open(winfofile, 'wb') as handle:
-            pickle.dump(LU, handle, protocol=pickle.HIGHEST_PROTOCOL)
+#        # Save land use database for use in mounding objective
+#        winfofile = r'model_files\optimization_data\objectives\LU_' + self.name + '.pickle'
+#        with open(winfofile, 'wb') as handle:
+#            pickle.dump(LU, handle, protocol=pickle.HIGHEST_PROTOCOL)
         
         '''
         Recharge
         Create recharge dictionary for MODFLOW RCH package based on land use multipliers and interpolated precipitation rasters
         '''
-        newtime = time.time()
+#        newtime = time.time()
             
         RCH_DICT = {}
         Precip_Dict = {}
@@ -344,12 +344,12 @@ class model():
         # Create MODFLOW RCH package
         rch = flopy.modflow.ModflowRch(mf, nrchop=3,  ipakcb=9, rech=RCH_DICT)
         
-        print('RCH_Dict generated in', str(time.time() - newtime), 'seconds')
+#        print('RCH_Dict generated in', str(time.time() - newtime), 'seconds')
         
         '''
         Well objects: supply wells, distribution leaks, injection wells, wastewater reuse, recharge basins
         '''
-        newtime = time.time()
+#        newtime = time.time()
         
         WEL_DICT = {}
         WEL_INFO = {}
@@ -504,14 +504,14 @@ class model():
         
         wel = flopy.modflow.ModflowWel(mf, stress_period_data=WEL_DICT, options=['NOPRINT'])
             
-        print('WEL_Dict generated in', str(time.time() - newtime), 'seconds')
-        
-        ## Create pickle file of Well Data to be available for post processing of well energy use objective
-        winfofile = r'model_files\optimization_data\objectives\WEL_INFO_' + self.name + '.pickle'
-        with open(winfofile, 'wb') as handle:
-            pickle.dump(WEL_INFO, handle, protocol=pickle.HIGHEST_PROTOCOL)
-        print('WEL_Dict saved in',str(time.time()-newtime),'seconds')
-        
+#        print('WEL_Dict generated in', str(time.time() - newtime), 'seconds')
+#        
+#        ## Create pickle file of Well Data to be available for post processing of well energy use objective
+#        winfofile = r'model_files\optimization_data\objectives\WEL_INFO_' + self.name + '.pickle'
+#        with open(winfofile, 'wb') as handle:
+#            pickle.dump(WEL_INFO, handle, protocol=pickle.HIGHEST_PROTOCOL)
+#        print('WEL_Dict saved in',str(time.time()-newtime),'seconds')
+#        
 #        ## Drains
 #        drain_data = np.loadtxt(r'data_processed\drains\DRN_order3.csv', delimiter=',', skiprows=1)
 #        DRN_DICT = {}
@@ -530,32 +530,31 @@ class model():
         # Generate output control and solver MODFLOW packages 
         oc, pcg = self.outputControl(mf)
         
-        mf.add_existing_package(r'model_files\modflow\OBS.ob_hob',ptype='HOB', copy_to_model_ws=False)
         mf.add_output(r'model_files\modflow\VM_' + self.name + '.hob.out',unit=1002)
-        hob = flopy.modflow.ModflowHob.load(r'model_files\modflow\OBS.ob_hob', mf)
-        winfofile = r'model_files\modflow\OBS.pickle'
-        with open(winfofile, 'wb') as handle:
-            pickle.dump(hob.obs_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    
-        # Run Model and post processing
-        ## Write the MODFLOW model input files
-        print('Data processed in', str(time.time() - timestart), 'seconds')
-        
-        newtime = time.time()
-        print('Writing input file...')
-        
-        mf.write_input()
-        print('Input file written in', str(time.time() - newtime), 'seconds')
-        
-        newtime = time.time()
-        print('Running MODFLOW model...')
+        hob = flopy.modflow.ModflowHob.load(r'model_files\modflow\VM.ob_hob', mf)
+#        winfofile = r'model_files\modflow\OBS.pickle'
+#        with open(winfofile, 'wb') as handle:
+#            pickle.dump(hob.obs_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
+#    
+#        # Run Model and post processing
+#        ## Write the MODFLOW model input files
+#        print('Data processed in', str(time.time() - timestart), 'seconds')
+#        
+#        newtime = time.time()
+#        print('Writing input file...')
+#        
+#        mf.write_input()
+#        print('Input file written in', str(time.time() - newtime), 'seconds')
+#        
+#        newtime = time.time()
+#        print('Running MODFLOW model...')
         # Run the MODFLOW model
         success, buff = mf.run_model()
-        
-        print('MODFLOW model completed run in', str(time.time() - newtime), 'seconds')
-        
-        print('Wrapper completed run in', str(time.time() - timestart), 'seconds')
-        
+#        
+#        print('MODFLOW model completed run in', str(time.time() - newtime), 'seconds')
+#        
+#        print('Wrapper completed run in', str(time.time() - timestart), 'seconds')
+#        
         self.wwtps = WWTPs
         self.basins = Basins
         self.mthlyleak = total_mthly_leak
