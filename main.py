@@ -30,20 +30,17 @@ The model run will create an object with the following results:
 exefile = r'C:\WRDAPP\MF2005.1_12\bin\mf2005.exe'
 
 # Parameters
-## Test Mode
-test = False
-test_name = 'Test'
-hydrographloc = 'NoDRN_U_20190909'
+## Hydrograph Mode
+plt_hydrograph = False
+model_name = 'Test'
+hydrographloc = 'Test_v1'
 
 ## Scenario Mode
 plt_scen = True
 run_scenarios = True
-scenario_names = ['Historical','WWTP','Leak','Basin']
+scenario_names = ['Historical','WWTP','Basin','Leak']
 mapTitles = ['Historical','Increased WW Reuse','Repair Leaks','Recharge Basins']
-leak_repair = [0,0,20,0]
-num_wwplants = [0,74,0,0]
-num_infbasins = [0,0,0,5]
-clay_layer = np.loadtxt('data_processed\ACTIVE_VM_LYR1.asc',skiprows=6)
+
 cutz = np.loadtxt('model_files\optimization_data\decisions\cutz.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Imports from Cutzamala reservoir system
 lerm = np.loadtxt('model_files\optimization_data\decisions\lerm.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Imports from Lerma groundwater system
 pai = np.loadtxt('model_files\optimization_data\decisions\pai.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Imports from PAI groundwater system external to the model
@@ -62,11 +59,11 @@ max_nfes = 200
 opt_run = str(max_nfes)+'nfe'
 
 ####### DON'T MESS WITH ANYTHING BELOW THIS LINE IF YOU AREN'T SURE #######
-if test:
-    testModel = model(test_name, 455000, 2107000, 539000, 2175000, 500, 1984, 2014, ACTIVE=['data_processed\ACTIVE_VM_LYR1.asc', 'data_processed\ACTIVE_VM_LYR2.asc'], THICKNESS=['data_processed\THICK1_VM.asc', 'data_processed\THICK2_VM.asc'], GEO=['data_processed\GEO_VM_LYR1.asc', 'data_processed\GEO_VM_LYR2.asc'], DEM='data_processed\DEM_VM.asc', IH='data_processed\IH_1984_LT2750.asc', MUN='data_processed\MUN_VM.asc', PAR='model_files\modflow\params.pval', exe_file=exefile)
-    testModel.run_scenario_model(0,0,0)
+if plt_hydrograph:
+    hydModel = model(model_name, 455000, 2107000, 539000, 2175000, 500, 1984, 2014, ACTIVE=['data_processed\ACTIVE_VM_LYR1.asc', 'data_processed\ACTIVE_VM_LYR2.asc'], THICKNESS=['data_processed\THICK1_VM.asc', 'data_processed\THICK2_VM.asc'], GEO=['data_processed\GEO_VM_LYR1.asc', 'data_processed\GEO_VM_LYR2.asc'], DEM='data_processed\DEM_VM.asc', IH='data_processed\IH_1984_LT2750.asc', MUN='data_processed\MUN_VM.asc', PAR='model_files\modflow\params.pval', exe_file=exefile)
+    hydModel.run_scenario_model(0,0,0)
     
-    pltvm.plt_wellhydrographs(test_name, hydrographloc, df=0, obsformation=0)
+    pltvm.plt_wellhydrographs(model_name, hydrographloc, df=0, obsformation=0)
 
 
 if plt_scen:
