@@ -8,7 +8,7 @@ soswrlim = 10000000
 safolder = '20191022'
 
 # MODFLOW File location
-exefile = Path.cwd() / 'gwscripts' / 'make' / 'mf2005'
+exefile = Path.cwd() / 'gwscripts' / 'gwmodel' / 'make' / 'mf2005'
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
