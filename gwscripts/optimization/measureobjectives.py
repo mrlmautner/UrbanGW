@@ -102,3 +102,16 @@ def get_objectives(heads, wellinfo, landuse, dem, active, thickness):
     mound, mound_cells, urban_cells, maxmound = measureMound(heads, dem, active, landuse, [132,252])
     
     return energy, sub/sub_cells, mound_cells/urban_cells
+
+def calculate_SOSWR(heads, stats):
+    '''
+    Calculates the sum-of-squared, weighted residual given weights (stats) and array (heads) with three columns: simulated head, observed head, observation ID
+    '''
+    soswr = 0
+    maxerror = 0
+    for i in range(len(stats)-1):
+        currenterror = (heads[i+1][1] - heads[i+1][0])**2
+        maxerror = max([maxerror, currenterror])
+        soswr += stats[i+1] * currenterror
+    
+    return soswr, maxerror

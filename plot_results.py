@@ -11,8 +11,17 @@ import pandas as pd
 import seaborn as sns
 import pickle
 import flopy.utils.binaryfile as bf
+from scipy import stats
+from pathlib import Path
 
 sns.set(style="white", palette="muted", color_codes=True)
+plt.rcParams['legend.fontsize'] = 20
+plt.rcParams['axes.titlesize'] = 22
+plt.rcParams['axes.labelsize'] = 22
+plt.rcParams['xtick.labelsize'] = 18
+plt.rcParams['ytick.labelsize'] = 18
+plt.rcParams['figure.titlesize'] = 24
+plt.rcParams.update({'font.size': 20})
 
 xll = 455000
 yll = 2107000
@@ -26,24 +35,15 @@ END_YEAR = 2014
 ncol = int((xur-xll)/cellsize) # Number of rows
 nrow = int((yur-yll)/cellsize) # Number of columns
 
-#%% Head Dictionary
-from scipy import stats
-import flopy.utils.binaryfile as bf
-from pathlib import Path
-
-sns.set(style="white", palette="muted", color_codes=True)
-plt.rcParams['legend.fontsize'] = 20
-plt.rcParams['axes.titlesize'] = 22
-plt.rcParams['axes.labelsize'] = 22
-plt.rcParams['xtick.labelsize'] = 18
-plt.rcParams['ytick.labelsize'] = 18
-plt.rcParams['figure.titlesize'] = 24
-plt.rcParams.update({'font.size': 20})
-
-def get_heads(scenario_list):
+## Head Dictionary
+def get_heads(alt_list,safolder=-1):
     S_heads = {}
-    for s_name in scenario_list:
-        S_heads[s_name] = bf.HeadFile('model_files\modflow\VM_'+s_name+'.hds')
+    if safolder >= 0: 
+        headpath = Path.cwd().joinpath('model_files').joinpath('modflow').joinpath(str(safolder))
+    else:
+        headpath = Path.cwd().joinpath('model_files').joinpath('modflow')
+    for name in alt_list:
+        S_heads[name] = bf.HeadFile(headpath.joinpath(name+'.hds'))
 
     return S_heads
 
@@ -52,7 +52,7 @@ def calc_head_change(hds, GEO, ACTIVE, n, m, g_units, lyr):
     h_i = hds.get_data(mflay=lyr,kstpkper=n)
     h_e = hds.get_data(mflay=lyr,kstpkper=m)
     
-#%% Heads Contour
+## Heads Contour
 def plt_head_change(s_heads, GEO, ACTIVE_LYR1, ACTIVE_LYR2, n=(30,0), m=(30,359), g_units = [2,3,4], lyr = 1):
     # Create array of heads only for geologic units g_units
     new_h_i = np.ones(h_i.shape)*np.nan
@@ -69,7 +69,7 @@ def plt_head_change(s_heads, GEO, ACTIVE_LYR1, ACTIVE_LYR2, n=(30,0), m=(30,359)
     head_change = new_h_e - new_h_i
     return head_change
 
-def plt_head_change(scenario_list, mapTitles, s_heads, GEO, ACTIVE, n = (8,23), m = (8,359), g_units = [2,3,4,5], lyr = 1):
+def plt_head_change(alt_list, mapTitles, s_heads, GEO, ACTIVE, n = (8,23), m = (8,359), g_units = [2,3,4,5], lyr = 1):
     '''
     Calculates the raster of the change in head from the nth time step to the
     mth time step for each model in S_heads. Then plots the difference between
@@ -103,8 +103,8 @@ def plt_head_change(scenario_list, mapTitles, s_heads, GEO, ACTIVE, n = (8,23), 
     # Find difference between nth and mth time steps
     hist_change = new_hist_e-new_hist_i
     
-    for i,s_name in enumerate(scenario_list):
-        hds = s_heads[s_name]
+    for i,name in enumerate(alt_list):
+        hds = s_heads[name]
         h_i = hds.get_data(mflay=1,kstpkper=n)
         h_e = hds.get_data(mflay=1,kstpkper=m)
 
@@ -116,12 +116,12 @@ def plt_head_change(scenario_list, mapTitles, s_heads, GEO, ACTIVE, n = (8,23), 
 
     first_change = calc_head_change(first_heads, GEO, ACTIVE, n, m, g_units, lyr)
 
-    for i, s_name in enumerate(scenario_list):
-        scen_heads = s_heads[s_name]
+    for i, name in enumerate(alt_list):
+        alt_heads = s_heads[name]
 
-        scen_change = calc_head_change(scen_heads, GEO, ACTIVE, n, m, g_units, lyr)
+        alt_change = calc_head_change(alt_heads, GEO, ACTIVE, n, m, g_units, lyr)
 
-        change_compare = scen_change - first_change
+        change_compare = alt_change - first_change
 
         fig, axes = plt.subplots()
         cbar_ax = fig.add_axes()
@@ -135,15 +135,15 @@ def plt_head_change(scenario_list, mapTitles, s_heads, GEO, ACTIVE, n = (8,23), 
 
         fig.colorbar(im, cax=cbar_ax, label='Change in Groundwater Head (m)')
 
-        plt.savefig('model_files\output\plots\head-change_'+s_name+'-'+scenario_list[0]+'.eps', dpi=600)
-        plt.savefig('model_files\output\plots\head-change_'+s_name+'-'+scenario_list[0]+'.png', dpi=600)
+        plt.savefig(Path.cwd().joinpath('model_files').joinpath('output').joinpath('plots').joinpath('head-change_'+name+'-'+alt_list[0]+'.eps'), dpi=600)
+        plt.savefig(Path.cwd().joinpath('model_files').joinpath('output').joinpath('plots').joinpath('head-change_'+name+'-'+alt_list[0]+'.png'), dpi=600)
         plt.close()
 
-def plt_scen_objectives(scenario_names, num_scen, objectives):
+def plt_alt_objectives(alt_names, num_alt, objectives):
     '''
-    objectives is a list with an array of length number of scenarios for each objective
+    objectives is a list with an array of length number of alternatives for each objective
     '''
-    print('Plotting scenario performance under objectives...')
+    print('Plotting alternative performance under objectives...')
     plt.rcParams['legend.fontsize'] = 20
     plt.rcParams['axes.titlesize'] = 22
     plt.rcParams['axes.labelsize'] = 22
@@ -154,11 +154,11 @@ def plt_scen_objectives(scenario_names, num_scen, objectives):
     
     c = ['k','goldenrod','blue','darkgreen']
     barWidth = 0.1
-    r = np.arange(num_scen)*0.1 # bar position
+    r = np.arange(num_alt)*0.1 # bar position
     y_label = ['Pumping Energy (kWh)','Depth to Groundwater in Clay (m)','Percent of Urban Cells Flooded']
     obj_title = ['Energy Use','Subsidence Avoidance','Urban Flooding']
 
-    normalized_o = np.zeros((num_scen, len(objectives)))
+    normalized_o = np.zeros((num_alt, len(objectives)))
 
     fig, axes = plt.subplots(nrows=1, ncols=3,figsize=(12,7.2))
 
@@ -166,14 +166,14 @@ def plt_scen_objectives(scenario_names, num_scen, objectives):
         normalized_o[:,o] = obj / (obj.max(axis=0) - obj.min(axis=0))
         plt.subplot(1,len(objectives),o+1)
         plt.bar(r, obj, width=barWidth, edgecolor='white', color=c)
-        plt.xticks(r, scenario_names, rotation=35, ha='right')
+        plt.xticks(r, alt_names, rotation=35, ha='right')
         plt.ylabel(y_label[o])
         plt.title(obj_title[o], fontweight='bold', y=1.04)
 
     # Flip subsidence measure to be minimizing
     plt.gcf().subplots_adjust(wspace=0.45,left=0.09,right=.97,bottom=0.15,top=.9)
-    plt.savefig('model_files\output\plots\Objectives.eps', dpi=600)
-    plt.savefig('model_files\output\plots\Objectives.png', dpi=600)
+    plt.savefig(Path.cwd() / 'model_files' / 'output' / 'plots' / 'Objectives.eps', dpi=600)
+    plt.savefig(Path.cwd() / 'model_files' / 'output' / 'plots' / 'Objectives.png', dpi=600)
     plt.close()
 
 def parallel_axis(nondom_results, obj_labels, opt_run):
@@ -185,21 +185,21 @@ def parallel_axis(nondom_results, obj_labels, opt_run):
 
     plt.gca().set_xticks(range(len(obj_labels)))
     plt.gca().set_xticklabels(obj_labels)
-    plt.savefig('parallelaxis_' + opt_run + '.png')
+    plt.savefig(Path.cwd().joinpath('parallelaxis_' + opt_run + '.png'))
     plt.close()
 
-def get_budgets(scenario_list, mapTitles, s_heads):
+def get_budgets(alt_list, mapTitles, s_heads):
     # Budget
     df_Bdget = {}
     df_CumSum = {}
     
-    for s_name in scenario_list:
-        mf_list = flopy.utils.MfListBudget('model_files\modflow\VM_'+s_name+".list")
+    for name in alt_list:
+        mf_list = flopy.utils.MfListBudget(Path.cwd().joinpath('model_files').joinpath('modflow').joinpath(name+".list"))
         incremental, cumulative = mf_list.get_budget()
     
-        df_Bdget[s_name], df_CumSum[s_name] = mf_list.get_dataframes(start_datetime="04-30-1984")
+        df_Bdget[name], df_CumSum[name] = mf_list.get_dataframes(start_datetime="04-30-1984")
         
-        mthly_Bdget = df_Bdget[s_name].drop(['CONSTANT_HEAD_IN', 'TOTAL_IN', 'CONSTANT_HEAD_OUT', 'RECHARGE_OUT', 'TOTAL_OUT', 'IN-OUT', 'PERCENT_DISCREPANCY'], axis=1)
+        mthly_Bdget = df_Bdget[name].drop(['CONSTANT_HEAD_IN', 'TOTAL_IN', 'CONSTANT_HEAD_OUT', 'RECHARGE_OUT', 'TOTAL_OUT', 'IN-OUT', 'PERCENT_DISCREPANCY'], axis=1)
         
         mthly_Bdget['STORAGE_OUT'] = mthly_Bdget['STORAGE_OUT'].apply(lambda x: x*-1)
         mthly_Bdget['WELLS_OUT'] = mthly_Bdget['WELLS_OUT'].apply(lambda x: x*-1)
@@ -219,25 +219,25 @@ def get_budgets(scenario_list, mapTitles, s_heads):
         
         fig.subplots_adjust(right=0.8)
         fig.colorbar(im, cax=cbar_ax, label='Change in Groundwater Head (m)')
-        plt.savefig('model_output\plots\Hist_change_all.svg')
-        plt.savefig('model_output\plots\Hist_change_all.png', dpi=600)
+        plt.savefig(Path.cwd() / 'model_output' / 'plots' / 'Hist_change_all.svg')
+        plt.savefig(Path.cwd() / 'model_output' / 'plots' / 'Hist_change_all.png', dpi=600)
         plt.show()
 
-    for s_name in scenario_list:
-        df_CumSum[s_name]['IN'] = df_CumSum[s_name]['RECHARGE_IN'].divide(1000000) + df_CumSum[s_name]['WELLS_IN'].divide(1000000)
-        df_CumSum[s_name]['OUT'] = df_CumSum[s_name]['WELLS_OUT'].divide(1000000) #+ df_CumSum[s_name]['DRAINS_OUT'].divide(1000000)
-        df_CumSum[s_name]['INOUTCUMSUM'] = df_CumSum[s_name]['IN'] - df_CumSum[s_name]['OUT']
+    for name in alt_list:
+        df_CumSum[name]['IN'] = df_CumSum[name]['RECHARGE_IN'].divide(1000000) + df_CumSum[name]['WELLS_IN'].divide(1000000)
+        df_CumSum[name]['OUT'] = df_CumSum[name]['WELLS_OUT'].divide(1000000) #+ df_CumSum[name]['DRAINS_OUT'].divide(1000000)
+        df_CumSum[name]['INOUTCUMSUM'] = df_CumSum[name]['IN'] - df_CumSum[name]['OUT']
     
     return df_Bdget, mthly_Bdget, df_CumSum
     
-def plt_cum_sum(filename, scenario_list, mapTitles, df_CumSum, start='01-31-1985', end='12-31-2013'):
+def plt_cum_sum(filename, alt_list, mapTitles, df_CumSum, start='01-31-1985', end='12-31-2013'):
     # Plotting defaults
     l = [4,2,2,2]
     c = ['k','goldenrod','blue','darkgreen']
     mark = ['-','-','-','--']
     
-    for i,s_name in enumerate(scenario_list):
-        df_CumSum[s_name].INOUTCUMSUM[start:end].plot(linewidth=l[i],color=c[i],style=mark[i])
+    for i,name in enumerate(alt_list):
+        df_CumSum[name].INOUTCUMSUM[start:end].plot(linewidth=l[i],color=c[i],style=mark[i])
         
     plt.ylabel(r'Volume (million m$^3$)')
     #plt.xlabel(r'Year')
@@ -250,157 +250,13 @@ def plt_cum_sum(filename, scenario_list, mapTitles, df_CumSum, start='01-31-1985
     plt.savefig(filename+'.eps', dpi=600)
     
     plt.show()
-    
-##%% Budget
-#df_1Bdget = {}
-#df_extra = {}
-#
-#for s_name in scenario_list:
-#    mf_list = flopy.utils.MfListBudget('model_files\modflow\VM_'+s_name+".list")
-#    incremental, cumulative = mf_list.get_budget()
-#
-#    df_1Bdget[s_name], df_extra[s_name] = mf_list.get_dataframes(start_datetime="04-30-1984")
-#    
-##    mthly_Bdget = df_1Bdget[s_name].drop(['CONSTANT_HEAD_IN','TOTAL_IN','CONSTANT_HEAD_OUT','RECHARGE_OUT','TOTAL_OUT','IN-OUT','PERCENT_DISCREPANCY'], axis=1)
-##    
-##    mthly_Bdget['STORAGE_OUT'] = mthly_Bdget['STORAGE_OUT'].apply(lambda x: x*-1)
-##    mthly_Bdget['WELLS_OUT'] = mthly_Bdget['WELLS_OUT'].apply(lambda x: x*-1)
-##    mthly_Bdget = mthly_Bdget.multiply(30/1000000)
-##    cols = mthly_Bdget.columns.tolist()
-##    # reorder columns
-##    cols = [cols[1]] + [cols[2]] + [cols[0]] + [cols[4]] + [cols[3]] 
-##    # "commit" the reordering
-##    mthly_Bdget = mthly_Bdget[cols]
-#    
-##    ax = mthly_Bdget['01-31-1985':'12-31-2013'].plot.area(stacked=True,figsize=(8,9),color=['blue','xkcd:azure','lightblue','red','lightpink'])
-##    plt.ylabel(r'Volume ($hm^3$)')
-##    plt.title('Groundwater Budget')
-##    plt.legend(['Leaks','Precipitation','Storage: In','Pumping','Storage: Out'],loc=4)
-##    
-##    plt.savefig('model_files\output\plots\WB_'+modelname+'.png')
-##    plt.savefig('model_files\output\plots\WB_'+modelname+'.svg')
-##    plt.close()
-#
-##%% Time series by location
-#t = pd.DatetimeIndex(freq='M',start='01/30/1985',end='12/31/2013')
-#coords = [52,61] # subs, [29,77] # pump, [90,25] # mtn, [59,54] #
-#
-#hTimeS = np.zeros((348,4))
-#
-#z = [0,1,1,1]
-#
-#for i,s_name in enumerate(scenario_list):
-#    j = 0
-#    for y in range(1,30):
-#        for m in range(0,12):
-#            h = S_heads[s_name].get_data(kstpkper=((calendar.monthrange(1984+y,m+1)[1]-1),y*12+m),mflay=1)#S_heads[s_name].get_data(kstpkper=((calendar.monthrange(1984+y,m+1)[1]-1),y*12+m),mflay=1)
-#            hTimeS[j,i] = h[coords[0],coords[1]]
-#            j+=1
-#    
-#    plt.plot(t, hTimeS[:,i],linewidth=l[i],color=c[i])#,mark[i],zorder=z[i],markersize=5)
-#    
-#plt.xlabel('Year')
-#plt.ylabel('Head Elevation')
-#plt.title('Head elevation over time at pumping location')
-#plt.legend(['Historical','Increased WW Reuse','Repair Leaks','Recharge Basins'])
-#plt.savefig('model_files\output\plots\HDS_Indicator_Pump.svg')
-#plt.close()
-#
-##%%
-#fig = plt.figure()
-#ax = fig.gca(projection='3d')
-#
-##for s_name in ['Historical','WWTP','Leak','Basin']:
-#hds = bf.HeadFile('model_files\modflow\VM_Test.hds')
-#h = hds.get_data(mflay=[0,1],kstpkper=(30,359))
-#
-#HNEW = np.ones(h.shape)*2100#min(h[h>0])
-#for i, head in enumerate(h):
-#    HNEW[i][head>-900] = head[head>-900]
-#
-## plot a 3D wireframe like in the example mplot3d/wire3d_demo
-#Z = HNEW[1]
-#x = np.arange(0,ncol*cellsize,cellsize)
-#y = np.arange(0,nrow*cellsize,cellsize)
-#X, Y = np.meshgrid(x, y)
-#
-## Plot the surface.
-#surf = ax.plot_surface(X, Y, Z, cmap=cm.coolwarm)
-#
-## Add a color bar which maps values to colors.
-#fig.colorbar(surf, shrink=0.5, aspect=5, label='Elevation (masl)')
-#plt.xlabel('Easting')
-#plt.ylabel('Northing')
-#plt.show()
-#
-##%% Calculate Objectives
-#WEL_INFO = {}
-#
-#n_scenario = 4
-#n_obj = 3
-#energy_array = np.zeros((n_scenario,2))
-#subs_array = np.zeros((n_scenario,2))
-#mound_array = np.zeros((n_scenario,3))
-#
-#for s, s_name in enumerate(scenario_list):
-#    
-#    with open('model_output\objective_data\WEL_INFO_'+s_name+'.pickle', 'rb') as handle:
-#        WEL_INFO = pickle.load(handle)
-#    with open('model_output\objective_data\LU_'+s_name+'.pickle', 'rb') as handle:
-#        LU = pickle.load(handle)
-#    heads = S_heads[s_name]
-#    
-#    energy_array[s,:] = mo.measureEnergy(heads,WEL_INFO,DEM)
-#    subs_array[s,:] = mo.measureSubidence(heads,DEM,ACTIVE_LYR1,TH1)
-#    mound_array[s,:] = mo.measureMound(heads,DEM,ACTIVE_LYR1,LU,[132,252])
-#
-##%%
-#    
-#energy = energy_array[:,0]
-#subs = subs_array[:,0]/subs_array[:,1]
-#mound = mound_array[:,0]/min(mound_array[:,0])
-#cells = (360-14)*np.sum(np.sum(ACTIVE_LYR2)) # Number of cells in Model Area over periods 15-360
-#
 
-# Plotting defaults
-l = [4,2,2,2]
-c = ['k','goldenrod','blue','darkgreen']
-mark = ['-','-','-','--']
-
-scenario_list = ['Historical','WWTP','Leak','Basin']
-
-#barWidth = 0.5
-#r = np.arange(n_scenario)*0.5 # bar position
-#y_label = ['Kilowatt Hours','Average Head Below top of Clay Layer','Ratio to Historical Mounding']
-#obj_title = ['Energy Use','Subsidence Avoidance','Mounding']
-#ylims = [[4.5E9,6E9],[36,41],[0.9,1.25]]
-#
-#normalized_o = np.zeros((n_scenario,n_obj))
-#
-#fig, axes = plt.subplots(nrows=1, ncols=3,figsize=(10,6))
-#
-#for o, obj in enumerate([energy,subs,mound]):
-#    normalized_o[:,o] = obj / (obj.max(axis=0) - obj.min(axis=0))
-#    plt.subplot(1,n_obj,o+1)
-#    plt.bar(r, obj, width=barWidth, edgecolor='white', color=c)
-#    plt.xticks(r, ['Historical','WWTP','Leak','Basin'],rotation='vertical')
-#    plt.ylabel(y_label[o])
-#    plt.ylim(ylims[o])
-#    plt.title(obj_title[o])
-#
-#fig.tight_layout()
-## Flip subsidence measure to be minimizing
-##normalized_o[:,1] = 1 - normalized_o[:,1]
-#plt.savefig('model_output\plots\Objectives.svg')
-#plt.savefig('model_output\plots\Objectives.png', dpi=600)
-#plt.show()
-
-def process_hobs(s_name, legend, obsinfo_loaded=True):
+def process_hobs(name, legend, obsinfo_loaded=True):
     '''
     Imports head observations from .hob.out file which gives simulated and observed head values
     '''
     obsformation = pd.read_csv(Path.cwd() / 'data_raw' / 'obs_formation.csv')
-    df = pd.read_fwf(Path.cwd().joinpath('model_files').joinpath('modflow').joinpath('VM_'+s_name+'.hob.out'),widths=[22,19,22])
+    df = pd.read_fwf(Path.cwd().joinpath('model_files').joinpath('modflow').joinpath(name+'.hob.out'),widths=[22,19,22])
     df.columns = ['simulated','observed','obs_name']
     df['time_series'] = np.nan
     df['obs_id'] = np.nan
@@ -416,8 +272,8 @@ def process_hobs(s_name, legend, obsinfo_loaded=True):
             obsinfo = pickle.load(handle)
     else:
         print('Processing observation input file...')
-        mf = flopy.modflow.Modflow.load(str(Path.cwd().joinpath('model_files').joinpath('modflow').joinpath(s_name+'.nam')))
-        hob = flopy.modflow.ModflowHob.load(str(Path.cwd().joinpath('model_files').joinpath('modflow').joinpath(s_name+'.ob_hob')), mf)
+        mf = flopy.modflow.Modflow.load(str(Path.cwd().joinpath('model_files').joinpath('modflow').joinpath(name+'.nam')))
+        hob = flopy.modflow.ModflowHob.load(str(Path.cwd() / 'model_files' / 'modflow' / 'OBS.ob_hob'), mf)
         winfofile = Path.cwd() / 'model_files' / 'modflow' / 'OBS.pickle'
         with open(winfofile, 'wb') as handle:
             pickle.dump(hob.obs_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
@@ -444,12 +300,13 @@ def process_hobs(s_name, legend, obsinfo_loaded=True):
         df.loc[df['obs_id']==r['IDPOZO'],'legend'] = legend[r['ZONE']-1]
     return df, obsformation
 
-def plt_wellhydrographs(s_name, filelocation, df=0, obsformation=0, obsinfo_loaded=True, timestep='d', startdate='1984-01-01', ddn_lim=[-50, 20], legend=['Lacustrine','Alluvial','Basalt','Volcaniclastic','Andesite']):
+def plt_wellhydrographs(name, filelocation, df=0, obsformation=0, obsinfo_loaded=True, timestep='d', startdate='1984-01-01', ddn_lim=[-50, 20], legend=['Lacustrine','Alluvial','Basalt','Volcaniclastic','Andesite']):
     
     if not isinstance(df, pd.DataFrame):
-        df, obsformation = process_hobs(s_name, legend=legend, obsinfo_loaded=obsinfo_loaded)
+        df, obsformation = process_hobs(name, legend=legend, obsinfo_loaded=obsinfo_loaded)
     
     filelocation = Path.cwd().joinpath('model_files').joinpath('output').joinpath('plots').joinpath('observations').joinpath(filelocation)
+    filelocation.mkdir(exist_ok=True)
     
     for l in legend:
         filelocation.joinpath(l).mkdir(exist_ok=True)
@@ -480,12 +337,12 @@ def plt_wellhydrographs(s_name, filelocation, df=0, obsformation=0, obsinfo_load
         plt.savefig(str(filename), dpi=600)
         plt.close()
         
-def plt_simvsobs(s_name, filename, legend=['Lacustrine','Alluvial','Basalt','Volcaniclastic','Andesite'], df=0, obsformation=0, obsinfo_loaded=True):
+def plt_simvsobs(name, filename, legend=['Lacustrine','Alluvial','Basalt','Volcaniclastic','Andesite'], df=0, obsformation=0, obsinfo_loaded=True):
     
     filename = str(Path.cwd() / 'model_files' / 'output' / 'plots' / 'calibration' / filename)
     
     if not isinstance(df, pd.DataFrame):
-        df, obsformation = process_hobs(s_name, legend=legend, obsinfo_loaded=obsinfo_loaded)
+        df, obsformation = process_hobs(name, legend=legend, obsinfo_loaded=obsinfo_loaded)
         
     # get coeffs of linear fit
     x = df['absobserved1'].values
@@ -509,12 +366,12 @@ def plt_simvsobs(s_name, filename, legend=['Lacustrine','Alluvial','Basalt','Vol
     
     return slope, intercept, r_value, p_value, std_err 
 
-def plt_simvsobsddn(s_name, filename, legend=['Lacustrine','Alluvial','Basalt','Volcaniclastic','Andesite'], df=0, obsformation=0, obsinfo_loaded=True):
+def plt_simvsobsddn(name, filename, legend=['Lacustrine','Alluvial','Basalt','Volcaniclastic','Andesite'], df=0, obsformation=0, obsinfo_loaded=True):
     
     filename = str(Path.cwd() / 'model_files' / 'output' / 'plots' / 'calibration' / filename)
     
     if not isinstance(df, pd.DataFrame):
-        df, obsformation = process_hobs(s_name, legend=legend, obsinfo_loaded=obsinfo_loaded)
+        df, obsformation = process_hobs(name, legend=legend, obsinfo_loaded=obsinfo_loaded)
 
     df.loc[df['simulated']>1000,'simulated'] = 0
     df.loc[df['observed']>1000, 'observed'] = 0

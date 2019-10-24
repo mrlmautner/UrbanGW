@@ -8,18 +8,19 @@ Created on Thu Apr  5 15:23:15 2018
 import flopy
 import numpy as np
 import time
-import pickle
+#import pickle
 import calendar
+from pathlib import Path
 
 class model():
 
     # Initializer / Instance attributes
-    def __init__(self, scenario, xll, yll, xur, yur, cellsize, strt_yr, end_yr, ACTIVE, THICKNESS, GEO, DEM, IH, MUN, PAR, exe_file = r'C:\WRDAPP\MF2005.1_12\bin\mf2005.exe'):
-        self.name = scenario # Assign name
-        self.xll = xll # X coordinate of the lower left corner
-        self.yll = yll # Y coordinate of the lower left corner
-        self.xur = xur # X coordinate of the upper right corner
-        self.yur = yur # Y coordinate of the upper right corner
+    def __init__(self, name, exe_file=Path('C:') / 'WRDAPP' / 'MF2005.1_12' / 'bin' / 'mf2005.exe', modlims=[455000, 2107000, 539000, 2175000], cellsize=500, strt_yr=1984, end_yr=2014, ACTIVE=[Path.cwd() / 'data_processed' / 'ACTIVE_VM_LYR2.asc', Path.cwd() / 'data_processed' / 'ACTIVE_VM_LYR2.asc'], THICKNESS=[Path.cwd() / 'data_processed' / 'THICK1_VM.asc', Path.cwd() / 'data_processed' / 'THICK2_VM.asc'], GEO=[Path.cwd() / 'data_processed' / 'GEO_VM_LYR1.asc', Path.cwd() / 'data_processed' / 'GEO_VM_LYR2.asc'], DEM=Path.cwd() / 'data_processed' / 'DEM_VM.asc', IH=Path.cwd() / 'data_processed' / 'IH_1984_LT2750.asc', MUN=Path.cwd() / 'data_processed' / 'MUN_VM.asc', PAR=Path.cwd() / 'model_files' / 'modflow' / 'params.pval', sarun=0):
+        self.name = name # Assign name
+        self.xll = modlims[0] # X coordinate of the lower left corner
+        self.yll = modlims[1] # Y coordinate of the lower left corner
+        self.xur = modlims[2] # X coordinate of the upper right corner
+        self.yur = modlims[3] # Y coordinate of the upper right corner
         self.cellsize = cellsize # Grid size
         self.ncol = int((self.xur - self.xll) / self.cellsize) # Number of rows
         self.nrow = int((self.yur - self.yll) / self.cellsize) # Number of columns
@@ -35,22 +36,38 @@ class model():
         self.exe = exe_file
         
         # Create adjustable parameter dictionary
-        self.params = {}
-        with open(PAR) as f:
-            pval = f.readlines()
-        
-        for i in pval:
-            try:
-                self.params[i[:i.rfind('_')]].append(float(i[i.rfind('   '):]))
-            except:
+        # If PAR is a dictionary, extract parameter names and values
+        if isinstance(PAR, dict):
+            self.params = {}
+            for i, name in enumerate(PAR['names']):
+                p = PAR['values'][sarun][i]
+                if int(PAR['transform'][i]):
+                    p = np.exp(p)
                 try:
-                    self.params[i[:i.rfind('_')]] = [float(i[i.rfind('   '):])]
+                    self.params[name[:name.rfind('_')]].append(p)
                 except:
-                    pass
-    
+                    try:
+                        self.params[name[:name.rfind('_')]] = [p]
+                    except:
+                        pass
+        # Otherwise, PAR is a filename: read file and create parameters
+        else:
+            self.params = {}
+            with open(PAR) as f:
+                pval = f.read().splitlines()
+            
+            for i in pval:
+                try:
+                    self.params[i[:i.rfind('_')]].append(float(i[i.rfind('   '):]))
+                except:
+                    try:
+                        self.params[i[:i.rfind('_')]] = [float(i[i.rfind('   '):])]
+                    except:
+                        pass
+                    
     def initializeFM(self):
         # modelname to set the file root 
-        mf = flopy.modflow.Modflow(r'model_files\modflow\VM_' + self.name, exe_name=self.exe)
+        mf = flopy.modflow.Modflow(str(Path('model_files') / 'modflow' / self.name), exe_name=self.exe)
         
         # Model domain and grid definition
         botm = np.zeros((self.nlay, self.nrow, self.ncol))
@@ -231,7 +248,7 @@ class model():
         
         return oc, pcg
     
-    def run_scenario_model(self,num_WWTP,num_RCHBASIN,fixleak,seed=1):
+    def run_simulation_model(self, alt_wwtp, alt_basin, alt_leak, incl_obs=False, seed=1, verbose=False):
         '''
         num_WWTP is the number of wastewater treatment plants to rehabilitate for wastewater injection into the aquifer
         num_RCHBASIN is the number of infiltration basins that will recharge the aquifer using imported water
@@ -240,7 +257,7 @@ class model():
         
         np.random.seed(seed)
         timestart = time.time()
-#        print('Processing data...')
+        if verbose: print('Processing data...')
         
         # Phase starting stress period
         PHASE_PER = [0, 132, 252, 360]
@@ -252,26 +269,25 @@ class model():
         
         # Model internal variables
 #        drains = False
-        fixleak = fixleak/100 # convert from integer to decimal
+        fixleak = alt_leak/100 # convert from integer to decimal
         cost = 0 # Initial cost
         sec2day = 60*60*24 # Second to day conversion
-        LID_PAR = [1, 1, 1] # Phase LID increase multiplier
         
         # Water supply data
-        hist_water_use = np.loadtxt(r'model_files\optimization_data\decisions\twu.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Initial (original) all other supplies before alternatives, matrix of size municipalities by phases (m3/s)
+        hist_water_use = np.loadtxt(Path('model_files') / 'optimization_data' / 'decisions' / 'twu.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Initial (original) all other supplies before alternatives, matrix of size municipalities by phases (m3/s)
         total_water_use = hist_water_use*self.params['TWU']*sec2day # Multiply by total water use parameters (m3/d)
         self.twateruse = total_water_use.sum(axis=0) # Total water use for each model phase (m3/d)
         
-        i_other = np.loadtxt(r'model_files\optimization_data\decisions\initial_supply.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Initial (original) all other supplies before alternatives (m3/s)
+        i_other = np.loadtxt(Path('model_files') / 'optimization_data' / 'decisions' / 'initial_supply.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Initial (original) all other supplies before alternatives (m3/s)
         i_other = i_other.sum(axis=0)*sec2day # Initial other water supply for each model phase (m3/d)
         new_other = i_other.copy() # New other water supply for each model phase (m3/d)
         
         # Alternatives changes to supply
         # Import alternative pumping scheme (percentage changes in pumping), total groundwater pumping must be equal to original
-        self.altpump = np.loadtxt(r'model_files\optimization_data\decisions\altpump.csv', delimiter=',', skiprows=1)
+        self.altpump = np.loadtxt(Path('model_files') / 'optimization_data' / 'decisions' / 'altpump.csv', delimiter=',', skiprows=1)
         
         # Calculate historical quantity of leaks in each municipality
-        LEAK_MUN = np.loadtxt(r'data_processed\leak\LEAK_TOT_MUN.csv',delimiter=',',skiprows=1) # Total recharge percent per municipality: equal to percent of total water use (1997 values) x percent leak (~35%) x recharge percent (15%)
+        LEAK_MUN = np.loadtxt(Path('data_processed') / 'leak' / 'LEAK_TOT_MUN.csv',delimiter=',',skiprows=1) # Total recharge percent per municipality: equal to percent of total water use (1997 values) x percent leak (~35%) x recharge percent (15%)
         leaks = np.zeros((LEAK_MUN.shape[0],phases+1))
         leaks[:,0] = LEAK_MUN[:,0]
         for i in range(phases):
@@ -288,7 +304,7 @@ class model():
         # Initialize the modflow model with the boundary conditions input above
         mf, dis, bas, lpf = self.initializeFM()
         
-#        print('Basic, Discretization, and Layer packages generated in', str(time.time() - timestart), 'seconds')
+        if verbose: print('Basic, Discretization, and Layer packages generated in', str(time.time() - timestart), 'seconds')
         
         '''
         Land Use Type
@@ -299,7 +315,7 @@ class model():
             LU[LUset] = {'ARRAY':{},'LIST':{}}
             
             for l, LUtype in enumerate(['URBAN','NATURAL','WATER']):
-                filename = r'data_processed\landuse\LU-' + LUset + '-' + LUtype + '.asc'
+                filename = Path('data_processed').joinpath('landuse').joinpath('LU-' + LUset + '-' + LUtype + '.asc')
                 perarea =  np.loadtxt(filename,skiprows=6)
                 LU[LUset]['ARRAY'][LUtype] = perarea
                 
@@ -326,7 +342,7 @@ class model():
         Recharge
         Create recharge dictionary for MODFLOW RCH package based on land use multipliers and interpolated precipitation rasters
         '''
-#        newtime = time.time()
+        newtime = time.time()
             
         RCH_DICT = {}
         Precip_Dict = {}
@@ -335,7 +351,7 @@ class model():
             for month in range(1,13):
                 per = (year - self.strt_yr) * 12 + month - 1
             
-                filename = r'data_processed\recharge\claymult\PrecipCM_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
+                filename = Path('data_processed').joinpath('recharge').joinpath('claymult').joinpath('PrecipCM_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc')
                 Precip_Dict[per] = np.loadtxt(filename,skiprows=6)
         
         for i, LUset in enumerate(LU_PAR):
@@ -344,7 +360,7 @@ class model():
         # Create MODFLOW RCH package
         rch = flopy.modflow.ModflowRch(mf, nrchop=3,  ipakcb=9, rech=RCH_DICT)
         
-#        print('RCH_Dict generated in', str(time.time() - newtime), 'seconds')
+        if verbose: print('RCH_Dict generated in', str(time.time() - newtime), 'seconds')
         
         '''
         Well objects: supply wells, distribution leaks, injection wells, wastewater reuse, recharge basins
@@ -356,13 +372,13 @@ class model():
         
         # Add supply wells, includes the ratioGn multiplier to reduce pumping when new supplies are added
         # Import CONAGUA and SACM pumping datasets
-        CAEM_array = np.loadtxt(r'data_processed\wells\PUMP_C.csv', delimiter=',', skiprows=1, usecols=[1,2,7,8,11]) # pumping in m3 per day
+        CAEM_array = np.loadtxt(Path('data_processed') / 'wells' / 'PUMP_C.csv', delimiter=',', skiprows=1, usecols=[1,2,7,8,11]) # pumping in m3 per day
         WEL_DICT, WEL_INFO = self.addNewWells(CAEM_array, LYR=1, WEL_Dict=WEL_DICT, INFO_Dict=WEL_INFO, pumpwell=True)
             
-        SACM_array = np.loadtxt(r'data_processed\wells\PUMP_S-ERRORS.csv',delimiter=',', skiprows=1, usecols=[1,2,7,8,11]) # pumping in m3 per day
+        SACM_array = np.loadtxt(Path('data_processed') / 'wells' / 'PUMP_S-ERRORS.csv',delimiter=',', skiprows=1, usecols=[1,2,7,8,11]) # pumping in m3 per day
         WEL_DICT, WEL_INFO = self.addNewWells(SACM_array, LYR=1, WEL_Dict=WEL_DICT, INFO_Dict=WEL_INFO, pumpwell=True)
         
-        REPDA_array = np.loadtxt(r'data_processed\wells\PUMP_RC_Q-Repeats.csv', delimiter=',', skiprows=1, usecols=[1,2,4,5,11,16]) # pumping in m3 per day
+        REPDA_array = np.loadtxt(Path('data_processed') / 'wells' / 'PUMP_RC_Q-Repeats.csv', delimiter=',', skiprows=1, usecols=[1,2,4,5,11,15]) # pumping in m3 per day
         total_urban_repda = REPDA_array[REPDA_array[:,5]==1,4].sum() * -1 # Pumping sum is negative
         total_periurban_repda = REPDA_array[REPDA_array[:,5]==0,4].sum() * -1 # Pumping sum is negative
         
@@ -455,16 +471,16 @@ class model():
         At the end of the data processing WWTP has the following columns: X, Y, 
         start year, end year, difference between installed and actual capacity
         '''
-        WWTPs = np.loadtxt(r'data_processed\alternatives\WWTP.csv', delimiter=',', skiprows=1, usecols=[9,8,5,6,11])
+        WWTPs = np.loadtxt(Path('data_processed') / 'alternatives' / 'WWTP.csv', delimiter=',', skiprows=1, usecols=[9,8,5,6,11])
         
-        if num_WWTP > 0:
+        if alt_wwtp > 0:
             WWTPs[:, 3] = (WWTPs[:,2] - WWTPs[:,3]) # Col 2 is installed treatment capacity and Col 3 is actual treatment quantity
             WWTPs = np.insert(WWTPs, 2, PHASE_PER[0], axis=1) # Insert starting period
             WWTPs[:, 3] = np.ones(WWTPs.shape[0]) * PHASE_PER[phases] # Replace Col 3 with ending period
             WWTPs[WWTPs[:, 4] < 0.01, 4] = 0.01 # For any WWTPs with a difference of
             # less than 0.01 m3/s in capacity, assign an injection of 0.01 m3/s
             
-            WWTPs = WWTPs[np.random.choice(WWTPs.shape[0], size=num_WWTP, replace=False), :]
+            WWTPs = WWTPs[np.random.choice(WWTPs.shape[0], size=alt_wwtp, replace=False), :]
             WEL_DICT, WEL_INFO = self.addNewWells(WWTPs, LYR=1, WEL_Dict=WEL_DICT, INFO_Dict=WEL_INFO, WEL_mult=sec2day) # Mult used to convert to m3/d
             
             ## Cost attributed to each exapanded WWTPs
@@ -486,9 +502,9 @@ class model():
         '''
         Recharge Basins
         '''
-        Basin_Array = np.loadtxt(r'data_processed\alternatives\RCH_BASIN.csv', delimiter=',', skiprows=1)
-        Basins = np.zeros((num_RCHBASIN, 2))
-        for b in range(0, num_RCHBASIN):
+        Basin_Array = np.loadtxt(Path('data_processed') / 'alternatives' / 'RCH_BASIN.csv', delimiter=',', skiprows=1)
+        Basins = np.zeros((alt_basin, 2))
+        for b in range(0, alt_basin):
             randBasin = np.random.randint(0, Basin_Array.shape[0])
             c = int(np.floor((Basin_Array[randBasin,0] - self.xll) / self.cellsize))
             r = int(np.floor((self.yur - Basin_Array[randBasin, 1]) / self.cellsize))
@@ -500,11 +516,11 @@ class model():
                 WEL_INFO[per].append([1, r, c, 1 * sec2day, self.mun[r, c], 1])
         
         ## Cost attributed to building recharge basins
-        cost += num_RCHBASIN * 20
+        cost += alt_basin * 20
         
         wel = flopy.modflow.ModflowWel(mf, stress_period_data=WEL_DICT, options=['NOPRINT'])
             
-#        print('WEL_Dict generated in', str(time.time() - newtime), 'seconds')
+        if verbose: print('WEL_Dict generated in', str(time.time() - newtime), 'seconds')
 #        
 #        ## Create pickle file of Well Data to be available for post processing of well energy use objective
 #        winfofile = r'model_files\optimization_data\objectives\WEL_INFO_' + self.name + '.pickle'
@@ -530,31 +546,36 @@ class model():
         # Generate output control and solver MODFLOW packages 
         oc, pcg = self.outputControl(mf)
         
-        mf.add_output(r'model_files\modflow\VM_' + self.name + '.hob.out',unit=1002)
-        hob = flopy.modflow.ModflowHob.load(r'model_files\modflow\VM.ob_hob', mf)
+        if incl_obs:
+            mf.add_existing_package(str(Path.cwd().joinpath('model_files').joinpath('modflow').joinpath('OBS.ob_hob')),ptype='HOB', copy_to_model_ws=False)
+            mf.add_output(str(Path.cwd().joinpath('model_files').joinpath('modflow').joinpath(self.name + '.hob.out')),unit=1002)
+#        hob = flopy.modflow.ModflowHob.load(r'model_files\modflow\OBS.ob_hob', mf)
 #        winfofile = r'model_files\modflow\OBS.pickle'
 #        with open(winfofile, 'wb') as handle:
 #            pickle.dump(hob.obs_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
 #    
-#        # Run Model and post processing
-#        ## Write the MODFLOW model input files
-#        print('Data processed in', str(time.time() - timestart), 'seconds')
-#        
-#        newtime = time.time()
-#        print('Writing input file...')
-#        
-#        mf.write_input()
-#        print('Input file written in', str(time.time() - newtime), 'seconds')
-#        
-#        newtime = time.time()
-#        print('Running MODFLOW model...')
+        # Run Model and post processing
+        ## Write the MODFLOW model input files
+        if verbose:
+            print('Data processed in', str(time.time() - timestart), 'seconds')
+        
+            newtime = time.time()
+            print('Writing input file...')
+            
+            mf.write_input()
+            print('Input file written in', str(time.time() - newtime), 'seconds')
+            
+            newtime = time.time()
+            print('Running MODFLOW model...')
+            
         # Run the MODFLOW model
-        success, buff = mf.run_model()
-#        
-#        print('MODFLOW model completed run in', str(time.time() - newtime), 'seconds')
-#        
-#        print('Wrapper completed run in', str(time.time() - timestart), 'seconds')
-#        
+        success, buff = mf.run_model(silent=not verbose)
+        
+        if verbose:
+            print('MODFLOW model completed run in', str(time.time() - newtime), 'seconds')
+        
+            print('Wrapper completed run in', str(time.time() - timestart), 'seconds')
+        
         self.wwtps = WWTPs
         self.basins = Basins
         self.mthlyleak = total_mthly_leak
