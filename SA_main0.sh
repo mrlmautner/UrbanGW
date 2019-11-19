@@ -10,4 +10,6 @@
 # IMPORTANT: Python3 is installed in my directory. Add it to the path.
 export PATH=/zeolite/mmautner/miniconda3/bin:$PATH
 
+module purge
+
 python SA_main0.py

@@ -1,13 +1,15 @@
 #!/bin/bash -l
-#SBATCH -n 200            # Total number of processors to request
-#SBATCH -p aqua
-#SBATCH -t 200:00:00        # Run time (hh:mm:ss) - 24 hours
+#SBATCH -n 168                  # Total number of processors to request
+#SBATCH --distribution=plane=8  # Distribute in blocks of 8 to each node
+#SBATCH -p aqua                 # Partition option of AQUA is aqua
+#SBATCH -t 200:00:00            # Run time (hh:mm:ss) - 24 hours
 #SBATCH --mail-user=mmautner@ucdavis.edu              # address for email notification
-#SBATCH --mail-type=ALL                  # email at Begin and End of job
+#SBATCH --mail-type=ALL         # email at Begin and End of job
 
-# you can define your own variables. Access them later with dollar signs ($DIR, etc.)
-
-# IMPORTANT: Python3 is installed in my directory. Add it to the path.
+# Add my directory to the path to point to python.
 export PATH=/zeolite/mmautner/miniconda3/bin:$PATH
 
-python SA_main.py
+# To point to the correct MPI in my local folder
+module purge 
+
+mpirun --bind-to none python SA_main.py

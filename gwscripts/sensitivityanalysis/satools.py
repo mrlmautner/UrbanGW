@@ -7,7 +7,6 @@ Created on Wed Oct 16 11:22:48 2019
 
 from SALib.sample import latin
 from SALib.analyze import delta
-from SALib.test_functions import Ishigami
 import numpy as np
 from pathlib import Path
 
@@ -48,4 +47,4 @@ def gen_param_vals(nsamples):
     # Sample from the parameter ranges
     params['values'] = latin.sample(problem, nsamples)
     
-    return params
+    return problem, params

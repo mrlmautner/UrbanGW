@@ -15,7 +15,7 @@ from pathlib import Path
 class model():
 
     # Initializer / Instance attributes
-    def __init__(self, name, exe_file=Path('C:') / 'WRDAPP' / 'MF2005.1_12' / 'bin' / 'mf2005.exe', modlims=[455000, 2107000, 539000, 2175000], cellsize=500, strt_yr=1984, end_yr=2014, ACTIVE=[Path.cwd() / 'data_processed' / 'ACTIVE_VM_LYR2.asc', Path.cwd() / 'data_processed' / 'ACTIVE_VM_LYR2.asc'], THICKNESS=[Path.cwd() / 'data_processed' / 'THICK1_VM.asc', Path.cwd() / 'data_processed' / 'THICK2_VM.asc'], GEO=[Path.cwd() / 'data_processed' / 'GEO_VM_LYR1.asc', Path.cwd() / 'data_processed' / 'GEO_VM_LYR2.asc'], DEM=Path.cwd() / 'data_processed' / 'DEM_VM.asc', IH=Path.cwd() / 'data_processed' / 'IH_1984_LT2750.asc', MUN=Path.cwd() / 'data_processed' / 'MUN_VM.asc', PAR=Path.cwd() / 'model_files' / 'modflow' / 'params.pval', sarun=0):
+    def __init__(self, name, exe_file=str(Path('C:') / 'WRDAPP' / 'MF2005.1_12' / 'bin' / 'mf2005.exe'), modlims=[455000, 2107000, 539000, 2175000], cellsize=500, strt_yr=1984, end_yr=2014, ACTIVE=[Path.cwd() / 'data_processed' / 'ACTIVE_VM_LYR2.asc', Path.cwd() / 'data_processed' / 'ACTIVE_VM_LYR2.asc'], THICKNESS=[Path.cwd() / 'data_processed' / 'THICK1_VM.asc', Path.cwd() / 'data_processed' / 'THICK2_VM.asc'], GEO=[Path.cwd() / 'data_processed' / 'GEO_VM_LYR1.asc', Path.cwd() / 'data_processed' / 'GEO_VM_LYR2.asc'], DEM=Path.cwd() / 'data_processed' / 'DEM_VM.asc', IH=Path.cwd() / 'data_processed' / 'IH_1984_LT2750.asc', MUN=Path.cwd() / 'data_processed' / 'MUN_VM.asc', PAR=Path.cwd() / 'model_files' / 'modflow' / 'params.pval', sarun=0):
         self.name = name # Assign name
         self.xll = modlims[0] # X coordinate of the lower left corner
         self.yll = modlims[1] # Y coordinate of the lower left corner
@@ -41,7 +41,7 @@ class model():
             self.params = {}
             for i, name in enumerate(PAR['names']):
                 p = PAR['values'][sarun][i]
-                if int(PAR['transform'][i]):
+                if int(PAR['transform'][i]) == 1:
                     p = np.exp(p)
                 try:
                     self.params[name[:name.rfind('_')]].append(p)
@@ -67,7 +67,7 @@ class model():
                     
     def initializeFM(self):
         # modelname to set the file root 
-        mf = flopy.modflow.Modflow(str(Path('model_files') / 'modflow' / self.name), exe_name=self.exe)
+        mf = flopy.modflow.Modflow(str(Path('model_files') / 'modflow' / self.name), exe_name=str(self.exe))
         
         # Model domain and grid definition
         botm = np.zeros((self.nlay, self.nrow, self.ncol))
@@ -551,6 +551,7 @@ class model():
             mf.add_output(str(Path.cwd().joinpath('model_files').joinpath('modflow').joinpath(self.name + '.hob.out')),unit=1002)
 #        hob = flopy.modflow.ModflowHob.load(r'model_files\modflow\OBS.ob_hob', mf)
 #        winfofile = r'model_files\modflow\OBS.pickle'
+#        import pickle
 #        with open(winfofile, 'wb') as handle:
 #            pickle.dump(hob.obs_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
 #    
@@ -562,7 +563,9 @@ class model():
             newtime = time.time()
             print('Writing input file...')
             
-            mf.write_input()
+        mf.write_input()
+        
+        if verbose:
             print('Input file written in', str(time.time() - newtime), 'seconds')
             
             newtime = time.time()

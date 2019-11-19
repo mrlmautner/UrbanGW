@@ -20,7 +20,7 @@ from pathlib import Path
 import shutil
 
 # Function to run SA: sarun is the index of the set of parameter values to use given a previously generated set of parameter values in SALib, soswrlim is the maximum sum-of-squared, weighted residuals allowed to proceed with an evaluation of the managed aquifer recharge alternatives
-def SA_mode(alternatives, params, exefile, safolder, sarun=0, soswrlim=0, verbose=False):
+def SA_mode(alternatives, params, exefile, safolder, sarun=0, soswrlim=0, verbose=False, delfolder=True):
     num_alts = len(alternatives['names'])
     sa_model = [0]*num_alts
     
@@ -29,8 +29,10 @@ def SA_mode(alternatives, params, exefile, safolder, sarun=0, soswrlim=0, verbos
     sa_loc.mkdir(exist_ok=True)
     
     # Run the simulation model under historical conditions
+    hist_time = time.time()
     sa_model[0] = vm.model(name=str(Path(sa_loc) / alternatives['names'][0]), PAR=params, sarun=sarun, exe_file=exefile)
     sa_model[0].run_simulation_model(alt_wwtp=0, alt_basin=0, alt_leak=0, incl_obs=True, verbose=verbose)
+    print('Historical alternative for model ' + '{:05d}'.format(sarun) + ' completed in: ' + str(time.time() - hist_time) + ' seconds')
     
     # Load head observation information for historical model run
     stats = np.loadtxt(Path.cwd() / 'model_files' / 'modflow' / 'OBS_stats.csv')
@@ -39,6 +41,15 @@ def SA_mode(alternatives, params, exefile, safolder, sarun=0, soswrlim=0, verbos
     
     soswr, maxerror = mo.calculate_SOSWR(heads_obs, stats)
     
+    # Save the sum-of-squared, weighted residual error
+    error = np.array([soswr, maxerror])
+    sa_err_loc = Path.cwd().joinpath('model_files').joinpath('output').joinpath('sa').joinpath('err').joinpath(safolder)
+    try:
+        np.savetxt(sa_err_loc.joinpath('{:05d}'.format(sarun) + '.csv'), error, delimiter=',')
+    except:
+        sa_err_loc.mkdir(exist_ok=True)
+        np.savetxt(sa_err_loc.joinpath('{:05d}'.format(sarun) + '.csv'), error, delimiter=',')
+    
     # Determine if historical model performance is adequate
     objectives = np.ones((3,4))*np.nan
     if soswr<=soswrlim:
@@ -46,10 +57,10 @@ def SA_mode(alternatives, params, exefile, safolder, sarun=0, soswrlim=0, verbos
         for i, name in enumerate(alternatives['names'][1:]):
             if verbose: print(name, 'Alternative')
             alt_time = time.time()
-            print(name)
             sa_model[i+1] = vm.model(name=str(Path(sa_loc) / name), PAR=params, sarun=sarun, exe_file=exefile)
             sa_model[i+1].run_simulation_model(int(alternatives['wwtps'][i+1]), int(alternatives['basins'][i+1]), int(alternatives['leakrepair'][i+1]), verbose=verbose)
             if verbose: print(name, 'Simulation completed in', str(time.time() - alt_time), 'seconds')
+            print('Alternative ' + name + ' for model ' + '{:05d}'.format(sarun) + ' completed in: ' + str(time.time() - alt_time) + ' seconds')
     
         # Retrieve head changes over model period  
         heads = pltvm.get_heads(alternatives['names'],sarun)
@@ -59,37 +70,29 @@ def SA_mode(alternatives, params, exefile, safolder, sarun=0, soswrlim=0, verbos
         energy, subs, mound = (np.zeros(num_alts) for i in range(3))
     
         for i, name in enumerate(alternatives['names']):
-            energy[i], subs[i], mound[i] = mo.get_objectives(heads[name], sa_model[i].wells, sa_model[i].landuse, sa_model[i].dem, sa_model[i].geo[0], sa_model[i].thck[0])
+            energy[i], subs[i], mound[i] = mo.get_objectives(heads[name], sa_model[i].wells, sa_model[i].landuse, sa_model[i].dem, sa_model[i].geo[0], sa_model[i].thck[0], sa_model[i].botm)
         
         mound = mound*100
         
         objectives = [energy, subs, mound]
         sa_obj_loc = Path.cwd().joinpath('model_files').joinpath('output').joinpath('sa').joinpath('obj').joinpath(safolder)
         try:
-            np.savetxt(sa_obj_loc.joinpath(str(sarun) + '.csv'), objectives, delimiter=',')
+            np.savetxt(sa_obj_loc.joinpath('{:05d}'.format(sarun) + '.csv'), objectives, delimiter=',')
         except:
             sa_obj_loc.mkdir(exist_ok=True)
-            np.savetxt(sa_obj_loc.joinpath(str(sarun) + '.csv'), objectives, delimiter=',')
-        
-    # Save the sum-of-squared, weighted residual error
-    error = np.array([soswr, maxerror])
-    sa_err_loc = Path.cwd().joinpath('model_files').joinpath('output').joinpath('sa').joinpath('err').joinpath(safolder)
-    try:
-        np.savetxt(sa_err_loc.joinpath(str(sarun) + '.csv'), error, delimiter=',')
-    except:
-        sa_err_loc.mkdir(exist_ok=True)
-        np.savetxt(sa_err_loc.joinpath(str(sarun) + '.csv'), error, delimiter=',')
+            np.savetxt(sa_obj_loc.joinpath('{:05d}'.format(sarun) + '.csv'), objectives, delimiter=',')
         
     # Move the head observation file into the SA experiment folder (safolder)
     sa_hob_loc = Path.cwd().joinpath('model_files').joinpath('output').joinpath('sa').joinpath('hob').joinpath(safolder)
     try:
-        shutil.move(sa_loc.joinpath(alternatives['names'][0] + '.hob.out'), sa_hob_loc.joinpath(alternatives['names'][0] + '.hob_out'))
+        shutil.move(sa_loc.joinpath(alternatives['names'][0] + '.hob.out'), sa_hob_loc.joinpath('{:05d}'.format(sarun) + '.hob_out'))
     except:
         sa_hob_loc.mkdir(exist_ok=True)
-        shutil.move(sa_loc.joinpath(alternatives['names'][0] + '.hob.out'), sa_hob_loc.joinpath(alternatives['names'][0] + '.hob_out'))
+        shutil.move(sa_loc.joinpath(alternatives['names'][0] + '.hob.out'), sa_hob_loc.joinpath('{:05d}'.format(sarun) + '.hob_out'))
         
     # Delete the model directory and files for this SA parameter set
-    shutil.rmtree(sa_loc)
+    if delfolder:
+        shutil.rmtree(sa_loc, ignore_errors=True)
 
     return [error, objectives]
 
