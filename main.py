@@ -31,18 +31,18 @@ exefile = r'C:\WRDAPP\MF2005.1_12\bin\mf2005.exe'
 
 # Parameters
 ## Test Mode
-test = False
-test_name = 'Test'
+test = True
+test_name = 'Historical'
 hydrographloc = 'NoDRN_U_20190909'
 
 ## Scenario Mode
 plt_scen = True
-run_scenarios = True
-scenario_names = ['Historical','WWTP','Leak','Basin']
-mapTitles = ['Historical','Increased WW Reuse','Repair Leaks','Recharge Basins']
-leak_repair = [0,0,20,0]
-num_wwplants = [0,74,0,0]
-num_infbasins = [0,0,0,5]
+run_scenarios = False
+scenario_names = ['Historical','WWTP','Leak','Basin','Combined']
+mapTitles = ['Historical','Increased WW Reuse','Repair Leaks','Recharge Basins','Combined Alternatives']
+leak_repair = [0,0,20,0,20]
+num_wwplants = [0,74,0,0,74]
+num_infbasins = [0,0,0,5,5]
 clay_layer = np.loadtxt('data_processed\ACTIVE_VM_LYR1.asc',skiprows=6)
 cutz = np.loadtxt('model_files\optimization_data\decisions\cutz.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Imports from Cutzamala reservoir system
 lerm = np.loadtxt('model_files\optimization_data\decisions\lerm.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Imports from Lerma groundwater system
@@ -66,7 +66,7 @@ if test:
     testModel = model(test_name, 455000, 2107000, 539000, 2175000, 500, 1984, 2014, ACTIVE=['data_processed\ACTIVE_VM_LYR1.asc', 'data_processed\ACTIVE_VM_LYR2.asc'], THICKNESS=['data_processed\THICK1_VM.asc', 'data_processed\THICK2_VM.asc'], GEO=['data_processed\GEO_VM_LYR1.asc', 'data_processed\GEO_VM_LYR2.asc'], DEM='data_processed\DEM_VM.asc', IH='data_processed\IH_1984_LT2750.asc', MUN='data_processed\MUN_VM.asc', PAR='model_files\modflow\params.pval', exe_file=exefile)
     testModel.run_scenario_model(0,0,0)
     
-    pltvm.plt_wellhydrographs(test_name, hydrographloc, df=0, obsformation=0)
+#    pltvm.plt_wellhydrographs(test_name, hydrographloc, df=0, obsformation=0)
 
 
 if plt_scen:
@@ -100,7 +100,7 @@ if plt_scen:
     # Retrieve and plot head changes over model period  
     s_heads = pltvm.get_heads(scenario_names)
     
-    pltvm.plt_head_change(scenario_names, mapTitles, s_heads, vmmodel[0].geo[1], vmmodel[0].actv[1])
+    pltvm.plt_head_change(scenario_names[1:], mapTitles[1:], s_heads, vmmodel[0].geo[1], vmmodel[0].actv[1])
     
     # Calculate and plot objective performance
     print('Calculating scenario performance under objectives')

@@ -170,9 +170,9 @@ def get_budgets(scenario_list, mapTitles, s_heads):
     
 def plt_cum_sum(filename, scenario_list, mapTitles, df_CumSum, start='01-31-1985', end='12-31-2013'):
     # Plotting defaults
-    l = [4,2,2,2]
-    c = ['k','goldenrod','blue','darkgreen']
-    mark = ['-','-','-','--']
+    l = [4,2,2,2,2]
+    c = ['k','goldenrod','blue','darkgreen','k']
+    mark = ['-','-','-','--','-']
     
     for i,s_name in enumerate(scenario_list):
         df_CumSum[s_name].INOUTCUMSUM[start:end].plot(linewidth=l[i],color=c[i],style=mark[i])
