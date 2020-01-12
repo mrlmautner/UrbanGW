@@ -102,7 +102,7 @@ def plt_scen_objectives(scenario_names, num_scen, objectives):
     plt.rcParams['figure.titlesize'] = 24
     plt.rcParams.update({'font.size': 20})
     
-    c = ['k','goldenrod','blue','darkgreen']
+    c = ['k','goldenrod','blue','darkgreen','purple']
     barWidth = 0.1
     r = np.arange(num_scen)*0.1 # bar position
     y_label = ['Pumping Energy (kWh)','Depth to Groundwater in Clay (m)','Percent of Urban Cells Flooded']
@@ -171,7 +171,7 @@ def get_budgets(scenario_list, mapTitles, s_heads):
 def plt_cum_sum(filename, scenario_list, mapTitles, df_CumSum, start='01-31-1985', end='12-31-2013'):
     # Plotting defaults
     l = [4,2,2,2,2]
-    c = ['k','goldenrod','blue','darkgreen','k']
+    c = ['k','goldenrod','blue','darkgreen','purple']
     mark = ['-','-','-','--','-']
     
     for i,s_name in enumerate(scenario_list):

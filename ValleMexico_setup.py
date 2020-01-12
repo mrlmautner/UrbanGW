@@ -34,6 +34,14 @@ class model():
         self.nlay = 2 # This model only accepts 2 layers
         self.exe = exe_file
         
+        # Model domain and grid definition
+        botm = np.zeros((self.nlay, self.nrow, self.ncol))
+        sumthck = np.zeros((self.nrow, self.ncol))
+        for b, thickness in enumerate(self.thck):
+            sumthck = np.add(sumthck,thickness)
+            botm[b,:,:] = self.dem - sumthck # Current layer bottom elevation
+        self.botm = botm
+        
         # Create adjustable parameter dictionary
         self.params = {}
         with open(PAR) as f:
@@ -52,14 +60,6 @@ class model():
         # modelname to set the file root 
         mf = flopy.modflow.Modflow(r'model_files\modflow\VM_' + self.name, exe_name=self.exe)
         
-        # Model domain and grid definition
-        botm = np.zeros((self.nlay, self.nrow, self.ncol))
-        sumthck = np.zeros((self.nrow, self.ncol))
-        for b, thickness in enumerate(self.thck):
-            sumthck = np.add(sumthck,thickness)
-            botm[b,:,:] = self.dem - sumthck # Current layer bottom elevation
-        self.botm = botm
-        
         # Time discretization
         nper = (self.end_yr - self.strt_yr)*12 # Number of stress periods
         nstp = []
@@ -69,7 +69,7 @@ class model():
         nstp = np.array(nstp)
         steady = np.zeros((nper),dtype=bool)
         
-        dis = flopy.modflow.ModflowDis(mf, nlay=self.nlay, nrow=self.nrow, ncol=self.ncol, nper=nper, delr=self.cellsize, delc=self.cellsize, top=self.dem, botm=botm, perlen=nstp, nstp=9, tsmult=1.3, steady=steady, start_datetime='01/01/1984')
+        dis = flopy.modflow.ModflowDis(mf, nlay=self.nlay, nrow=self.nrow, ncol=self.ncol, nper=nper, delr=self.cellsize, delc=self.cellsize, top=self.dem, botm=self.botm, perlen=nstp, nstp=9, tsmult=1.3, steady=steady, start_datetime='01/01/1984')
             
         # Model Boundaries & initial conditions
         # Active areas
