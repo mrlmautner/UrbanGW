@@ -102,16 +102,16 @@ if plt_scen:
     
     pltvm.plt_head_change(scenario_names[1:], mapTitles[1:], s_heads, vmmodel[0].geo[1], vmmodel[0].actv[1])
     
-    # Calculate and plot objective performance
-    print('Calculating scenario performance under objectives')
-    energy, subs, mound = (np.zeros(num_scenarios) for i in range(3))
-    
-    for i, s_name in enumerate(scenario_names):
-        energy[i], subs[i], mound[i] = mo.get_objectives(s_heads[s_name], vmmodel[i].wells, vmmodel[i].landuse, vmmodel[i].dem, vmmodel[i].actv, vmmodel[i].botm)
-    
-    mound = mound*100# mound/min(mound)
-    
-    pltvm.plt_scen_objectives(scenario_names, num_scenarios, [energy, subs, mound])
+#    # Calculate and plot objective performance
+#    print('Calculating scenario performance under objectives')
+#    energy, subs, mound = (np.zeros(num_scenarios) for i in range(3))
+#    
+#    for i, s_name in enumerate(scenario_names):
+#        energy[i], subs[i], mound[i] = mo.get_objectives(s_heads[s_name], vmmodel[i].wells, vmmodel[i].landuse, vmmodel[i].dem, vmmodel[i].actv, vmmodel[i].botm)
+#    
+#    mound = mound*100# mound/min(mound)
+#    
+#    pltvm.plt_scen_objectives(scenario_names, num_scenarios, [energy, subs, mound])
     
 
 if plot_opt:

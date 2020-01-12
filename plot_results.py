@@ -76,7 +76,7 @@ def plt_head_change(scenario_list, mapTitles, s_heads, GEO, ACTIVE, n = (8,23), 
         fig, axes = plt.subplots()
         cbar_ax = fig.add_axes()
 
-        im = axes.imshow(change_compare,vmin=0,vmax=20)
+        im = axes.imshow(change_compare,vmin=0,vmax=50)
         CS = axes.contour(ACTIVE, colors='k', linewidths=2)
 
         axes.xaxis.set_visible(False)
@@ -85,8 +85,8 @@ def plt_head_change(scenario_list, mapTitles, s_heads, GEO, ACTIVE, n = (8,23), 
 
         fig.colorbar(im, cax=cbar_ax, label='Change in Groundwater Head (m)')
 
-        plt.savefig('model_files\output\plots\head-change_'+s_name+'-'+scenario_list[0]+'.eps', dpi=600)
-        plt.savefig('model_files\output\plots\head-change_'+s_name+'-'+scenario_list[0]+'.png', dpi=600)
+        plt.savefig('model_files\output\plots\head-change_'+s_name+'-'+list(s_heads.keys())[0]+'.eps', dpi=600)
+        plt.savefig('model_files\output\plots\head-change_'+s_name+'-'+list(s_heads.keys())[0]+'.png', dpi=600)
         plt.close()
 
 def plt_scen_objectives(scenario_names, num_scen, objectives):
