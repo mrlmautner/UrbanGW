@@ -21,7 +21,7 @@ def measureEnergy(heads,supply_dict,dem):
     
     for i, p in supply_dict.items():
         # Start in year 2
-        if i > 23:
+        if i > 347:
             d = calendar.monthrange(1984+math.floor(i/12),(i%12)+1)[1] # number of days in stress period
             h = heads.get_data(kstpkper=(8,i),mflay=1) # heads binary file for last time step in stress period
             
@@ -42,29 +42,53 @@ def measureEnergy(heads,supply_dict,dem):
 def measureSubidence(heads,dem,active,bottom):
     sub = np.zeros(360) # total difference between dem and h
     h = list(sub.copy()) # head map for each stress period
-    cells = np.sum(np.sum(active[0])) # Number of cells in Clay layer
+    cells_all = np.sum(np.sum(active[0])) # Number of cells in Clay layer
+    cells_below = np.zeros(360) # Number of cells with head below ground surface
     
     # loop through all stress periods
     for t in range(0,360):
-        # check during the reference month of the last year (March)
-        h1 = heads.get_data(kstpkper=(8,t),mflay=0) # heads binary file for dth day of stress period
-        h2 = heads.get_data(kstpkper=(8,t),mflay=1) # heads binary file for dth day of stress period
+        # check during the last time step of each stress period
+        h1 = heads.get_data(kstpkper=(8,t),mflay=0) # heads binary file layer 1
+        h2 = heads.get_data(kstpkper=(8,t),mflay=1) # heads binary file layer 2
         
-        h[t] = np.multiply(np.less(np.multiply(active[0],h2),0),bottom[1]) + np.multiply(np.less(np.multiply(active[0],h1),0).astype(float) - np.less(np.multiply(active[0],h2),0).astype(float),h2) + np.multiply(np.greater(np.multiply(active[0],h1),0),h1)
+        h[t] = np.multiply(np.less(np.multiply(active[0],h2),0),bottom[1]) + np.multiply(np.less(np.multiply(active[0],h1),0).astype(float) - np.less(np.multiply(active[0],h2),0).astype(float),h2) + np.multiply(np.greater(np.multiply(active[0],h1),0),h1) # Matrix that has bottom of layer 2 if cell is dry, hydraulic head in layer 2 if layer 1 is dry less dry cells in layer 2, and hydraulic head in layer 1 if higher than bottom of layer 1
         
-        sub_temp = np.multiply(active[0],dem) - h[t] # Only add subsidence measure if the hydraulic head is less than the ground surface
-        sub_temp[sub_temp < 0] = 0
-        
-        sub[t] = np.sum(np.sum(sub_temp))
+        sub_temp = np.multiply(active[0],dem) - h[t] # Subtract the hydraulic head from the ground surface
 
-    return np.average(sub[23:]),cells,sub
+        sub_temp[sub_temp < 0] = 0 # Only include cells that have a hydraulic head less than the ground surface
+        cells_below[t] = np.sum(np.sum(np.greater(sub_temp,0))) # Count all the cells that have a depth to groundwater greater than 0
+        
+        sub[t] = np.sum(np.sum(sub_temp)) # Sum the total depth to groundwater over all cells with head below the ground surface
+
+    return sub,cells_below
+
+def measureWaterQuality(heads,dem,active,bottom):
+    wqual = np.zeros(360) # total difference between bottom of clay layer and head in layer 2
+    h = list(wqual.copy()) # head map for each stress period
+    cells_below = np.zeros(360) # Number of cells with head below bottom of clay layer
+    
+    # loop through all stress periods
+    for t in range(0,360):
+        # check during the last time step of each stress period
+        h2 = heads.get_data(kstpkper=(8,t),mflay=1) # heads binary file layer 2
+        
+        h[t] = np.multiply(np.less(np.multiply(active[0],h2),0),bottom[1]) + np.multiply(np.multiply(np.less(np.multiply(active[0],h2),bottom[0]), np.greater(np.multiply(active[0],h2),0)) - np.less(np.multiply(active[0],h2),0).astype(float),h2) # Matrix containing bottom of layer 2 if layer 2 is dry, plus the head in layer 2 if less than the bottom of layer 1
+        
+        cells_below[t] = np.sum(np.sum(np.greater(h[t],0)))
+#        h[t] += np.multiply(np.greater_equal(np.multiply(active[0],h2),bottom[0]),bottom[0]) # Add bottom of layer 1 if head is greater than bottom of layer 1
+
+        wq_temp = np.multiply(active[0],bottom[0]) - h[t] # Subtract the head matrix from the bottom of the active clay layer
+        
+        wqual[t] = np.sum(np.sum(wq_temp)) # Sum the total depth to groundwater below the bottom of layer 1 in layer 2 over all cells
+
+    return wqual,cells_below,h
 
 def measureMound(heads,dem,active,LU,PhasePer):
     mound = 0 # cumulative head above DEM during model period
     urban_cells = 0
     mound_cells = 0
     
-    for t in range(23,360):
+    for t in range(348,360):
 #        d = calendar.monthrange(1984+math.floor(t/12),(t%12)+1)[1] # number of days in stress period
         h1 = heads.get_data(kstpkper=(8,t),mflay=0) # heads binary file for last time step of stress period
         h2 = heads.get_data(kstpkper=(8,t),mflay=1) # heads binary file for last time step of stress period
@@ -88,9 +112,12 @@ def measureMound(heads,dem,active,LU,PhasePer):
     return mound,mound_cells,urban_cells
 
 def get_objectives(heads, wellinfo, landuse, dem, active, bottom):
-
+    
+    cells_clay = np.sum(np.sum(active[0])) # Number of cells in Clay layer
     energy = measureEnergy(heads, wellinfo, dem)
-    sub, sub_cells, sub_monthly = measureSubidence(heads, dem, active, bottom)
+    sub, sub_cells = measureSubidence(heads, dem, active, bottom)
+    wq, wq_cells, hwq = measureWaterQuality(heads, dem, active, bottom)
     mound, mound_cells, urban_cells = measureMound(heads, dem, active, landuse, [132,252])
     
-    return energy, sub/sub_cells, mound_cells/urban_cells
+#    return energy, np.sum(wq_cells[24:])/(cells_clay*336), mound_cells/urban_cells, hwq
+    return energy, np.sum(wq_cells[348:])/(cells_clay*12), mound_cells/urban_cells, hwq

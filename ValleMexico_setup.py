@@ -486,7 +486,7 @@ class model():
         '''
         Recharge Basins
         '''
-        Basin_Array = np.loadtxt(r'data_processed\alternatives\RCH_BASIN.csv', delimiter=',', skiprows=1)
+        Basin_Array = np.loadtxt(r'data_processed\alternatives\RCH_BASIN.csv', delimiter=',', skiprows=1, usecols=(0,1,2,3))
         Basins = np.zeros((num_RCHBASIN, 2))
         for b in range(0, num_RCHBASIN):
             randBasin = np.random.randint(0, Basin_Array.shape[0])

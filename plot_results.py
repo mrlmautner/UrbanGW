@@ -105,12 +105,12 @@ def plt_scen_objectives(scenario_names, num_scen, objectives):
     c = ['k','goldenrod','blue','darkgreen','purple']
     barWidth = 0.1
     r = np.arange(num_scen)*0.1 # bar position
-    y_label = ['Pumping Energy (kWh)','Depth to Groundwater in Clay (m)','Percent of Urban Cells Flooded']
-    obj_title = ['Energy Use','Subsidence Avoidance','Urban Flooding']
+    y_label = ['Pumping Energy (kWh)','Percent of Confined Cells with Head\nBelow Bottom of Clay Layer','Percent of Urban Cells Flooded']
+    obj_title = ['Energy Use','Water Quality','Urban Flooding']
 
     normalized_o = np.zeros((num_scen, len(objectives)))
 
-    fig, axes = plt.subplots(nrows=1, ncols=3,figsize=(12,7.2))
+    fig, axes = plt.subplots(nrows=1, ncols=3,figsize=(12.5,7.2))
 
     for o, obj in enumerate(objectives):
         normalized_o[:,o] = obj / (obj.max(axis=0) - obj.min(axis=0))

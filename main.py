@@ -51,7 +51,6 @@ int_sw = np.loadtxt('model_files\optimization_data\decisions\int_sw.csv', delimi
 int_ww = np.loadtxt('model_files\optimization_data\decisions\int_ww.csv', delimiter=',', skiprows=1, usecols=(1,2,3)) # Wastewater reuse within the basin
 new_other = cutz + lerm + pai + int_sw + int_ww # Total of all other water supplies except local groundwater (m3/s)
 new_other = new_other.sum(axis=0) # Total of all other supplies (m3/s)
-#x = [0]*4
 
 ## Optimization mode
 run_optimization = False
@@ -83,7 +82,7 @@ if plt_scen:
             scen_time = time.time()
             vmmodel[i] = model(s_name, 455000, 2107000, 539000, 2175000, 500, 1984, 2014, ACTIVE=['data_processed\ACTIVE_VM_LYR1.asc', 'data_processed\ACTIVE_VM_LYR2.asc'], THICKNESS=['data_processed\THICK1_VM.asc', 'data_processed\THICK2_VM.asc'], GEO=['data_processed\GEO_VM_LYR1.asc', 'data_processed\GEO_VM_LYR2.asc'], DEM='data_processed\DEM_VM.asc', IH='data_processed\IH_1984_LT2750.asc', MUN='data_processed\MUN_VM.asc', PAR='model_files\modflow\params.pval', exe_file=exefile)
             vmmodel[i].run_scenario_model(num_wwplants[i], num_infbasins[i], leak_repair[i])
-#            x[i] = vmmodel[i].ratiogn
+
             print(s_name, 'Scenario completed in', str(time.time() - scen_time), 'seconds')
     else:
         # If the results have already been generated, open results from saved files
@@ -100,18 +99,20 @@ if plt_scen:
     # Retrieve and plot head changes over model period  
     s_heads = pltvm.get_heads(scenario_names)
     
-    pltvm.plt_head_change(scenario_names[1:], mapTitles[1:], s_heads, vmmodel[0].geo[1], vmmodel[0].actv[1])
+#    pltvm.plt_head_change(scenario_names[1:], mapTitles[1:], s_heads, vmmodel[0].geo[1], vmmodel[0].actv[1])
     
-#    # Calculate and plot objective performance
-#    print('Calculating scenario performance under objectives')
-#    energy, subs, mound = (np.zeros(num_scenarios) for i in range(3))
-#    
-#    for i, s_name in enumerate(scenario_names):
-#        energy[i], subs[i], mound[i] = mo.get_objectives(s_heads[s_name], vmmodel[i].wells, vmmodel[i].landuse, vmmodel[i].dem, vmmodel[i].actv, vmmodel[i].botm)
-#    
-#    mound = mound*100# mound/min(mound)
-#    
-#    pltvm.plt_scen_objectives(scenario_names, num_scenarios, [energy, subs, mound])
+    # Calculate and plot objective performance
+    print('Calculating scenario performance under objectives')
+    hwqm = [0]*num_scenarios
+    energy, wqual, mound = (np.zeros(num_scenarios) for i in range(3))
+    
+    for i, s_name in enumerate(scenario_names):
+        energy[i], wqual[i], mound[i], hwqm[i] = mo.get_objectives(s_heads[s_name], vmmodel[i].wells, vmmodel[i].landuse, vmmodel[i].dem, vmmodel[i].actv, vmmodel[i].botm)
+    
+    mound = mound*100# mound/min(mound)
+    wqual = wqual*100
+    
+    pltvm.plt_scen_objectives(scenario_names, num_scenarios, [energy, wqual, mound])
     
 
 if plot_opt:
