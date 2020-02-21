@@ -23,8 +23,8 @@ nrows = int((yur-yll)/cellsize) # nrows
 ## Precipitation rasters
 #for year in range(1984,2014):
 #    for month in range(1,13):
-#        filename = r'data\RawFiles\Precipitation\Precip_VM\Precip_mm_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
-#        newfile = r'data\Input\RCH\Precip_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
+#        filename = r'data_raw\precipitation\Precip_mm_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
+#        newfile = r'data_processed\recharge\precip\Precip_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
 #        header = gen.getHeader(ncols,nrows,xll,yll,cellsize,-99999)
 #        dsAsArray = gen.averageGD(filename,newfile,header)
 #
