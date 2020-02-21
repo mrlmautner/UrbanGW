@@ -25,41 +25,41 @@ ACTIVE1 = gen.openASC('data_output\ACTIVE_VM_LYR1.asc',1)
 #%% 1% Multiplier for lacustrine clays and 100% for all others
 geoMult = 0.01*(ACTIVE1==1)+(ACTIVE1!=1)
 
-##%%
-#header = gen.getHeader(ncols,nrows,xll,yll,cellsize,-99999)
-#for year in range(1984,2014):    
-#    for month in range(1,13):
-#        
-#        filename = rchFolder + 'precip\Precip_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
-#        precip = gen.openASC(filename)
-#        
-#        # Apply 1% recharge rate on the clay layer and separate by Recharge potential by LU type
-#        recharge = geoMult*precip/1000/DAYS_M[month-1]
-#        
-#        newfile = rchFolder + 'claymult\PrecipCM_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
-#        np.savetxt(newfile, recharge, header=header, fmt="%1.5f",comments='')
-
-#%% Create Average Precipitation RCH file for first time step
+#%%
 header = gen.getHeader(ncols,nrows,xll,yll,cellsize,-99999)
-totPrecip = np.zeros((nrows,ncols))
-
-for year in range(1984,2014):
+for year in range(1984,2014):    
     for month in range(1,13):
-        filename = rchFolder + 'claymult\\PrecipCM_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
+        
+        filename = rchFolder + 'precip\Precip_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
         precip = gen.openASC(filename)
-        totPrecip += precip*DAYS_M[month-1]
+        
+        # Apply 1% recharge rate on the clay layer and separate by Recharge potential by LU type
+        recharge = geoMult*precip/1000/DAYS_M[month-1]
+        
+        newfile = rchFolder + 'claymult\PrecipCM_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
+        np.savetxt(newfile, recharge, header=header, fmt="%1.5f",comments='')
 
-avgPrecip = totPrecip/30 # recharge divided by mm, 30 years, 365 days/year
-
-newfile = rchFolder + 'claymult\\PrecipCM_AVGyr.asc'
-
-np.savetxt(newfile, avgPrecip, header=header, fmt="%1.5f",comments='')
-
-avgDPrecip = avgPrecip/365 # recharge divided by mm, 30 years, 365 days/year
-
-newfile = rchFolder + 'claymult\\PrecipCM_AVG.asc'
-
-np.savetxt(newfile, avgDPrecip, header=header, fmt="%1.5f",comments='')
+##%% Create Average Precipitation RCH file for first time step
+#header = gen.getHeader(ncols,nrows,xll,yll,cellsize,-99999)
+#totPrecip = np.zeros((nrows,ncols))
+#
+#for year in range(1984,2014):
+#    for month in range(1,13):
+#        filename = rchFolder + 'claymult\\PrecipCM_' + str(year) + '_' + '{num:02d}'.format(num=month) + '.asc'
+#        precip = gen.openASC(filename)
+#        totPrecip += precip*DAYS_M[month-1]
+#
+#avgPrecip = totPrecip/30 # recharge divided by mm, 30 years, 365 days/year
+#
+#newfile = rchFolder + 'claymult\\PrecipCM_AVGyr.asc'
+#
+#np.savetxt(newfile, avgPrecip, header=header, fmt="%1.5f",comments='')
+#
+#avgDPrecip = avgPrecip/365 # recharge divided by mm, 30 years, 365 days/year
+#
+#newfile = rchFolder + 'claymult\\PrecipCM_AVG.asc'
+#
+#np.savetxt(newfile, avgDPrecip, header=header, fmt="%1.5f",comments='')
 
 ##%% Create Average Precipitation RCH file for monthly
 #header = gen.getHeader(ncols,nrows,xll,yll,cellsize,-99999)
