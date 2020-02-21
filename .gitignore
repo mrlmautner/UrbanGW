@@ -47,6 +47,7 @@ mp6.exe
 *.mpnam
 *.mpsim
 RunModflow.Bat
+data_raw/precipitation
 model_files/output/plots/head_change_Basin-Historical.png
 model_files/output/plots/head_change_Historical-Historical.png
 model_files/output/plots/head_change_Leak-Historical.png
