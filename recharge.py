@@ -15,12 +15,12 @@ cellsize = 500
 ncols = int((xur-xll)/cellsize) # ncols
 nrows = int((yur-yll)/cellsize) # nrows
 
-rchFolder = 'data_output\\recharge\\'
+rchFolder = 'data_processed\\recharge\\'
  
 #%%
 DAYS_M = [31,28,31,30,31,30,31,31,30,31,30,31]
     
-ACTIVE1 = gen.openASC('data_output\ACTIVE_VM_LYR1.asc',1)
+ACTIVE1 = gen.openASC('data_processed\ACTIVE_VM_LYR1.asc',1)
 
 #%% 1% Multiplier for lacustrine clays and 100% for all others
 geoMult = 0.01*(ACTIVE1==1)+(ACTIVE1!=1)
