@@ -534,15 +534,15 @@ class model():
 #        if drains:
 #            drain_list = []
 #            for drn in range(0,drain_data.shape[0]):
-#                r = int(drain_data[drn,0])
-#                c = int(drain_data[drn,1])
-#                drain_list.append([0,r,c,self.dem[r,c],drain_data[drn,2]*self.params['DRN'][0]])
+#                r = int(drain_data[drn,0]-1)
+#                c = int(drain_data[drn,1]-1)
+#                drain_list.append([1,r,c,self.dem[r,c],drain_data[drn,2]*self.params['DRN'][0]])
 #            for per in range(PHASE_PER[phases]):
 #                DRN_DICT[per] = drain_list
 #            self.drains = DRN_DICT
 #            
 #            drn = flopy.modflow.ModflowDrn(mf, stress_period_data=DRN_DICT, options=['NOPRINT'])
-#                    
+#                              
         # Generate output control and solver MODFLOW packages 
         oc, pcg = self.outputControl(mf)
         
