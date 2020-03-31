@@ -1,5 +1,5 @@
 #  HOB:  Head  Observation  package  file  created  on  11/19/2018  by  ModelMuse  version  3.10.0.0.                  
-  8181  0  2  1002  -1.00E+06  #  Data  Set  1:00  NH  MOBS  MAXM  IUHOBSV  HOBDRY              
+  8181  0  2  2001  -1.00E+06  #  Data  Set  1:00  NH  MOBS  MAXM  IUHOBSV  HOBDRY              
   1.00E+00  #  Data  Set  2:00  TOMULTH  
 c102_B  2  81  43  -22  0.00E+00  1.08000E-01  -2.16000E-01  2254.800  # Initial Obs: OBSNAM LAYER ROW COLUMN IREFSP TOFFSET ROFF COFF HOBS
      2 # Head changes

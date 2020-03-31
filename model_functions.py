@@ -96,11 +96,12 @@ def SA_mode(alternatives, params, exefile, safolder, sarun=0, soswrlim=0, verbos
 
     return [error, objectives]
 
-def plt_hydrograph(name, hydrographloc, exefile, verbose=True):
-    hydModel = vm.model(name=name, exe_file=exefile)
-    hydModel.run_simulation_model(0,0,0,verbose=verbose)
+def plt_hydrograph(name, hydrographloc, exefile, verbose=True, run_test=True, obsinfo_loaded=True):
+    if run_test:
+        hydModel = vm.model(name=name, exe_file=exefile)
+        hydModel.run_simulation_model(0,0,0,verbose=verbose,incl_obs=True)
     
-    pltvm.plt_wellhydrographs(name, hydrographloc, df=0, obsformation=0)
+    pltvm.plt_wellhydrographs(name, hydrographloc, df=0, obsformation=0, obsinfo_loaded=obsinfo_loaded)
     
     return hydModel
 

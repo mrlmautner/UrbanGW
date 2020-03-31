@@ -25,9 +25,10 @@ exefile = r'C:\WRDAPP\MF2005.1_12\bin\mf2005.exe'
 
 # Parameters
 ## Hydrograph Mode
-plot_hydrograph = False
-model_name = 'Test'
-hydrographloc = 'Test_v1'
+plot_hydrograph = True
+run_test = True
+model_name = 'NoDrainTest_v1'
+hydrographloc = 'NoDrainTest_v1'
 if plot_hydrograph:
     hydModel = mf.plt_hydrograph(model_name, hydrographloc, exefile)
 

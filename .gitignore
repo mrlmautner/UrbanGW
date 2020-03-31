@@ -60,3 +60,6 @@ model_files/output/plots/head-change_Leak-Historical.png
 model_files/output/plots/head-change_WWTP-Historical.png
 model_files/output/plots/observations/drawdown*
 model_files/output/plots/observations/IH_2750/*
+*.drob_out
+*.hob.out
+*.drn

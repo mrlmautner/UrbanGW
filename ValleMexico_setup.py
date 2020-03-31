@@ -268,7 +268,7 @@ class model():
         LU_PAR = ['1990', '2000', '2010']
         
         # Model internal variables
-#        drains = False
+        drains = False
         fixleak = alt_leak/100 # convert from integer to decimal
         cost = 0 # Initial cost
         sec2day = 60*60*24 # Second to day conversion
@@ -527,28 +527,32 @@ class model():
 #        with open(winfofile, 'wb') as handle:
 #            pickle.dump(WEL_INFO, handle, protocol=pickle.HIGHEST_PROTOCOL)
 #        print('WEL_Dict saved in',str(time.time()-newtime),'seconds')
-#        
-#        ## Drains
-#        drain_data = np.loadtxt(r'data_processed\drains\DRN_order3.csv', delimiter=',', skiprows=1)
-#        DRN_DICT = {}
-#        if drains:
-#            drain_list = []
-#            for drn in range(0,drain_data.shape[0]):
-#                r = int(drain_data[drn,0]-1)
-#                c = int(drain_data[drn,1]-1)
-#                drain_list.append([1,r,c,self.dem[r,c],drain_data[drn,2]*self.params['DRN'][0]])
-#            for per in range(PHASE_PER[phases]):
-#                DRN_DICT[per] = drain_list
-#            self.drains = DRN_DICT
-#            
-#            drn = flopy.modflow.ModflowDrn(mf, stress_period_data=DRN_DICT, options=['NOPRINT'])
-#                              
+        
+        ## Drains
+        drain_data = np.loadtxt(r'data_processed\drains\DRN_order3.csv', delimiter=',', skiprows=1)
+        DRN_DICT = {}
+        if drains:
+            drain_list = []
+            for drn in range(0,drain_data.shape[0]):
+                r = int(drain_data[drn,0]-1)
+                c = int(drain_data[drn,1]-1)
+                drain_list.append([1,r,c,self.dem[r,c],drain_data[drn,2]*self.params['DRN'][0]])
+            for per in range(PHASE_PER[phases]):
+                DRN_DICT[per] = drain_list
+            self.drains = DRN_DICT
+            
+            drn = flopy.modflow.ModflowDrn(mf, stress_period_data=DRN_DICT, options=['NOPRINT'])
+                              
         # Generate output control and solver MODFLOW packages 
         oc, pcg = self.outputControl(mf)
         
         if incl_obs:
             mf.add_existing_package(str(Path.cwd().joinpath('model_files').joinpath('modflow').joinpath('OBS.ob_hob')),ptype='HOB', copy_to_model_ws=False)
-            mf.add_output(str(Path.cwd().joinpath('model_files').joinpath('modflow').joinpath(self.name + '.hob.out')),unit=1002)
+            mf.add_output(str(Path.cwd().joinpath('model_files').joinpath('modflow').joinpath(self.name + '.hob.out')),unit=2001)
+            
+            if drains:
+                mf.add_existing_package(str(Path.cwd().joinpath('model_files').joinpath('modflow').joinpath('DROBS.ob_drob')),ptype='DROB', copy_to_model_ws=False)
+                mf.add_output(str(Path.cwd().joinpath('model_files').joinpath('modflow').joinpath(self.name + '.drob_out')),unit=2002)
 #        hob = flopy.modflow.ModflowHob.load(r'model_files\modflow\OBS.ob_hob', mf)
 #        winfofile = r'model_files\modflow\OBS.pickle'
 #        import pickle

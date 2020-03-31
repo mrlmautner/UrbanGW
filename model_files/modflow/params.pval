@@ -1,5 +1,5 @@
 # MODFLOW-2005 PVAL file for project VM_TR_C
-33
+34
 HK_Par1     5.0000E-04
 HK_Par2     1.1550E+02
 HK_Par3     3.8300E+02
@@ -30,7 +30,7 @@ RCH_Par2     7.8170E-01
 RCH_Par3     5.0000E-01
 SY_Par1     6.0000E-02
 SY_Par2     1.5000E-01
-SY_Par3     3.4837E-03
-SY_Par4     5.7552E-03
+SY_Par3     1.000E-01
+SY_Par4     1.500E-01
 SY_Par5     1.0000E-02
 DRN_Par1     1.0000E+01

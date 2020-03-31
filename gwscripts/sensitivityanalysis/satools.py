@@ -29,7 +29,7 @@ def gen_param_vals(nsamples):
     numparams = len(params['names'])
     
     # Format lower and upper parameter bounds and apply ln transformation for applicable variables
-    bounds = [0,0] for i in range(numparams)]
+    bounds = [[0,0] for i in range(numparams)]
     for i, transform in enumerate(params['transform']):
         bounds[i][0] = float(params['lbound'][i])
         bounds[i][1] = float(params['ubound'][i])
