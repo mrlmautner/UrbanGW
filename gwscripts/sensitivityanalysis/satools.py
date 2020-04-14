@@ -29,14 +29,15 @@ def gen_param_vals(nsamples):
     numparams = len(params['names'])
     
     # Format lower and upper parameter bounds and apply ln transformation for applicable variables
-    bounds = [[0,0] for i in range(numparams)]
+    bounds = []
     for i, transform in enumerate(params['transform']):
-        bounds[i][0] = float(params['lbound'][i])
-        bounds[i][1] = float(params['ubound'][i])
-        t = int(transform)
-        if t:
-            bounds[i] = list(np.log(bounds[i]))
-    
+        lb = float(params['lbound'][i])
+        ub = float(params['ubound'][i])
+        if int(transform) == 0:
+            bounds.append([lb,ub])
+        else:
+            bounds.append([np.log(lb),np.log(ub)])   
+ 
     # Define the SA problem
     problem = {
         'num_vars': numparams,
@@ -44,7 +45,9 @@ def gen_param_vals(nsamples):
         'bounds': bounds
     }
     
+    print(problem)
+    
     # Sample from the parameter ranges
     params['values'] = latin.sample(problem, nsamples)
     
-    return problem, params
+    return params
