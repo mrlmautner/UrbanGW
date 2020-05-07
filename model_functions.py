@@ -101,3 +101,6 @@ def SA_mode(alternatives, params, exefile, safolder, sarun=0, soswrlim=0, verbos
         shutil.rmtree(str(sa_loc), ignore_errors=True)
 
     return [error, objectives]
+
+def checkHOB():
+    Path.cwd().joinpath('Input').joinpath('params').joinpath('params_' + safolder + '.csv')

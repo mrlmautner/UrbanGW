@@ -251,16 +251,20 @@ def plt_cum_sum(filename, alt_list, mapTitles, df_CumSum, start='01-31-1985', en
     
     plt.show()
 
-def process_hobs(name, legend, obsinfo_loaded=True):
+def process_hobs(folder, name, legend=['Lacustrine','Alluvial','Basalt','Volcaniclastic','Andesite'], obsinfo_loaded=True):
     '''
     Imports head observations from .hob.out file which gives simulated and observed head values
     '''
+    obsstats = pd.read_csv(Path.cwd() / 'model_files' / 'modflow' / 'OBS_stats.csv')
     obsformation = pd.read_csv(Path.cwd() / 'data_raw' / 'obs_formation.csv')
-    df = pd.read_fwf(Path.cwd().joinpath('model_files').joinpath('modflow').joinpath(name+'.hob.out'),widths=[22,19,22])
+    df = pd.read_fwf(Path.cwd().joinpath('model_files').joinpath('output').joinpath('sa').joinpath('hob').joinpath(folder).joinpath(name+'.hob_out'),widths=[22,19,22])
     df.columns = ['simulated','observed','obs_name']
+    df['LAT'] = np.nan
+    df['LON'] = np.nan
     df['time_series'] = np.nan
     df['obs_id'] = np.nan
-    df['legend'] = np.nan
+    df['stat'] = obsstats
+    df['formation'] = np.nan
     df['abssimulated'] = np.nan
     df['absobserved'] = np.nan
     df['abssimulated1'] = np.nan
@@ -272,7 +276,7 @@ def process_hobs(name, legend, obsinfo_loaded=True):
             obsinfo = pickle.load(handle)
     else:
         print('Processing observation input file...')
-        mf = flopy.modflow.Modflow.load(str(Path.cwd().joinpath('model_files').joinpath('modflow').joinpath(name+'.nam')))
+        mf = flopy.modflow.Modflow.load(str(Path.cwd().joinpath('model_files').joinpath('modflow').joinpath('Historical.nam')))
         hob = flopy.modflow.ModflowHob.load(str(Path.cwd() / 'model_files' / 'modflow' / 'OBS.ob_hob'), mf)
         winfofile = Path.cwd() / 'model_files' / 'modflow' / 'OBS.pickle'
         with open(winfofile, 'wb') as handle:
@@ -293,17 +297,22 @@ def process_hobs(name, legend, obsinfo_loaded=True):
         df.loc[df['obs_name'].str.contains(oname),'absobserved'] = df[df['obs_name'].str.contains(oname)][1:]['observed'] + df[df['obs_name'].str.contains(oname)]['observed'].values[0]
         df.loc[df['obs_name']==(oname),'absobserved'] = df[df['obs_name']==oname]['observed']
         
+        df.loc[df['obs_name']==(oname+'_1'),'abssimulated'] = df[df['obs_name']==(oname+'_1')]['simulated']
+        df.loc[df['obs_name']==(oname+'_1'),'absobserved'] = df[df['obs_name']==(oname+'_1')]['observed']
         df.loc[df['obs_name']==(oname+'_1'),'abssimulated1'] = df[df['obs_name']==(oname+'_1')]['simulated']
         df.loc[df['obs_name']==(oname+'_1'),'absobserved1'] = df[df['obs_name']==(oname+'_1')]['observed']
     
     for i, r in obsformation.iterrows():
-        df.loc[df['obs_id']==r['IDPOZO'],'legend'] = legend[r['ZONE']-1]
-    return df, obsformation
+        df.loc[df['obs_id']==r['IDPOZO'],'formation'] = legend[r['ZONE']-1]
+        df.loc[df['obs_id']==r['IDPOZO'],'LON'] = r['X']
+        df.loc[df['obs_id']==r['IDPOZO'],'LAT'] = r['Y']
+    
+    return df, obsinfo, obsstats, obsformation
 
 def plt_wellhydrographs(name, filelocation, df=0, obsformation=0, obsinfo_loaded=True, timestep='d', startdate='1984-01-01', ddn_lim=[-50, 20], legend=['Lacustrine','Alluvial','Basalt','Volcaniclastic','Andesite']):
     
     if not isinstance(df, pd.DataFrame):
-        df, obsformation = process_hobs(name, legend=legend, obsinfo_loaded=obsinfo_loaded)
+        df, obsinfo, obsstats, obsformation = process_hobs(name, legend=legend, obsinfo_loaded=obsinfo_loaded)
     
     filelocation = Path.cwd().joinpath('model_files').joinpath('output').joinpath('plots').joinpath('observations').joinpath(filelocation)
     filelocation.mkdir(exist_ok=True)
@@ -332,17 +341,17 @@ def plt_wellhydrographs(name, filelocation, df=0, obsformation=0, obsinfo_loaded
         axes[1].xaxis.label.set_visible(False)
         
         plt.tight_layout()
-        filename = filelocation.joinpath(ddn_data['legend'][0]).joinpath(o+'.png')
+        filename = filelocation.joinpath(ddn_data['formation'][0]).joinpath(o+'.png')
         print(filename)
         plt.savefig(str(filename), dpi=600)
         plt.close()
         
-def plt_simvsobs(name, filename, legend=['Lacustrine','Alluvial','Basalt','Volcaniclastic','Andesite'], df=0, obsformation=0, obsinfo_loaded=True):
+def plt_simvsobs(name, filename, df=0, obsformation=0, obsinfo_loaded=True):
     
     filename = str(Path.cwd() / 'model_files' / 'output' / 'plots' / 'calibration' / filename)
     
     if not isinstance(df, pd.DataFrame):
-        df, obsformation = process_hobs(name, legend=legend, obsinfo_loaded=obsinfo_loaded)
+        df, obsinfo, obsstats, obsformation = process_hobs(name, obsinfo_loaded=obsinfo_loaded)
         
     # get coeffs of linear fit
     x = df['absobserved1'].values
@@ -352,7 +361,7 @@ def plt_simvsobs(name, filename, legend=['Lacustrine','Alluvial','Basalt','Volca
     slope, intercept, r_value, p_value, std_err = stats.linregress(x,y)
     
     sns.set_style("whitegrid")
-    g = sns.lmplot(x='absobserved1', y='abssimulated1', hue='legend',data=df,legend=False,palette=dict(Alluvial=(1,0.867,0), Basalt=(0,0.788,0.498), Volcaniclastic=(0.9, 0, 0.455) ), size=8, aspect=1.2, scatter_kws={'edgecolor':"none",'s':10, 'alpha':0.3})
+    g = sns.lmplot(x='absobserved1', y='abssimulated1', hue='formation',data=df,legend=False,palette=dict(Alluvial=(1,0.867,0), Basalt=(0,0.788,0.498), Volcaniclastic=(0.9, 0, 0.455) ), size=8, aspect=1.2, scatter_kws={'edgecolor':"none",'s':10, 'alpha':0.3})
     plt.plot(np.linspace(2000,2800,1000), np.linspace(2000,2800,1000), 'k',linestyle=':')
     plt.plot(np.linspace(2000,2800,1000), intercept + slope*np.linspace(2000,2800,1000), 'grey', linewidth=2)
     plt.legend(['Tarango (Volcaniclastic)','Alluvial','Fractured Basalt','One-to-one',"y = {0:.3f}x + {1:.1f}, R = {2:.3f} ".format(slope, intercept, r_value)], loc='upper left')
@@ -366,12 +375,12 @@ def plt_simvsobs(name, filename, legend=['Lacustrine','Alluvial','Basalt','Volca
     
     return slope, intercept, r_value, p_value, std_err 
 
-def plt_simvsobsddn(name, filename, legend=['Lacustrine','Alluvial','Basalt','Volcaniclastic','Andesite'], df=0, obsformation=0, obsinfo_loaded=True):
+def plt_simvsobsddn(name, filename, df=0, obsformation=0, obsinfo_loaded=True):
     
     filename = str(Path.cwd() / 'model_files' / 'output' / 'plots' / 'calibration' / filename)
     
     if not isinstance(df, pd.DataFrame):
-        df, obsformation = process_hobs(name, legend=legend, obsinfo_loaded=obsinfo_loaded)
+        df, obsinfo, obsstats, obsformation = process_hobs(name, obsinfo_loaded=obsinfo_loaded)
 
     df.loc[df['simulated']>1000,'simulated'] = 0
     df.loc[df['observed']>1000, 'observed'] = 0
@@ -382,7 +391,7 @@ def plt_simvsobsddn(name, filename, legend=['Lacustrine','Alluvial','Basalt','Vo
     slope, intercept, r_value, p_value, std_err = stats.linregress(x,y)
     
     sns.set_style("whitegrid")
-    g = sns.lmplot(x='observed', y='simulated', hue='legend',data=df,legend=False,palette=dict(Alluvial=(1,0.867,0), Basalt=(0,0.788,0.498), Volcaniclastic=(0.9, 0, 0.455)), size=8, aspect=1.2, scatter_kws={'edgecolor':"none",'s':10, 'alpha':0.3})
+    g = sns.lmplot(x='observed', y='simulated', hue='formation',data=df,legend=False,palette=dict(Alluvial=(1,0.867,0), Basalt=(0,0.788,0.498), Volcaniclastic=(0.9, 0, 0.455)), size=8, aspect=1.2, scatter_kws={'edgecolor':"none",'s':10, 'alpha':0.3})
     plt.plot(np.linspace(-60,60,1000), np.linspace(-60,60,1000), 'k',linestyle=':')
     plt.plot(np.linspace(-60,60,1000), intercept + slope*np.linspace(-60,60,1000), 'grey', linewidth=2)
     plt.legend(['Tarango (Volcaniclastic)','Alluvial','Fractured Basalt','One-to-one',"y = {0:.3f}x + {1:.1f}, R = {2:.3f} ".format(slope, intercept, r_value)],loc='upper left')

@@ -9,6 +9,18 @@ from SALib.sample import latin
 from SALib.analyze import delta
 import numpy as np
 from pathlib import Path
+import numpy as np
+import flopy
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import pickle
+from scipy import stats
+from pathlib import Path
+import os
+from SALib.sample import latin
+from SALib.analyze import delta
+from sklearn.cluster import KMeans
 
 def gen_param_vals(nsamples):
     prangepath = Path.cwd() / 'data_processed' / 'pranges.csv'
@@ -51,3 +63,138 @@ def gen_param_vals(nsamples):
     params['values'] = latin.sample(problem, nsamples)
     
     return params
+
+def kmeans_obs(obsdata, n_clusters=10, norm=False, time=True):
+    '''
+    obsdata is a dataframe with columns: IDPOZO, LAT, LON, Z, t
+    num_cluster is the desired number of k-means clusters to group the data into
+    '''
+    if time:
+        df_keys = ['LAT','LON','Z','t']
+    else:
+        df_keys = ['LAT','LON','Z']
+    df = obsdata[df_keys].copy()
+    if norm:
+        for i in df_keys:
+            df[i] = (df[i]-df[i].min())/(df[i].max()-df[i].min())
+    kmeans_labels = KMeans(n_clusters=n_clusters).fit_predict(df)
+    
+    return kmeans_labels
+    
+
+def get_err_data(safolder, makedict=True, err_df=[], soswrlim=5000000):
+
+    if makedict:
+        # Create two arrays: soswr and max error
+        soswr = {}
+        maxerror = {}
+        lowerror = {}
+        index = 0
+        
+        for i in safolder:
+            # Set cwd to repository folder
+            errsamples = os.listdir(Path.cwd().joinpath(i))
+            numerr = len(errsamples)
+            
+            for x in range(numerr):
+                dataFileName = Path.cwd().joinpath(i).joinpath(errsamples[x])
+                xname = int(errsamples[x][:errsamples[x].find('.csv')]) + index
+                xname = '{:05d}'.format(xname)
+                
+                temperror = np.loadtxt(dataFileName, delimiter=',')
+                soswr[xname] = temperror[0]
+                
+                if temperror[0] <= soswrlim:
+                    lowerror[xname] = temperror[0]
+                    
+                maxerror[xname] = temperror[1]
+                
+            index += numerr # For combo sets add the number of samples thus far
+            
+        return soswr, maxerror, lowerror
+    
+    else:
+        toterr = 0
+
+        for i in safolder:
+            # Set cwd to repository folder
+            toterrsamples = os.listdir(Path.cwd().joinpath(i))
+            toterr += len(toterrsamples)
+        
+        err_df['soswr'] = np.ones(toterr)*np.nan
+        err_df['maxerror'] = np.ones(toterr)*np.nan
+        err_df['lowerror'] = np.zeros(toterr)
+        index = 0
+        
+        for i in safolder:
+            print('Processing folder:',i)
+            # Set cwd to repository folder
+            errsamples = os.listdir(Path.cwd().joinpath(i))
+            numerr = len(errsamples)
+            
+            
+            for x in range(numerr):
+                dataFileName = Path.cwd().joinpath(i).joinpath(errsamples[x])
+                xname = int(errsamples[x][:errsamples[x].find('.csv')]) + index
+                xname = '{:05d}'.format(xname)
+                
+                temperror = np.loadtxt(dataFileName, delimiter=',')
+                
+                err_df.at[xname,'soswr'] = temperror[0]
+                err_df.at[xname,'maxerror'] = temperror[1]
+                
+                if temperror[0] <= soswrlim:
+                    err_df.at[xname,'lowerror'] = 1
+                    
+            index += numerr # For combo sets add the number of samples thus far
+            
+        return err_df
+
+def get_obj_data(safolder, soswr, paramsarray, soswrlim=5000000, objectives=3, alternatives=['Historical', 'WWTP', 'Basin', 'Leak'], obj_names=['Energy','Quality','Flood','SOSWR','Params']):
+    '''
+    safolder is the folder path for the objectives to be loaded
+    soswr is a dictionary with keys that correspond to each sample and contains the sum of squared weighted residual
+    params array is the full dataset of parameter values for each sample
+    '''
+    obj = {}
+    obj['arrays'] = {}
+    obj['samples'] = {}
+    
+    # Initialize lists containing objective values
+    for a in alternatives:
+        obj['arrays'][a] = {}
+        for o in obj_names[:objectives]:
+            obj['arrays'][a][o] = []
+    obj['arrays']['SOSWR'] = []
+    obj['arrays']['Params'] = []
+    
+    index = 0
+    
+    for s in safolder:
+        # Set cwd to repository folder
+        objsamples = os.listdir(Path.cwd() / 'Output' / 'obj' / s)
+        numobjsamples = len(objsamples)
+        
+        # Iterate over all samples that were evaluated using the planning alternatives
+        for x in range(numobjsamples):
+            dataFileName = Path.cwd() / 'Output' / 'obj' / s / objsamples[x]
+            xname = int(objsamples[x][:objsamples[x].find('.csv')]) + index
+            xname = '{:05d}'.format(xname)
+            
+            if soswr[xname] <= soswrlim:
+                tempobj = np.loadtxt(dataFileName, delimiter=',')
+                obj['samples'][xname] = tempobj
+            
+                # Exclude any samples that produced nan for any objectives
+                if np.logical_not(np.isnan(tempobj).any()):
+                    obj['arrays']['Params'].append(paramsarray[int(xname)])
+                    obj['arrays']['SOSWR'].append(soswr[xname])
+                    
+                    for i, a in enumerate(alternatives):    
+                        for j, o in enumerate(obj_names[:objectives]):
+                            obj['arrays'][a][o].append(tempobj[j,i])
+        
+        numrunsamples = int(s[(s.find('_')+1):])
+        index += numrunsamples
+    
+    return obj
