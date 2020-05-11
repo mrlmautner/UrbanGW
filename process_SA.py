@@ -199,13 +199,12 @@ comm.Barrier() # wait for all of them to finish
 delta_all = comm.gather(delta_s, root=0) # gather back to master node (0)
 # the combined results only exist on master node
 if my_rank==0:
-    delta_obj_final = np.ones((n_params, n_obj*n_alt))*np.nan
-    delta_clust_final = np.ones((n_params, n_combs))*np.nan
+    delta_all_final = np.ones((n_params, n_obj*n_alt + n_combs))*np.nan
     for d in delta_all:
-        for i in range(n_obj*n_alt):
-            delta_obj_final[:, i] = np.reshape(d[1 + n_params + i], (n_params,1))
-        for i in range(n_combs):
-            delta_clust_final[:, i] = np.reshape(d[1 + n_params + n_obj*n_alt + i], (n_params,1))
+        delta_all_final[:, d['column']] = np.reshape(np.array(d['delta']), (n_params,1))
+        
+    delta_obj_final = delta_all_final[:, :n_obj*n_alt]
+    delta_clust_final = delta_all_final[:, n_obj*n_alt:]
     
     np.savetxt(str(outputpath.joinpath('analysis').joinpath(folder + ('-norm' if kmeans_norm else '') + ('-t' if kmeans_time else '') + '-' + str(n_clusters) + '-deltas-obj.csv')), delta_obj_final, delimiter=',')
     np.savetxt(str(outputpath.joinpath('analysis').joinpath(folder + ('-norm' if kmeans_norm else '') + ('-t' if kmeans_time else '') + '-' + str(n_clusters) + '-deltas-err.csv')), delta_clust_final, delimiter=',')
