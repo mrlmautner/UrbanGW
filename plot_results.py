@@ -6,13 +6,16 @@ Created on Mon Nov 26 14:02:08 2018
 """
 import flopy
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
+matplotlib.use("Agg")
 import pandas as pd
 import seaborn as sns
 import pickle
 import flopy.utils.binaryfile as bf
 from scipy import stats
 from pathlib import Path
+from mpl_toolkits.mplot3d import Axes3D
 
 sns.set(style="white", palette="muted", color_codes=True)
 plt.rcParams['legend.fontsize'] = 20
@@ -272,13 +275,13 @@ def process_hobs(folder, name, legend=['Lacustrine','Alluvial','Basalt','Volcani
     
     if obsinfo_loaded:
         print('Opening observation input file...')
-        with open(Path.cwd() / 'model_files' / 'modflow' / 'OBS.pickle', 'rb') as handle:
+        with open(str(Path.cwd() / 'model_files' / 'modflow' / 'OBS.pickle'), 'rb') as handle:
             obsinfo = pickle.load(handle)
     else:
         print('Processing observation input file...')
         mf = flopy.modflow.Modflow.load(str(Path.cwd().joinpath('model_files').joinpath('modflow').joinpath('Historical.nam')))
         hob = flopy.modflow.ModflowHob.load(str(Path.cwd() / 'model_files' / 'modflow' / 'OBS.ob_hob'), mf)
-        winfofile = Path.cwd() / 'model_files' / 'modflow' / 'OBS.pickle'
+        winfofile = str(Path.cwd() / 'model_files' / 'modflow' / 'OBS.pickle')
         with open(winfofile, 'wb') as handle:
             pickle.dump(hob.obs_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
         obsinfo = hob.obs_data
@@ -308,6 +311,36 @@ def process_hobs(folder, name, legend=['Lacustrine','Alluvial','Basalt','Volcani
         df.loc[df['obs_id']==r['IDPOZO'],'LAT'] = r['Y']
     
     return df, obsinfo, obsstats, obsformation
+
+def plt_cluster(df, km_cluster, filename):
+    fig = plt.figure(figsize=(16, 12))
+    ax = fig.add_subplot(111, projection='3d')
+    
+    xs = df['LON']
+    ys = df['LAT']
+    zs = df['Z']
+    
+#    if time_marker:
+#        markers = ['o','^','s']
+#        for i in range(3):
+#            ax.scatter(xs[df['t_group'].values==i], ys[df['t_group'].values==i], zs[df['t_group'].values==i], s=50, alpha=0.6, edgecolors=None, c=km_cluster[df['t_group'].values==i], cmap='Set1', marker=markers[i])
+#    else:
+#        ax.scatter(xs, ys, zs, s=50, alpha=0.6, c=km_cluster, cmap='Set1', edgecolors=None)
+    
+    ax.scatter(xs, ys, zs, s=50, alpha=0.6, c=km_cluster, cmap='Set1', edgecolors=None)
+    
+    ax.set_xlabel('Longitude')
+    ax.set_ylabel('Latitude')
+    ax.set_zlabel('Elevation (masl)')
+    
+    ax.set_xlim(xs.min(), xs.max())
+    ax.set_ylim(ys.min(), ys.max())
+    ax.set_zlim(zs.min(), zs.max())
+    
+    fig.tight_layout()
+
+    fig.savefig(filename)
+    plt.close()
 
 def plt_wellhydrographs(name, filelocation, df=0, obsformation=0, obsinfo_loaded=True, timestep='d', startdate='1984-01-01', ddn_lim=[-50, 20], legend=['Lacustrine','Alluvial','Basalt','Volcaniclastic','Andesite']):
     

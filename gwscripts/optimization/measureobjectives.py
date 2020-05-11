@@ -140,7 +140,7 @@ def calculate_SOSWR(heads, stats):
     '''
     soswr = 0
     maxerror = 0
-    for i in range(len(stats)-1):
+    for i in range(len(stats)):
         currenterror = (heads[i+1][1] - heads[i+1][0])
         maxerror = max([maxerror, np.abs(currenterror)])
         soswr += ((1/stats[i]) * currenterror)**2

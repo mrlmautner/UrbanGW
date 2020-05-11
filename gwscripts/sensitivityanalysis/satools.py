@@ -57,6 +57,7 @@ def gen_param_vals(nsamples):
         'bounds': bounds
     }
     
+    params['problem'] = problem
     print(problem)
     
     # Sample from the parameter ranges
@@ -81,9 +82,13 @@ def kmeans_obs(obsdata, n_clusters=10, norm=False, time=True):
     
     return kmeans_labels
     
-
-def get_err_data(safolder, makedict=True, err_df=[], soswrlim=5000000):
-
+def get_err_data(safolder, startpath, makedict=True, err_df=[], soswrlim=5000000):
+    '''
+    makedict option creates three dictionaries to hold error data
+    otherwise, error data is returned as a dataframe
+    '''
+    errpath = startpath.joinpath('model_files').joinpath('output').joinpath('sa').joinpath('err')
+    
     if makedict:
         # Create two arrays: soswr and max error
         soswr = {}
@@ -93,11 +98,11 @@ def get_err_data(safolder, makedict=True, err_df=[], soswrlim=5000000):
         
         for i in safolder:
             # Set cwd to repository folder
-            errsamples = os.listdir(Path.cwd().joinpath(i))
+            errsamples = os.listdir(errpath.joinpath(i))
             numerr = len(errsamples)
             
             for x in range(numerr):
-                dataFileName = Path.cwd().joinpath(i).joinpath(errsamples[x])
+                dataFileName = errpath.joinpath(i).joinpath(errsamples[x])
                 xname = int(errsamples[x][:errsamples[x].find('.csv')]) + index
                 xname = '{:05d}'.format(xname)
                 
@@ -118,7 +123,7 @@ def get_err_data(safolder, makedict=True, err_df=[], soswrlim=5000000):
 
         for i in safolder:
             # Set cwd to repository folder
-            toterrsamples = os.listdir(Path.cwd().joinpath(i))
+            toterrsamples = errpath.joinpath(i)
             toterr += len(toterrsamples)
         
         err_df['soswr'] = np.ones(toterr)*np.nan
@@ -129,12 +134,12 @@ def get_err_data(safolder, makedict=True, err_df=[], soswrlim=5000000):
         for i in safolder:
             print('Processing folder:',i)
             # Set cwd to repository folder
-            errsamples = os.listdir(Path.cwd().joinpath(i))
+            errsamples = os.listdir(errpath.joinpath(i))
             numerr = len(errsamples)
             
             
             for x in range(numerr):
-                dataFileName = Path.cwd().joinpath(i).joinpath(errsamples[x])
+                dataFileName = errpath.joinpath(i).joinpath(errsamples[x])
                 xname = int(errsamples[x][:errsamples[x].find('.csv')]) + index
                 xname = '{:05d}'.format(xname)
                 
@@ -150,12 +155,14 @@ def get_err_data(safolder, makedict=True, err_df=[], soswrlim=5000000):
             
         return err_df
 
-def get_obj_data(safolder, soswr, paramsarray, soswrlim=5000000, objectives=3, alternatives=['Historical', 'WWTP', 'Basin', 'Leak'], obj_names=['Energy','Quality','Flood','SOSWR','Params']):
+def get_obj_data(safolder, startpath, paramsarray, soswrlim=5000000, objectives=3, alternatives=['Historical', 'WWTP', 'Basin', 'Leak'], obj_names=['Energy','Quality','Flood','SOSWR','Params']):
     '''
     safolder is the folder path for the objectives to be loaded
     soswr is a dictionary with keys that correspond to each sample and contains the sum of squared weighted residual
     params array is the full dataset of parameter values for each sample
     '''
+    objpath = startpath.joinpath('model_files').joinpath('output').joinpath('sa').joinpath('obj')
+    
     obj = {}
     obj['arrays'] = {}
     obj['samples'] = {}
@@ -172,12 +179,12 @@ def get_obj_data(safolder, soswr, paramsarray, soswrlim=5000000, objectives=3, a
     
     for s in safolder:
         # Set cwd to repository folder
-        objsamples = os.listdir(Path.cwd() / 'Output' / 'obj' / s)
+        objsamples = os.listdir(objpath / s)
         numobjsamples = len(objsamples)
         
         # Iterate over all samples that were evaluated using the planning alternatives
         for x in range(numobjsamples):
-            dataFileName = Path.cwd() / 'Output' / 'obj' / s / objsamples[x]
+            dataFileName = objpath / s / objsamples[x]
             xname = int(objsamples[x][:objsamples[x].find('.csv')]) + index
             xname = '{:05d}'.format(xname)
             
@@ -197,4 +204,32 @@ def get_obj_data(safolder, soswr, paramsarray, soswrlim=5000000, objectives=3, a
         numrunsamples = int(s[(s.find('_')+1):])
         index += numrunsamples
     
+    obj['delta'] = {}
+    obj['delta']['SOSWR'] = delta.analyze(problem, np.array(paramsarray), np.array(err))
+    
+    problem, problemtransform, params = sat.gen_param_vals(len(obj['arrays']['Params']), prangefile='pranges_full')
+    
+    for i, a in enumerate(altnames):
+        print('Alternative:',a)
+        obj['delta'][a] = {}
+        for o in objnames:
+            print('Objective:',o)
+            obj['delta'][a][o] = delta.analyze(problem, np.array(obj['arrays']['Params']), np.array(obj['arrays'][a][o]))
+            
+    # Calculate Delta Sensitivity for Error
+    obj['delta']['SOSWR_obj'] = delta.analyze(problem, np.array(obj['arrays']['Params']), np.array(obj['arrays']['SOSWR']))
+    
+    # Normalize Datasets
+    obj['delta_norm'] = {}
+    for i, a in enumerate(altnames):
+        obj['delta_norm'][a] = {}
+        for o in objnames:
+            obj['delta_norm'][a][o] = obj['delta'][a][o]['delta'] / obj['delta'][a][o]['delta'].sum()
+    
+    obj['delta_hist_diff'] = {}
+    for i, a in enumerate(altnames):
+        obj['delta_hist_diff'][a] = {}
+        for o in objnames:
+            obj['delta_hist_diff'][a][o] = (obj['delta_norm'][a][o] - obj['delta_norm']['Historical'][o])#/obj['delta_norm']['Historical'][o]
+            
     return obj

@@ -35,7 +35,15 @@ def SA_mode(alternatives, params, exefile, safolder, sarun=0, soswrlim=0, verbos
     heads_obs = [df.columns.values.tolist()] + df.values.tolist()
     
     soswr, maxerror = mo.calculate_SOSWR(heads_obs, stats)
-    
+            
+    # Move the head observation file into the SA experiment folder (safolder)
+    sa_hob_loc = Path.cwd().joinpath('model_files').joinpath('output').joinpath('sa').joinpath('hob').joinpath(safolder)
+    try:
+        shutil.move(str(sa_loc.joinpath(alternatives['names'][0] + '.hob.out')), str(sa_hob_loc.joinpath('{:05d}'.format(sarun) + '.hob_out')))
+    except:
+        sa_hob_loc.mkdir(exist_ok=True)
+        shutil.move(str(sa_loc.joinpath(alternatives['names'][0] + '.hob.out')), str(sa_hob_loc.joinpath('{:05d}'.format(sarun) + '.hob_out')))
+        
     # Save the sum-of-squared, weighted residual error
     error = np.array([soswr, maxerror])
     sa_err_loc = Path.cwd().joinpath('model_files').joinpath('output').joinpath('sa').joinpath('err').joinpath(safolder)
@@ -87,15 +95,7 @@ def SA_mode(alternatives, params, exefile, safolder, sarun=0, soswrlim=0, verbos
     except:
         sa_obj_loc.mkdir(exist_ok=True)
         np.savetxt(sa_obj_loc.joinpath('{:05d}'.format(sarun) + '.csv'), objectives, delimiter=',')
-        
-    # Move the head observation file into the SA experiment folder (safolder)
-    sa_hob_loc = Path.cwd().joinpath('model_files').joinpath('output').joinpath('sa').joinpath('hob').joinpath(safolder)
-    try:
-        shutil.move(str(sa_loc.joinpath(alternatives['names'][0] + '.hob.out')), str(sa_hob_loc.joinpath('{:05d}'.format(sarun) + '.hob_out')))
-    except:
-        sa_hob_loc.mkdir(exist_ok=True)
-        shutil.move(str(sa_loc.joinpath(alternatives['names'][0] + '.hob.out')), str(sa_hob_loc.joinpath('{:05d}'.format(sarun) + '.hob_out')))
-        
+
     # Delete the model directory and files for this SA parameter set
     if delfolder:
         shutil.rmtree(str(sa_loc), ignore_errors=True)
