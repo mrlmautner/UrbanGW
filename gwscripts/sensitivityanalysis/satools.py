@@ -33,7 +33,7 @@ def gen_param_vals(nsamples):
     # Line 2: Lower bound for parameter values
     # Line 3: Upper bound for parameter values
     # Line 4: Binary indicator if parameter values should be transformed (0 or 1)
-    with open(prangepath) as d:
+    with open(str(prangepath)) as d:
         lines = d.read().splitlines()
         for i, line in enumerate(lines):
             templist = line.split(',')

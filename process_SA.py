@@ -143,7 +143,7 @@ my_obj_files = obj_files[int(sample_obj[0][0]):int(sample_obj[0][sample_obj[0].s
 print('Exctracting objectives for samples ' + my_obj_files[0] + ' through ' + my_obj_files[len(my_obj_files)-1] + ' on ' + str(my_rank), flush=True)
 for s, s_file in enumerate(my_obj_files):   
     # Exctract objective data for each sample
-    tempobj = np.loadtxt(objpath.joinpath(s_file), delimiter=',').flatten()
+    tempobj = np.loadtxt(str(objpath.joinpath(s_file)), delimiter=',').flatten()
     
     # Loop through objectives for each scenario
     for o in range(tempobj.shape[0]):
@@ -159,6 +159,7 @@ This section compiles error and objective data, removing any samples that contai
 '''
 # the combined results only exist on master node
 if my_rank==0:
+    print('Cleaning data', flush=True)
     obj_final = np.ones((n_samples, n_obj*n_alt))*np.nan
     for d in obj_all:
         for i in range(n_obj*n_alt):
@@ -169,7 +170,7 @@ if my_rank==0:
     params_array = np.loadtxt('params_' + folder + '.csv', delimiter=',')
     
     # Concatenate all datasets to be evaluated for Delta sensitivity, including parameter values
-    err_obj_array = np.concatenate((np.reshape(np.arange(0,n_samples),(n_samples,1)), params_array, obj_final, kmc_err_final))
+    err_obj_array = np.concatenate((np.reshape(np.arange(0,n_samples),(n_samples,1)), params_array, obj_final, kmc_err_final), axis=1)
     
     # Remove all samples that returned NaN for any objective values
     err_obj_array = err_obj_array[~np.isnan(err_obj_array).any(axis=1)]
@@ -191,17 +192,22 @@ params = comm.bcast(params, root=0)
 This section calculates the Delta sensitivity for each cluster soswr and each of the management objectives
 '''
 if my_rank < (n_obj*n_alt + n_combs):
+    print('Calculating sensitivity for ' + str(my_rank), flush=True)
     delta_s = delta.analyze(params['problem'], params['values'], err_obj_array[:, my_rank + 1 + n_params])
     delta_s['column'] = my_rank
+else:
+    delta_s = None
 
 # Combine all sensitivity values across the processors
 comm.Barrier() # wait for all of them to finish
 delta_all = comm.gather(delta_s, root=0) # gather back to master node (0)
 # the combined results only exist on master node
 if my_rank==0:
+    print('Gathering sensitivity data', flush=True)
     delta_all_final = np.ones((n_params, n_obj*n_alt + n_combs))*np.nan
     for d in delta_all:
-        delta_all_final[:, d['column']] = np.reshape(np.array(d['delta']), (n_params,1))
+        if d is not None:
+            delta_all_final[:, d['column']] = np.array(d['delta'])
         
     delta_obj_final = delta_all_final[:, :n_obj*n_alt]
     delta_clust_final = delta_all_final[:, n_obj*n_alt:]
