@@ -58,7 +58,7 @@ def gen_param_vals(nsamples):
     }
     
     params['problem'] = problem
-    print(problem)
+#    print(problem)
     
     # Sample from the parameter ranges
     params['values'] = latin.sample(problem, nsamples)
