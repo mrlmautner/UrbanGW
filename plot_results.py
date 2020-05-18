@@ -7,8 +7,8 @@ Created on Mon Nov 26 14:02:08 2018
 import flopy
 import numpy as np
 import matplotlib
-import matplotlib.pyplot as plt
 matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 import pickle
@@ -436,3 +436,6 @@ def plt_simvsobsddn(name, filename, df=0, obsformation=0, obsinfo_loaded=True):
     plt.savefig(filename+'.eps', dpi=600)
     
     return slope, intercept, r_value, p_value, std_err 
+#
+#def plt_sensitivity(sensitivity):
+#    
