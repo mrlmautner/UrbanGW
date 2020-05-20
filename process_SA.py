@@ -205,32 +205,33 @@ if my_rank==0:
     
     # Create dictionary of indices for datasets that are below the sample percent threshold for error of each cluster of observations
     sa_data_sort = {}
-    sa_data_index = np.ones((len(err_threshold)*n_obj*n_alt,3))#np.ones((len(err_threshold)*n_combs*n_obj*n_alt,3))
+    sa_data_index = np.ones((len(err_threshold)*n_combs*n_obj*n_alt,3))#np.ones((len(err_threshold)*n_obj*n_alt,3))#
     a = 0 # index for error threshold
     b = 0 # index for comb
     for i in err_threshold:
         thresh_sample = int(n_samples*i)
         sa_err_sort = np.zeros((thresh_sample, n_combs+1))
         sa_err_sort[:,n_combs] = i
-#        sa_data_index[a:a+n_combs*n_obj*n_alt, 0] = i
-        sa_data_index[a:a+n_obj*n_alt, 0] = i
-#        a += n_combs*n_obj*n_alt
-        a += n_obj*n_alt
+        sa_data_index[a:a+n_combs*n_obj*n_alt, 0] = i
+#        sa_data_index[a:a+n_obj*n_alt, 0] = i
+        a += n_combs*n_obj*n_alt
+#        a += n_obj*n_alt
         
         # Sort by the error for each cluster and record the indices of samples that are within the top i fraction of the total samples
         for j in range(n_combs):
             temp_sort = sa_data_array[:, 1+n_params+n_obj*n_alt+j].argsort()
             sa_err_sort[:,j] = temp_sort[:thresh_sample]
-#            sa_data_index[b:b+n_obj*n_alt, 1] = j
-#            sa_data_index[b:b+n_obj*n_alt, 2] = np.arange(n_obj*n_alt)
-#            b += n_obj*n_alt
-            if j == n_combs-1:
-                sa_data_index[b:b+n_obj*n_alt, 1] = j
-                sa_data_index[b:b+n_obj*n_alt, 2] = np.arange(n_obj*n_alt)
-                b += n_obj*n_alt
+            sa_data_index[b:b+n_obj*n_alt, 1] = j
+            sa_data_index[b:b+n_obj*n_alt, 2] = np.arange(n_obj*n_alt)
+            b += n_obj*n_alt
+#            if j == n_combs-1:
+#                sa_data_index[b:b+n_obj*n_alt, 1] = j
+#                sa_data_index[b:b+n_obj*n_alt, 2] = np.arange(n_obj*n_alt)
+#                b += n_obj*n_alt
             
         sa_data_sort[i] = sa_err_sort
-        
+    
+    np.savetxt(str(outputpath.joinpath('analysis').joinpath(folder + ('-norm' if kmeans_norm else '') + ('-t' if kmeans_time else '') + '-' + str(n_clusters) + '-samples_evald.csv')), sa_data_array, delimiter=',') # Save filtered dataset
     np.savetxt(str(outputpath.joinpath('analysis').joinpath(folder + ('-norm' if kmeans_norm else '') + ('-t' if kmeans_time else '') + '-' + str(n_clusters) + '-threshold_samples.csv')), np.concatenate(tuple(list(sa_data_sort.values())), axis=0), delimiter=',') # Save filtered dataset
     
 else:
@@ -284,7 +285,8 @@ def master(comm):
         sarun += 1
             
     # No more work to be done, receive all outstanding results from slaves
-    for rank in range(1, num_proc): 
+    print('Receiving outstanding work', flush=True)
+    for rank in range(1, int(min(num_proc-2, sa_data_index.shape[0]))): 
         slave_data = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
         slave_index = slave_data[0]
         delta_vals = np.array(slave_data[1]['delta'])
@@ -293,20 +295,22 @@ def master(comm):
         S1_data[slave_index[0]][int(slave_index[1]),:,int(slave_index[2])] = S1_vals
 
     # Tell all the slaves to exit by sending an empty message with DIETAG
+    print('Killing processers', flush=True)
     for rank in range(1, num_proc):
         comm.send(0, dest=rank, tag=DIETAG)
 
     # Save the sum-of-squared, weighted residual error
+    print('Saving sensitivity values', flush=True)
     sensitivity_loc = outputpath.joinpath('sens').joinpath(folder + ('-norm' if kmeans_norm else '') + ('-t' if kmeans_time else '') + '-' + str(n_clusters))
     for i in delta_data.keys():
         for j in range(n_combs):
             try:
-                np.savetxt(sensitivity_loc.joinpath('delta-' + str(i) + '-' + '{:02d}'.format(j) + '.csv'), delta_data[i][j,:,:], delimiter=',')
-                np.savetxt(sensitivity_loc.joinpath('S1-' + str(i) + '-' + '{:02d}'.format(j) + '.csv'), S1_data[i][j,:,:], delimiter=',')
+                np.savetxt(str(sensitivity_loc.joinpath('delta-' + str(i) + '-' + '{:02d}'.format(j) + '.csv')), delta_data[i][j,:,:], delimiter=',')
+                np.savetxt(str(sensitivity_loc.joinpath('S1-' + str(i) + '-' + '{:02d}'.format(j) + '.csv')), S1_data[i][j,:,:], delimiter=',')
             except:
                 sensitivity_loc.mkdir(exist_ok=True)
-                np.savetxt(sensitivity_loc.joinpath('delta-' + str(i) + '-' + '{:02d}'.format(j) + '.csv'), delta_data[i][j,:,:], delimiter=',')
-                np.savetxt(sensitivity_loc.joinpath('S1-' + str(i) + '-' + '{:02d}'.format(j) + '.csv'), S1_data[i][j,:,:], delimiter=',')
+                np.savetxt(str(sensitivity_loc.joinpath('delta-' + str(i) + '-' + '{:02d}'.format(j) + '.csv')), delta_data[i][j,:,:], delimiter=',')
+                np.savetxt(str(sensitivity_loc.joinpath('S1-' + str(i) + '-' + '{:02d}'.format(j) + '.csv')), S1_data[i][j,:,:], delimiter=',')
 
 def slave(comm):
     my_rank = comm.Get_rank()
