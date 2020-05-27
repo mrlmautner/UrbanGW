@@ -342,10 +342,10 @@ def plt_cluster(df, km_cluster, filename):
     fig.savefig(filename)
     plt.close()
 
-def plt_wellhydrographs(name, filelocation, df=0, obsformation=0, obsinfo_loaded=True, timestep='d', startdate='1984-01-01', ddn_lim=[-50, 20], legend=['Lacustrine','Alluvial','Basalt','Volcaniclastic','Andesite']):
+def plt_wellhydrographs(folder, name, filelocation, df=0, obsformation=0, obsinfo_loaded=True, timestep='d', startdate='1984-01-01', ddn_lim=[-50, 20], legend=['Lacustrine','Alluvial','Basalt','Volcaniclastic','Andesite']):
     
     if not isinstance(df, pd.DataFrame):
-        df, obsinfo, obsstats, obsformation = process_hobs(name, legend=legend, obsinfo_loaded=obsinfo_loaded)
+        df, obsinfo, obsstats, obsformation = process_hobs(folder, name, legend=legend, obsinfo_loaded=obsinfo_loaded)
     
     filelocation = Path.cwd().joinpath('model_files').joinpath('output').joinpath('plots').joinpath('observations').joinpath(filelocation)
     filelocation.mkdir(exist_ok=True)

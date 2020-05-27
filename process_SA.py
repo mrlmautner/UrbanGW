@@ -286,7 +286,7 @@ def master(comm):
             
     # No more work to be done, receive all outstanding results from slaves
     print('Receiving outstanding work', flush=True)
-    for rank in range(1, int(min(num_proc-2, sa_data_index.shape[0]))): 
+    for rank in range(1, int(min(num_proc-1, sa_data_index.shape[0]))): 
         slave_data = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
         slave_index = slave_data[0]
         delta_vals = np.array(slave_data[1]['delta'])
