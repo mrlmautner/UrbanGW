@@ -9,7 +9,7 @@ import pandas as pd
 import math
 import calendar
 
-def measureEnergy(heads,supply_dict,dem):
+def measureEnergy(heads,supply_dict,dem,bottom):
     E = 0
     
     efficiency = 0.7
@@ -31,9 +31,9 @@ def measureEnergy(heads,supply_dict,dem):
                 if n[3] < 0:
                     coords[0] = n[1]
                     coords[1] = n[2]
-                    wellHead = h[int(coords[0]),int(coords[1])]
+                    wellHead = max(h[int(coords[0]),int(coords[1])], bottom[1][int(coords[0]),int(coords[1])])
                     surface = dem[int(coords[0]),int(coords[1])]
-                    depthtowater = max(surface-wellHead,0)
+                    depthtowater = max(surface-wellHead,1)
                     pumping = n[3] * (-1) * 0.001 # m3/d --> ML/d
                     E += (efficiency * depthtowater * pumping * MJc / kWhc)*d # kWh per month (stress period) of pumping
     
@@ -70,13 +70,16 @@ def measureWaterQuality(heads,dem,active,bottom):
     # loop through all stress periods
     for t in range(348,360):
         # check during the last time step of each stress period
-        h2 = heads.get_data(kstpkper=(8,t),mflay=1) # heads binary file layer 2
+        h2 = np.multiply(active[0],heads.get_data(kstpkper=(8,t),mflay=1)) # heads binary file layer 2
         
-        h[t] = np.multiply(np.less(np.multiply(active[0],h2),0),bottom[1]) + np.multiply(np.multiply(np.less(np.multiply(active[0],h2),bottom[0]), np.greater(np.multiply(active[0],h2),0)) - np.less(np.multiply(active[0],h2),0).astype(float),h2) # Matrix containing bottom of layer 2 if layer 2 is dry, plus the head in layer 2 if less than the bottom of layer 1
+        b0 = np.multiply(active[0],bottom[0])
+        b1 = np.multiply(active[0],bottom[1])
         
-        cells_below[t] = np.sum(np.sum(np.greater(h[t],0)))
+        h[t] = np.multiply(np.less(h2,b1),b1) + np.multiply(np.multiply(np.less(h2,b0), np.greater(h2,b1)),h2) + np.multiply(np.greater(h2,b0),b0) # Matrix containing bottom of layer 2 if layer 2 is dry, plus the head in layer 2 if less than the bottom of layer 1, plus the bottom of layer 1 if the head is greater than layer 1
+        
+        cells_below[t] = np.sum(np.sum(np.less(h[t],b0)))
 
-        wq_temp = np.multiply(active[0],bottom[0]) - h[t] # Subtract the head matrix from the bottom of the active clay layer
+        wq_temp = b0 - h[t] # Subtract the head matrix from the bottom of the active clay layer
         
         wqual[t] = np.sum(np.sum(wq_temp)) # Sum the total depth to groundwater below the bottom of layer 1 in layer 2 over all cells
 
@@ -98,13 +101,14 @@ def measureMound(heads,dem,active,LU,PhasePer):
         else:
             LUset = '2010'
         
-        lu_temp = LU[LUset]['ARRAY']['URBAN']
-        h = np.multiply(active[0],h1) + np.multiply((active[1]-active[0]),h2)
-        above_dem = h > dem
-        lu_active = np.sum(np.sum(np.multiply(lu_temp,active[1]))) # Total urban area of active cells
-        lu_above = np.sum(np.sum(lu_temp[above_dem])) # Total area of cells with mounding above dem
+        lu_temp = np.multiply(LU[LUset]['ARRAY']['URBAN'],active[1])
         
+        lu_active = np.sum(np.sum(lu_temp)) # Total urban area of active cells
         urban_cells += lu_active
+                
+        h = np.multiply(active[0],h1) + np.multiply((active[1]-active[0]),h2)
+        above_dem = np.greater(h,np.multiply(dem,active[1]))
+        lu_above = np.sum(np.sum(np.multiply(lu_temp,above_dem))) # Total area of cells with mounding above dem
         mound_cells += lu_above
     
     return mound,mound_cells,urban_cells
@@ -116,7 +120,7 @@ def get_objectives(heads, wellinfo, landuse, dem, active, bottom):
 #    wq, wq_cells, hwq = measureWaterQuality(heads, dem, active, bottom)
 #    mound, mound_cells, urban_cells = measureMound(heads, dem, active, landuse, [132,252])
     try:
-        energy = measureEnergy(heads, wellinfo, dem)
+        energy = measureEnergy(heads, wellinfo, dem, bottom)
     except:
         energy = np.nan
     try:

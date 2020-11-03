@@ -17,7 +17,7 @@ import itertools
 from SALib.analyze import delta
 import time
 
-folder = '20200403_100000'
+folder = '20200921_100000'
 startpath = Path.cwd() #Path('D:\MMautner\Cluster') #
 outputpath = startpath.joinpath('model_files').joinpath('output').joinpath('sa')
 hobspath = outputpath.joinpath('hob').joinpath(folder)
@@ -34,10 +34,10 @@ samples_per_proc = int(n_samples / num_proc)
 kmeans_time = False # Include time as a variable for K-means clustering
 kmeans_norm = True # Normalize the distances in each variable by the full range of values within each variable used for K-means clustering
 make_cluster = False
-compute_cluster_err = False
-process_obj = False
+compute_cluster_err = True
+process_obj = True
 
-err_threshold = [0.05, 0.10, 0.20, 0.30]
+err_threshold = [0.05, 0.10, 0.20, 0.30, 1]
 
 objnames = ['Energy','Water Quality','Flood']
 n_obj = len(objnames)
@@ -55,7 +55,7 @@ This section calculates the sum of squared weighted residual for subsamples of t
 '''
 if my_rank==0:
     # Set observation groups using k-means clustering based on observation characteristics (latitude, longitude, head elevation, and time [optional]). User chooses whether to use the absolute characteristic values (norm=False) or normalized based on the spread of the sample within each characteristic (norm=True)
-    df, obsinfo, obsstats, obsformation = pltvm.process_hobs('20200403_100000', '00000', obsinfo_loaded=True)
+    df, obsinfo, obsstats, obsformation = pltvm.process_hobs(folder, '00000', obsinfo_loaded=True)
     df.rename(columns={'absobserved': 'Z', 'time_series': 't'}, inplace=True)
     df['t_group'] = np.where(df['t']<=4018, 1, np.where((df['t']>4018) & (df['t']<=7671), 2, 3)) # Set model period grouping based on predetermined group limits
     df.set_index('obs_name', inplace=True)

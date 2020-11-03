@@ -15,7 +15,7 @@ from pathlib import Path
 class model():
 
     # Initializer / Instance attributes
-    def __init__(self, name, exe_file=str(Path('C:') / 'WRDAPP' / 'MF2005.1_12' / 'bin' / 'mf2005.exe'), modlims=[455000, 2107000, 539000, 2175000], cellsize=500, strt_yr=1984, end_yr=2014, ACTIVE=[Path.cwd() / 'data_processed' / 'ACTIVE_VM_LYR2.asc', Path.cwd() / 'data_processed' / 'ACTIVE_VM_LYR2.asc'], THICKNESS=[Path.cwd() / 'data_processed' / 'THICK1_VM.asc', Path.cwd() / 'data_processed' / 'THICK2_VM.asc'], GEO=[Path.cwd() / 'data_processed' / 'GEO_VM_LYR1.asc', Path.cwd() / 'data_processed' / 'GEO_VM_LYR2.asc'], DEM=Path.cwd() / 'data_processed' / 'DEM_VM.asc', IH=Path.cwd() / 'data_processed' / 'IH_1984_LT2750.asc', MUN=Path.cwd() / 'data_processed' / 'MUN_VM.asc', PAR=Path.cwd() / 'model_files' / 'modflow' / 'params.pval', sarun=0):
+    def __init__(self, name, exe_file=str(Path('C:') / 'WRDAPP' / 'MF2005.1_12' / 'bin' / 'mf2005.exe'), modlims=[455000, 2107000, 539000, 2175000], cellsize=500, strt_yr=1984, end_yr=2014, ACTIVE=[Path.cwd() / 'data_processed' / 'ACTIVE_VM_LYR1.asc', Path.cwd() / 'data_processed' / 'ACTIVE_VM_LYR2.asc'], THICKNESS=[Path.cwd() / 'data_processed' / 'THICK1_VM.asc', Path.cwd() / 'data_processed' / 'THICK2_VM.asc'], GEO=[Path.cwd() / 'data_processed' / 'GEO_VM_LYR1.asc', Path.cwd() / 'data_processed' / 'GEO_VM_LYR2.asc'], DEM=Path.cwd() / 'data_processed' / 'DEM_VM.asc', IH=Path.cwd() / 'data_processed' / 'IH_1984_LT2750.asc', MUN=Path.cwd() / 'data_processed' / 'MUN_VM.asc', PAR=Path.cwd() / 'model_files' / 'modflow' / 'params.pval', sarun=0):
         self.name = name # Assign name
         self.xll = modlims[0] # X coordinate of the lower left corner
         self.yll = modlims[1] # Y coordinate of the lower left corner

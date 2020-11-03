@@ -46,7 +46,7 @@ def get_heads(alt_list,safolder=-1):
     else:
         headpath = Path.cwd().joinpath('model_files').joinpath('modflow')
     for name in alt_list:
-        S_heads[name] = bf.HeadFile(headpath.joinpath(name+'.hds'))
+        S_heads[name] = bf.HeadFile(str(headpath.joinpath(name+'.hds')))
 
     return S_heads
 

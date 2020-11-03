@@ -9,17 +9,7 @@ from SALib.sample import latin
 from SALib.analyze import delta
 import numpy as np
 from pathlib import Path
-import numpy as np
-import flopy
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-import pickle
-from scipy import stats
-from pathlib import Path
 import os
-from SALib.sample import latin
-from SALib.analyze import delta
 from sklearn.cluster import KMeans
 
 def gen_param_vals(nsamples):
