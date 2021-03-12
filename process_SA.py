@@ -212,7 +212,7 @@ if my_rank==0:
         thresh_sample = int(n_samples*i)
         sa_err_sort = np.zeros((thresh_sample, n_combs+1))
         sa_err_sort[:,n_combs] = i
-        sa_data_index[a:a+n_combs*n_obj*n_alt, 0] = i
+        sa_data_index[a:a+n_combs*n_obj*n_alt, 0] = i # index that represents error threshold
 #        sa_data_index[a:a+n_obj*n_alt, 0] = i
         a += n_combs*n_obj*n_alt
 #        a += n_obj*n_alt
@@ -221,8 +221,8 @@ if my_rank==0:
         for j in range(n_combs):
             temp_sort = sa_data_array[:, 1+n_params+n_obj*n_alt+j].argsort()
             sa_err_sort[:,j] = temp_sort[:thresh_sample]
-            sa_data_index[b:b+n_obj*n_alt, 1] = j
-            sa_data_index[b:b+n_obj*n_alt, 2] = np.arange(n_obj*n_alt)
+            sa_data_index[b:b+n_obj*n_alt, 1] = j # index that represents cluster combination
+            sa_data_index[b:b+n_obj*n_alt, 2] = np.arange(n_obj*n_alt) # index that represents objective/error function
             b += n_obj*n_alt
 #            if j == n_combs-1:
 #                sa_data_index[b:b+n_obj*n_alt, 1] = j
@@ -332,7 +332,7 @@ def slave(comm):
         params = sa.gen_param_vals(sa_data_sort[sarun_index[0]].shape[0])
         params['values'] = sa_data_array[sa_data_sort[sarun_index[0]][:,int(sarun_index[1])].astype('int'),1:n_params+1]
         
-        # Calculate sensitivity
+        # Calculate sensitivity of the column selected using the threshold, cluster, and objective/error selection indicated by sa_data_index[0], sa_data_index[1], and sa_data_index[2] respectively
         try:
             sens_dict = delta.analyze(params['problem'], params['values'], sa_data_array[sa_data_sort[sarun_index[0]][:,int(sarun_index[1])].astype('int'), 1+n_params+int(sarun_index[2])])
         except:
