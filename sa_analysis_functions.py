@@ -54,14 +54,14 @@ class dataset():
         for i in [self.parnames, self.obj_alt, self.clusters]:
             self.allnames.extend(i)
         
-        self.alldata = pd.read_csv(self.filename+'-samples_evald.csv', names=self.allnames)
+        self.alldata = pd.read_csv(Path.cwd().joinpath('SA_data').joinpath(self.filename+'-samples_evald.csv'), names=self.allnames)
         self.ran_cluster_kde = False
         self.ran_norm_param = False
 
     def plt_cluster(self):
         sns.set_style("whitegrid")
         colors = ['xkcd:maroon','xkcd:orange','xkcd:lightblue','xkcd:olive','xkcd:violet']
-        df = pd.read_csv(self.filename+'-cluster_detailed.csv')
+        df = pd.read_csv(Path.cwd().joinpath('SA_data').joinpath(self.filename+'-cluster_detailed.csv'))
         fig = plt.figure(figsize=(16, 12))
         ax = fig.add_subplot(111, projection='3d')
         
@@ -81,8 +81,8 @@ class dataset():
         ax.set_ylim(ys.min(), ys.max())
         ax.set_zlim(zs.min(), zs.max())
         
-        fig.savefig(self.filename+'_Cluster.png')
-        fig.savefig(self.filename+'_Cluster.svg')
+        fig.savefig(Path.cwd().joinpath('images').joinpath(self.filename+'_Cluster.png'))
+        fig.savefig(Path.cwd().joinpath('SA_data').joinpath(self.filename+'_Cluster.svg'))
         plt.close()
     
     def normalize_paramrange(self):
@@ -108,7 +108,7 @@ class dataset():
         cols.append('Threshold')
         
         # Load the indices of the threshold percent of samples with the least error in each cluster
-        self.thresh_samples = pd.read_csv(self.filename+'-threshold_samples.csv', names=cols)
+        self.thresh_samples = pd.read_csv(Path.cwd().joinpath('SA_data').joinpath(self.filename+'-threshold_samples.csv'), names=cols)
         
         if type(params) is int:
             params = self.parnames
@@ -194,8 +194,8 @@ class dataset():
                 if i == 0:
                     axes[i].set_ylabel('Error')
             
-            plt.savefig(Path.cwd().joinpath('Error').joinpath(param+'_Error.png'), dpi=600)
-            plt.savefig(Path.cwd().joinpath('Error').joinpath(param+'_Error.svg'))
+            plt.savefig(Path.cwd().joinpath('images').joinpath('Error').joinpath(param+'_Error.png'), dpi=600)
+            plt.savefig(Path.cwd().joinpath('images').joinpath('Error').joinpath(param+'_Error.svg'))
             plt.close()
     
     def objective_scatter(self, params=-1, threshold=-1, n_samples=100000, show_all=False):
@@ -217,7 +217,7 @@ class dataset():
         yllim = [1e8,1e-2,1e-2]
         yulim = [1e11,1e2,1e2] 
         for o, ob in enumerate(self.objsymbol):  
-            ob_loc = Path.cwd() / ob
+            ob_loc = Path.cwd() / 'images' / ob
             ob_loc.mkdir(exist_ok=True)
             
             for p, param in enumerate(params):
@@ -258,8 +258,8 @@ class dataset():
                 
                 fig.text(0.03, 0.5, self.objnames[o], ha='center', va='center', rotation='vertical')
                 fig.subplots_adjust(left=0.12, top=0.85)
-                plt.savefig(Path.cwd().joinpath(ob).joinpath(param+'_'+ob+'.png'), dpi=600)
-                plt.savefig(Path.cwd().joinpath(ob).joinpath(param+'_'+ob+'.svg'))
+                plt.savefig(Path.cwd().joinpath('images').joinpath(ob).joinpath(param+'_'+ob+'.png'), dpi=600)
+                plt.savefig(Path.cwd().joinpath('images').joinpath(ob).joinpath(param+'_'+ob+'.svg'))
                 plt.close()
 
     def historical_scatter(self, params=-1, threshold=-1, n_samples=100000, show_all=False):
@@ -283,7 +283,7 @@ class dataset():
         yllim = [2e3,1e8,1e-2,1e-2]
         yulim = [3e14,7e10,1e2,1e2]
         
-        ob_loc = Path.cwd() / 'Historical_Scatter'
+        ob_loc = Path.cwd() / 'images' / 'Historical_Scatter'
         ob_loc.mkdir(exist_ok=True)
             
         for p, param in enumerate(params):
@@ -361,7 +361,7 @@ class dataset():
         g = sns.catplot(kind='bar', x='Cluster', y='Count', data=data, hue='Alternative', row='Objective', height=3, aspect=3, sharex=True, sharey=True, margin_titles=True, legend_out=True)
         
         g.tight_layout()
-        g.savefig('Bar_Dominant-Alternative.png')
+        g.savefig('images/Bar_Dominant-Alternative.png')
         plt.close()
 
     def param_sensitivity(self, sens_type='delta', cluster_index=[0,1,2,3,4,30], threshold='0.1', constant='Alternative', def_clust=5, def_alt=0, def_obj=0, def_params=0):
@@ -385,9 +385,9 @@ class dataset():
         sensitivity_df = pd.DataFrame()
         for c, ci in enumerate(cluster_index):
             if constant=='Historical':
-                df = pd.read_csv(Path(r'D:\MMautner\Cluster\model_files\output\sa\analysis').joinpath('sens').joinpath(self.filename).joinpath(sens_type+'-'+threshold+'-'+'{:02d}'.format(ci)+'.csv'),names=names)
+                df = pd.read_csv(Path.cwd().joinpath('SA_data').joinpath('sens').joinpath(self.filename).joinpath(sens_type+'-'+threshold+'-'+'{:02d}'.format(ci)+'.csv'),names=names)
             else:
-                df = pd.read_csv(Path(r'D:\MMautner\Cluster\model_files\output\sa\analysis').joinpath('sens').joinpath(self.filename+'_original').joinpath(sens_type+'-'+threshold+'-'+'{:02d}'.format(ci)+'.csv'),names=names)
+                df = pd.read_csv(Path.cwd().joinpath('SA_data').joinpath('sens').joinpath(self.filename+'_original').joinpath(sens_type+'-'+threshold+'-'+'{:02d}'.format(ci)+'.csv'),names=names)
             df['Param'] = self.parnames
             x = df.rank()
             x = pd.melt(x, id_vars='Param', var_name='Obj-Alt', value_name='Rank')
@@ -407,8 +407,8 @@ class dataset():
             g.tight_layout()
             g.fig.subplots_adjust(top=0.9)
             g.fig.suptitle('Parameter Sensitivity for Low Error Sample '+threshold+': Cluster '+self.clusters[def_clust])
-            g.savefig('Bar_Param-Sensitivity_Cluster-'+self.clusters[def_clust]+'.png')
-            g.savefig('Bar_Param-Sensitivity_Cluster-'+self.clusters[def_clust]+'.svg')
+            g.savefig('images/Bar_Param-Sensitivity_Cluster-'+self.clusters[def_clust]+'.png')
+            g.savefig('images/Bar_Param-Sensitivity_Cluster-'+self.clusters[def_clust]+'.svg')
             plt.close()
             
         elif constant == 'Alternative':
@@ -420,8 +420,8 @@ class dataset():
             g.tight_layout()
             g.fig.subplots_adjust(top=0.9)
             g.fig.suptitle('Parameter Sensitivity for Low Error Sample '+threshold+': '+self.altnameslong[def_alt]+' Alternative')
-            g.savefig('Bar_Param-Sensitivity_Alternative-'+self.altnames[def_alt]+'.png')
-            g.savefig('Bar_Param-Sensitivity_Alternative-'+self.altnames[def_alt]+'.svg')
+            g.savefig('images/Bar_Param-Sensitivity_Alternative-'+self.altnames[def_alt]+'.png')
+            g.savefig('images/Bar_Param-Sensitivity_Alternative-'+self.altnames[def_alt]+'.svg')
             plt.close()
         
         elif constant == 'Objective':
@@ -435,8 +435,8 @@ class dataset():
             g.tight_layout()
             g.fig.subplots_adjust(top=0.9)
             g.fig.suptitle('Parameter Sensitivity for Low Error Sample '+threshold+': '+objnames[def_obj]+' Objective')
-            g.savefig('Bar_Param-Sensitivity_Objective-'+self.objsymbol[def_obj]+'.png')
-            g.savefig('Bar_Param-Sensitivity_Objective-'+self.objsymbol[def_obj]+'.svg')
+            g.savefig('images/Bar_Param-Sensitivity_Objective-'+self.objsymbol[def_obj]+'.png')
+            g.savefig('images/Bar_Param-Sensitivity_Objective-'+self.objsymbol[def_obj]+'.svg')
             plt.close()
 
         elif constant == 'Historical':
@@ -468,8 +468,8 @@ class dataset():
                     ax.texts[0].remove()
             
             g.tight_layout()
-            g.savefig('Bar_Param-Sensitivity_Historical-Error-Object.png')
-            g.savefig('Bar_Param-Sensitivity_Historical-Error-Object.svg')
+            g.savefig('images/Bar_Param-Sensitivity_Historical-Error-Object.png')
+            g.savefig('images/Bar_Param-Sensitivity_Historical-Error-Object.svg')
             plt.close()
             
     def obj_spread(self, threshold=0.1, max_val=1, step_val=0.05, spread=True, ranking=False):
@@ -515,8 +515,8 @@ class dataset():
                     plt.figure(figsize=(8,5))
                     sns.histplot(data=o_dict[ob]['PerDiff-'+j], element="poly", palette="bright", bins=list(np.arange(0,max_val,step_val)), alpha=0.07)
                     plt.title(ob+' PerDiff-'+j)
-                    plt.savefig(ob+'_PerDiff-'+j+'.png')
-                    plt.savefig(ob+'_PerDiff-'+j+'.svg')
+                    plt.savefig(Path.cwd().joinpath('images').joinpath(ob+'_PerDiff-'+j+'.png'))
+                    plt.savefig(Path.cwd().joinpath('images').joinpath(ob+'_PerDiff-'+j+'.svg'))
                     plt.close()
         
         if ranking:
@@ -536,7 +536,7 @@ class dataset():
         # Heatmap - Params
         objnames = ['Pumping\nEnergy','Water\nQuality Risk','Urban\nFlooding']
         altnameslong = ['Historical','WW Reuse','Basins','Repair Leaks']
-        ob_loc = Path.cwd().joinpath('Ranking_Heatmap-params_' + c)
+        ob_loc = Path.cwd().joinpath('images').joinpath('Ranking_Heatmap-params_' + c)
         ob_loc.mkdir(exist_ok=True)
         
         if not self.ran_cluster_kde:
@@ -620,8 +620,8 @@ class dataset():
             g.set_xticklabels(['min','','','','','','','','','max'], rotation=0, size='medium')
             g.tight_layout()
             
-            plt.savefig(Path.cwd().joinpath('Ranking_Heatmap-params_'+c).joinpath(param+'_ranking-heatmap_'+c+'.png'), dpi=600)
-            plt.savefig(Path.cwd().joinpath('Ranking_Heatmap-params_'+c).joinpath(param+'_ranking-heatmap_'+c+'.svg'))
+            plt.savefig(Path.cwd().joinpath('images').joinpath('Ranking_Heatmap-params_'+c).joinpath(param+'_ranking-heatmap_'+c+'.png'), dpi=600)
+            plt.savefig(Path.cwd().joinpath('images').joinpath('Ranking_Heatmap-params_'+c).joinpath(param+'_ranking-heatmap_'+c+'.svg'))
             plt.close()
 
 #            return ranked_df_melt, ranked_df_table, ranked_df_normalized
