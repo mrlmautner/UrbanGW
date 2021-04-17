@@ -144,6 +144,7 @@ class dataset():
             plt.legend(fontsize = 'x-large', title_fontsize = 'xx-large', loc='lower right', facecolor='white', ncol=2, bbox_to_anchor=(1.05, 1))
             
             plt.savefig('KDE-by-param_th-'+str(self.threshold)+'.png')
+            plt.savefig('KDE-by-param_th-'+str(self.threshold)+'.svg')
             plt.close()
         
         self.ran_cluster_kde = True
@@ -194,6 +195,7 @@ class dataset():
                     axes[i].set_ylabel('Error')
             
             plt.savefig(Path.cwd().joinpath('Error').joinpath(param+'_Error.png'), dpi=600)
+            plt.savefig(Path.cwd().joinpath('Error').joinpath(param+'_Error.svg'))
             plt.close()
     
     def objective_scatter(self, params=-1, threshold=-1, n_samples=100000, show_all=False):
@@ -257,6 +259,7 @@ class dataset():
                 fig.text(0.03, 0.5, self.objnames[o], ha='center', va='center', rotation='vertical')
                 fig.subplots_adjust(left=0.12, top=0.85)
                 plt.savefig(Path.cwd().joinpath(ob).joinpath(param+'_'+ob+'.png'), dpi=600)
+                plt.savefig(Path.cwd().joinpath(ob).joinpath(param+'_'+ob+'.svg'))
                 plt.close()
 
     def historical_scatter(self, params=-1, threshold=-1, n_samples=100000, show_all=False):
@@ -324,6 +327,7 @@ class dataset():
                         axes[o,i].set_ylabel('')
             
             plt.savefig(ob_loc.joinpath(param+'.png'), dpi=600)
+            plt.savefig(ob_loc.joinpath(param+'.svg'))
             plt.close()
     
     def dominant_alternative_bar(self, threshold):
@@ -404,6 +408,7 @@ class dataset():
             g.fig.subplots_adjust(top=0.9)
             g.fig.suptitle('Parameter Sensitivity for Low Error Sample '+threshold+': Cluster '+self.clusters[def_clust])
             g.savefig('Bar_Param-Sensitivity_Cluster-'+self.clusters[def_clust]+'.png')
+            g.savefig('Bar_Param-Sensitivity_Cluster-'+self.clusters[def_clust]+'.svg')
             plt.close()
             
         elif constant == 'Alternative':
@@ -416,6 +421,7 @@ class dataset():
             g.fig.subplots_adjust(top=0.9)
             g.fig.suptitle('Parameter Sensitivity for Low Error Sample '+threshold+': '+self.altnameslong[def_alt]+' Alternative')
             g.savefig('Bar_Param-Sensitivity_Alternative-'+self.altnames[def_alt]+'.png')
+            g.savefig('Bar_Param-Sensitivity_Alternative-'+self.altnames[def_alt]+'.svg')
             plt.close()
         
         elif constant == 'Objective':
@@ -430,6 +436,7 @@ class dataset():
             g.fig.subplots_adjust(top=0.9)
             g.fig.suptitle('Parameter Sensitivity for Low Error Sample '+threshold+': '+objnames[def_obj]+' Objective')
             g.savefig('Bar_Param-Sensitivity_Objective-'+self.objsymbol[def_obj]+'.png')
+            g.savefig('Bar_Param-Sensitivity_Objective-'+self.objsymbol[def_obj]+'.svg')
             plt.close()
 
         elif constant == 'Historical':
@@ -438,7 +445,7 @@ class dataset():
                 if not (i in def_params):
                     sensitivity_df = sensitivity_df[sensitivity_df['Param'] != i]
             df = pd.DataFrame(sensitivity_df.loc[sensitivity_df['Alternative'].values==altnameslong[def_alt]].values, columns=['Param','Obj-Alt','Sensitivity','Objective','Alternative','Cluster'])
-            g = sns.catplot(kind='bar', x='Cluster', y='Sensitivity', data=df, col='Param', row='Objective', height=3, aspect=0.8, sharex=True, sharey=True, margin_titles=True, legend=True)
+            g = sns.catplot(kind='bar', x='Cluster', y='Sensitivity', data=df, col='Param', row='Objective', height=3, aspect=0.8, sharex=True, sharey=True, margin_titles=True, legend=True, row_order=['\nError Metric','\nEnergy','\nWater Quality','\nUrban Flooding'])
             plt.xticks(rotation=70)
             g.set(ylim=(0,0.31))
             g.set(xticklabels=[])
@@ -462,6 +469,7 @@ class dataset():
             
             g.tight_layout()
             g.savefig('Bar_Param-Sensitivity_Historical-Error-Object.png')
+            g.savefig('Bar_Param-Sensitivity_Historical-Error-Object.svg')
             plt.close()
             
     def obj_spread(self, threshold=0.1, max_val=1, step_val=0.05, spread=True, ranking=False):
@@ -508,6 +516,7 @@ class dataset():
                     sns.histplot(data=o_dict[ob]['PerDiff-'+j], element="poly", palette="bright", bins=list(np.arange(0,max_val,step_val)), alpha=0.07)
                     plt.title(ob+' PerDiff-'+j)
                     plt.savefig(ob+'_PerDiff-'+j+'.png')
+                    plt.savefig(ob+'_PerDiff-'+j+'.svg')
                     plt.close()
         
         if ranking:
@@ -525,8 +534,9 @@ class dataset():
 
     def heatmap_by_param(self,  params=-1, threshold=-1, n_samples=100000, c='C-12345'):
         # Heatmap - Params
-        objnames = ['Pumping\nEnergy','Water\nQuality','Urban\nFlooding']
-        ob_loc = Path.cwd() / 'Ranking_Heatmap-params'
+        objnames = ['Pumping\nEnergy','Water\nQuality Risk','Urban\nFlooding']
+        altnameslong = ['Historical','WW Reuse','Basins','Repair Leaks']
+        ob_loc = Path.cwd().joinpath('Ranking_Heatmap-params_' + c)
         ob_loc.mkdir(exist_ok=True)
         
         if not self.ran_cluster_kde:
@@ -552,11 +562,11 @@ class dataset():
                 df = pd.DataFrame(self.param_by_cluster.loc[self.param_by_cluster['Param'].values==param].values, columns=['Value','Cluster','Param'])
                 df = pd.DataFrame(df.loc[df['Cluster'].values==c].values, columns=['Value','Cluster','Param'])
                 
-                for a in self.altnames:
-                    df[a] = self.alldata[ob+'-'+a].values[self.thresh_samples[c][self.thresh_samples['Threshold']==threshold].values.astype('int')].copy()
+                for a, alt in enumerate(self.altnames):
+                    df[altnameslong[a]] = self.alldata[ob+'-'+alt].values[self.thresh_samples[c][self.thresh_samples['Threshold']==threshold].values.astype('int')].copy()
                 
                 # Rank each alternative within each parameter set 
-                x = df[self.altnames].rank(axis=1,method='first')
+                x = df[altnameslong].rank(axis=1,method='first')
                 
                 # Incorporate ranked information into pandas dataframe with identifying information, assign each datapoint to a decimal bin within the parameter range
                 x['Objective'] = objnames[o]
@@ -588,7 +598,7 @@ class dataset():
             
             # Fill any missing values in alternative rank space with NAN
             for o in objnames:
-                for a in self.altnames:
+                for a in altnameslong:
                     for r in range(1,5):
                         try:
                             temp = ranked_df_table.loc[o,a,str(r)]
@@ -604,132 +614,51 @@ class dataset():
                 d = data.pivot(index=args[1], columns=args[0], values=args[2])
                 sns.heatmap(d, **kwargs)
             
-            g = sns.FacetGrid(ranked_df_normalized, col='Alternative', row='Objective', height=3, aspect=1.2, margin_titles=True, col_order=self.altnames, row_order=objnames)
+            g = sns.FacetGrid(ranked_df_normalized, col='Alternative', row='Objective', height=3, aspect=1.2, margin_titles=True, col_order=altnameslong, row_order=objnames)
             g.map_dataframe(draw_heatmap, param, 'Rank', 'Percent Sample', cbar=False, vmin=0, vmax=1, cmap=sns.color_palette("viridis", as_cmap=True), square=False)
-            g.set_titles(col_template="{col_name}", row_template="{row_name}")
-            g.set_xticklabels(['min','','','','','','','','','max'],rotation=0)
+            g.set_titles(col_template="{col_name}", row_template="{row_name}", size='large')
+            g.set_xticklabels(['min','','','','','','','','','max'], rotation=0, size='medium')
             g.tight_layout()
             
-            plt.savefig(Path.cwd().joinpath('Ranking_Heatmap-params').joinpath(param+'_ranking-heatmap.png'), dpi=600)
-            plt.savefig(Path.cwd().joinpath('Ranking_Heatmap-params').joinpath(param+'_ranking-heatmap.svg'))
+            plt.savefig(Path.cwd().joinpath('Ranking_Heatmap-params_'+c).joinpath(param+'_ranking-heatmap_'+c+'.png'), dpi=600)
+            plt.savefig(Path.cwd().joinpath('Ranking_Heatmap-params_'+c).joinpath(param+'_ranking-heatmap_'+c+'.svg'))
             plt.close()
+
+#            return ranked_df_melt, ranked_df_table, ranked_df_normalized
             
-##%% Heatmap - Clusters
-#colors = ['maroon','navy','xkcd:green','orange']
-#
-#param = 'HK_4'
-#o_dict = {}
+## Heatmap - Clusters
+#param = 'HK_2'
 #ranked_df = pd.DataFrame()
+#objnameslong = ['Pumping\nEnergy','Water\nQuality Risk','Urban\nFlooding']
+#altnameslong = ['Historical','WW Reuse','Basins','Repair Leaks']
 #
 #for o, ob in enumerate(objsymbol):
 #    print(ob)
-#    o_dict[ob] = {}
-#    for j in range(0,3):
-#        o_dict[ob]['AbsDiff-'+str(j+1)] = pd.DataFrame()
-#        o_dict[ob]['PerDiff-'+str(j+1)] = pd.DataFrame()
 #    
 #    for c in clusters:
 #        print(c)
 #        df = pd.DataFrame(param_by_cluster.loc[param_by_cluster['Param'].values==param].values, columns=['Value','Cluster','Param'])
 #        df = pd.DataFrame(df.loc[df['Cluster'].values==c].values, columns=['Value','Cluster','Param'])
 #        for a in altnames:
-#            df[a] = alldata[ob+'-'+a].values[thresh_samples[c][thresh_samples['Threshold']==threshold].values.astype('int')].copy()
+#            df[altnameslong[altnames.index(a)]] = alldata[ob+'-'+a].values[thresh_samples[c][thresh_samples['Threshold']==threshold].values.astype('int')].copy()
 #        
 #        # Convert 
-#        x = df[altnames].rank(axis=1,method='first')
+#        x = df[altnameslong].rank(axis=1,method='first')
 #        ranked_array = np.array(x)
 #        
-#        for j in range(0,3):
-#            df['AbsDiff-'+str(j+1)] = np.nan
-#            df['PerDiff-'+str(j+1)] = np.nan
-#            
-#            for row in df.itertuples():
-#                df['AbsDiff-'+str(j+1)][row.Index] = row[int(np.arange(0,4)[ranked_array[row.Index]==1+(j+1)]+4)] - row[int(np.arange(0,4)[ranked_array[row.Index]==1]+4)]
-#                df['PerDiff-'+str(j+1)][row.Index] = df['AbsDiff-'+str(j+1)][row.Index] / row[int(np.arange(0,4)[ranked_array[row.Index]==1]+4)]
-#            
-#            o_dict[ob]['AbsDiff-'+str(j+1)][c] = df['AbsDiff-'+str(j+1)].values
-#            o_dict[ob]['PerDiff-'+str(j+1)][c] = df['PerDiff-'+str(j+1)].values
-#        
 #        # Incorporate ranked information into pandas dataframe with identifying information
-#        x['Objective'] = objnames[o]
-#        x['Cluster'] = c
+#        x['Objective'] = objnameslong[objsymbol.index(ob)]
+#        x['\nCluster'] = c
 #        
 #        ranked_df = pd.concat([ranked_df,x])
 #
-#z = ranked_df.melt(id_vars=['Objective','Cluster'], var_name='Alternative', value_name='Rank')
+#z = ranked_df.melt(id_vars=['Objective','\nCluster'], var_name='Alternative', value_name='Rank')
 #z['Rank'] = z['Rank'].astype(int).astype(str)
 #z = z.sort_values(by=['Rank'])
 #
-#g = sns.displot(z, x="Cluster", y="Rank", col="Alternative",  row="Objective", cmap=sns.color_palette("viridis", as_cmap=True), cbar=False, facet_kws=dict(sharex=True, sharey=True, margin_titles=True))
-#g.set_titles('')
-#g.set_xlabels('')
-#g.set_xticklabels('')
-#for ax in g.axes.flat:
-#
-#    # Make title more human-readable and larger
-#    if ax.get_title():
-#        ax.set_title(ax.get_title().split('=')[1])
-#
-#    # Make right ylabel more human-readable and larger
-#    # Only the 2nd and 4th axes have something in ax.texts
-#    if ax.texts:
-#        # This contains the right ylabel text
-#        txt = ax.texts[0]
-#        ax.text(txt.get_unitless_position()[0], txt.get_unitless_position()[1], txt.get_text().split('=')[1], transform=ax.transAxes, rotation=270, va='center')
-#        # Remove the original text
-#        ax.texts[0].remove()
-#
-#g.tight_layout()
-#
-## Heatmap - Parameter
-#colors = ['maroon','navy','xkcd:green','orange']
-#
-#param = 'HK_4'
-#c = 'C-12345'
-#o_dict = {}
-#ranked_df = pd.DataFrame()
-#
-#for o, ob in enumerate(objsymbol):
-#    print(ob)
-#    o_dict[ob] = {}
-#    df = pd.DataFrame(param_by_cluster.loc[param_by_cluster['Param'].values==param].values, columns=['Value','Cluster','Param'])
-#    df = pd.DataFrame(df.loc[df['Cluster'].values==c].values, columns=['Value','Cluster','Param'])
-#    
-#    for a in altnames:
-#        df[a] = alldata[ob+'-'+a].values[thresh_samples[c][thresh_samples['Threshold']==threshold].values.astype('int')].copy()
-#    
-#    # Convert 
-#    x = df[altnames].rank(axis=1,method='first')
-#    
-#    # Incorporate ranked information into pandas dataframe with identifying information
-#    x['Objective'] = objnames[o]
-#    temp = (df['Value']*10).astype(float)
-#    x[param] = (np.floor(temp)/10).astype(str)
-#    
-#    ranked_df = pd.concat([ranked_df,x])
-#
-#z = ranked_df.melt(id_vars=['Objective',param], var_name='Alternative', value_name='Rank')
-#z['Rank'] = z['Rank'].astype(int).astype(str)
-#z = z.sort_values(by=['Rank'])
-#
-#g = sns.displot(z, x=param, y="Rank", col="Alternative",  row="Objective", cmap=sns.color_palette("viridis", as_cmap=True), cbar=False, facet_kws=dict(sharex=True, sharey=True, margin_titles=True))
-#g.set_titles('')
-#g.set_xlabels('')
-#g.set_xticklabels('')
-#for ax in g.axes.flat:
-#
-#    # Make title more human-readable and larger
-#    if ax.get_title():
-#        ax.set_title(ax.get_title().split('=')[1])
-#
-#    # Make right ylabel more human-readable and larger
-#    # Only the 2nd and 4th axes have something in ax.texts
-#    if ax.texts:
-#        # This contains the right ylabel text
-#        txt = ax.texts[0]
-#        ax.text(txt.get_unitless_position()[0], txt.get_unitless_position()[1], txt.get_text().split('=')[1], transform=ax.transAxes, rotation=270, va='center')
-#        # Remove the original text
-#        ax.texts[0].remove()
+#g = sns.displot(z, x='\nCluster', y='Rank', col='Alternative', row='Objective', height=3, aspect=1, cmap=sns.color_palette("viridis", as_cmap=True), cbar=False, vmin=0, vmax=5000, facet_kws=dict(row_order=objnameslong, col_order=altnameslong, margin_titles=True))
+#g.set_titles(col_template="{col_name}", row_template="{row_name}", size='large')
+#g.set_xticklabels(clusters,rotation=90,size='medium')
 #
 #g.tight_layout()
 
