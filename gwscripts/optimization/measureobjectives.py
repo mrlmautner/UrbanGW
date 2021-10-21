@@ -16,12 +16,12 @@ def measureEnergy(heads,supply_dict,dem,bottom):
     MJc = 9.81 # MegaJoules to lift 1 MegaLiter 1 meter
     kWhc = 3.6 # MegaJoules per kWh
     
-    pd.DatetimeIndex(freq='M',start='01/31/1986',end='12/31/2013')
+#    pd.DatetimeIndex(freq='M',start='01/31/1986',end='12/31/2013')
     coords = np.zeros(2)
     
     for i, p in supply_dict.items():
         # Start in year 2
-        if i > 347:
+        if i > 23:
             d = calendar.monthrange(1984+math.floor(i/12),(i%12)+1)[1] # number of days in stress period
             h = heads.get_data(kstpkper=(8,i),mflay=1) # heads binary file for last time step in stress period
             
