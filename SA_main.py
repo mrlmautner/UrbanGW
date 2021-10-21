@@ -53,13 +53,13 @@ alternatives = comm.bcast(alternatives, root=0)
 WORKTAG = 1
 DIETAG = 0
 
-def master(comm):
+def conductor(comm):
     num_procs = comm.Get_size()
     status = MPI.Status()
     
     sarun = int((tot_samples/numSets)*currentSet)
 
-    # Seed the slaves, send one unit of work to each slave (rank)
+    # Seed the players, send one unit of work to each player (rank)
     for rank in range(1, int(min(num_procs,1+tot_samples/numSets))):
         comm.send(sarun, dest=rank, tag=WORKTAG)
         sarun += 1
@@ -67,25 +67,25 @@ def master(comm):
     # Loop over getting new work requests until there is no more work to be done
     while True:
             
-        # Receive results from a slave
+        # Receive results from a player
         objectives = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
 
         if sarun >= int((tot_samples/numSets)*(currentSet+1)):
             break
     
-        # Send the slave a new work unit
+        # Send the player a new work unit
         comm.send(sarun, dest=status.Get_source(), tag=WORKTAG)
         sarun += 1
 
-    # Tell all the slaves to exit by sending an empty message with DIETAG
+    # Tell all the players to exit by sending an empty message with DIETAG
     for rank in range(1, num_procs):
         comm.send(0, dest=rank, tag=DIETAG)
   
-def slave(comm):
+def player(comm):
     status = MPI.Status()
     
     while True:
-        # Receive a message from the master
+        # Receive a message from the conductor
         sarun = int(comm.recv(source=0, tag=MPI.ANY_TAG, status=status))
     
         # Check the tag of the received message
@@ -109,9 +109,9 @@ def slave(comm):
   
 def main():
     if my_rank == 0:
-        master(comm)
+        conductor(comm)
     else:
-        slave(comm)
+        player(comm)
 
 if __name__ == '__main__':
     main()
