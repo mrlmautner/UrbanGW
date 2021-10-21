@@ -130,9 +130,9 @@ if compute_cluster_err:
         
     # Combine all error values across the processors
     comm.Barrier() # wait for all of them to finish
-    kmc_err_all = comm.gather(kmc_err, root=0) # gather back to master node (0)
+    kmc_err_all = comm.gather(kmc_err, root=0) # gather back to conductor node (0)
 
-# the combined results only exist on master node
+# the combined results only exist on conductor node
 if my_rank==0:
     if compute_cluster_err:
         kmc_err_final = np.ones((n_samples, n_combs))*np.nan
@@ -171,13 +171,13 @@ if process_obj:
     
     # Combine all obj values across the processors
     comm.Barrier() # wait for all of them to finish
-    obj_all = comm.gather(sample_obj, root=0) # gather back to master node (0)
+    obj_all = comm.gather(sample_obj, root=0) # gather back to conductor node (0)
 
 ## Data Cleaning
 '''
 This section compiles error and objective data, removing any samples that contain nan in any objectives and preparing the data for sensitivity analysis
 '''
-# the combined results only exist on master node
+# the combined results only exist on conductor node
 if my_rank==0:
     if process_obj:
         print('Cleaning data', flush=True)
@@ -247,11 +247,11 @@ sa_data_array = comm.bcast(sa_data_array, root=0)
 '''
 This section calculates the Delta sensitivity for each cluster soswr and each of the management objectives
 '''
-# Define master/slave routine to calculate delta sensitivity
+# Define conductor/player routine to calculate delta sensitivity
 WORKTAG = 1
 DIETAG = 0
 
-def master(comm):
+def conductor(comm):
     status = MPI.Status()
     
     sarun = 0
@@ -261,7 +261,7 @@ def master(comm):
         delta_data[i] = np.zeros((n_combs, n_params, n_obj*n_alt))
         S1_data[i] = np.zeros((n_combs, n_params, n_obj*n_alt))
     
-    # Seed the slaves, send one unit of work to each slave (rank)
+    # Seed the players, send one unit of work to each player (rank)
     for rank in range(1, int(min(num_proc, sa_data_index.shape[0]))):
         comm.send(sarun, dest=rank, tag=WORKTAG)
         sarun += 1
@@ -269,32 +269,32 @@ def master(comm):
     # Loop over getting new work requests until there is no more work to be done
     while True:
         
-        # Receive results from a slave
-        slave_data = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
-        slave_index = slave_data[0]
-        delta_vals = np.array(slave_data[1]['delta'])
-        S1_vals = np.array(slave_data[1]['S1'])
-        delta_data[slave_index[0]][int(slave_index[1]),:,int(slave_index[2])] = delta_vals
-        S1_data[slave_index[0]][int(slave_index[1]),:,int(slave_index[2])] = S1_vals
+        # Receive results from a player
+        player_data = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
+        player_index = player_data[0]
+        delta_vals = np.array(player_data[1]['delta'])
+        S1_vals = np.array(player_data[1]['S1'])
+        delta_data[player_index[0]][int(player_index[1]),:,int(player_index[2])] = delta_vals
+        S1_data[player_index[0]][int(player_index[1]),:,int(player_index[2])] = S1_vals
         
         if sarun >= sa_data_index.shape[0]:
             break
 
-        # Send the slave a new work unit
+        # Send the player a new work unit
         comm.send(sarun, dest=status.Get_source(), tag=WORKTAG)
         sarun += 1
             
-    # No more work to be done, receive all outstanding results from slaves
+    # No more work to be done, receive all outstanding results from players
     print('Receiving outstanding work', flush=True)
     for rank in range(1, int(min(num_proc-1, sa_data_index.shape[0]))): 
-        slave_data = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
-        slave_index = slave_data[0]
-        delta_vals = np.array(slave_data[1]['delta'])
-        S1_vals = np.array(slave_data[1]['S1'])
-        delta_data[slave_index[0]][int(slave_index[1]),:,int(slave_index[2])] = delta_vals
-        S1_data[slave_index[0]][int(slave_index[1]),:,int(slave_index[2])] = S1_vals
+        player_data = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
+        player_index = player_data[0]
+        delta_vals = np.array(player_data[1]['delta'])
+        S1_vals = np.array(player_data[1]['S1'])
+        delta_data[player_index[0]][int(player_index[1]),:,int(player_index[2])] = delta_vals
+        S1_data[player_index[0]][int(player_index[1]),:,int(player_index[2])] = S1_vals
 
-    # Tell all the slaves to exit by sending an empty message with DIETAG
+    # Tell all the players to exit by sending an empty message with DIETAG
     print('Killing processers', flush=True)
     for rank in range(1, num_proc):
         comm.send(0, dest=rank, tag=DIETAG)
@@ -312,12 +312,12 @@ def master(comm):
                 np.savetxt(str(sensitivity_loc.joinpath('delta-' + str(i) + '-' + '{:02d}'.format(j) + '.csv')), delta_data[i][j,:,:], delimiter=',')
                 np.savetxt(str(sensitivity_loc.joinpath('S1-' + str(i) + '-' + '{:02d}'.format(j) + '.csv')), S1_data[i][j,:,:], delimiter=',')
 
-def slave(comm):
+def player(comm):
     my_rank = comm.Get_rank()
     status = MPI.Status()
 
     while True:
-        # Receive a message from the master
+        # Receive a message from the conductor
         sarun = int(comm.recv(source=0, tag=MPI.ANY_TAG, status=status))
 
         # Check the tag of the received message
@@ -344,6 +344,6 @@ def slave(comm):
         comm.send([sarun_index, sens_dict], dest=0, tag=0)
         
 if my_rank == 0:
-    master(comm)
+    conductor(comm)
 else:
-    slave(comm)
+    player(comm)
