@@ -196,8 +196,8 @@ class dataset():
                 if i == 0:
                     axes[i].set_ylabel('Error')
             
-            plt.savefig(Path.cwd().joinpath('images').joinpath('sa').joinpath('Error').joinpath(param+'_Error.png'), dpi=600)
-            plt.savefig(Path.cwd().joinpath('images').joinpath('sa').joinpath('Error').joinpath(param+'_Error.svg'))
+            plt.savefig(Path.cwd().joinpath('images').joinpath('sa').joinpath('error').joinpath(param+'_Error.png'), dpi=600)
+            plt.savefig(Path.cwd().joinpath('images').joinpath('sa').joinpath('error').joinpath(param+'_Error.svg'))
             plt.close()
     
     def objective_scatter(self, params=-1, threshold=-1, n_samples=100000, show_all=False):
@@ -261,8 +261,8 @@ class dataset():
                 
                 fig.text(0.03, 0.5, self.objnames[o], ha='center', va='center', rotation='vertical')
                 fig.subplots_adjust(left=0.12, top=0.85)
-                plt.savefig(Path.cwd().joinpath('images').joinpath('sa').joinpath(ob).joinpath(param+'_'+ob+'.png'), dpi=600)
-                plt.savefig(Path.cwd().joinpath('images').joinpath('sa').joinpath(ob).joinpath(param+'_'+ob+'.svg'))
+                plt.savefig(Path.cwd().joinpath('images').joinpath('sa').joinpath('scatter').joinpath(ob).joinpath(param+'_'+ob+'.png'), dpi=600)
+                plt.savefig(Path.cwd().joinpath('images').joinpath('sa').joinpath('scatter').joinpath(ob).joinpath(param+'_'+ob+'.svg'))
                 plt.close()
 
     def historical_scatter(self, params=-1, threshold=-1, n_samples=100000, show_all=False):
@@ -286,7 +286,7 @@ class dataset():
         yllim = [2e3,1e8,1e-2,1e-2]
         yulim = [3e14,7e10,1e2,1e2]
         
-        ob_loc = Path.cwd() / 'images' / 'sa' / 'Historical_Scatter'
+        ob_loc = Path.cwd() / 'images' / 'sa' / 'scatter' / 'historical'
         ob_loc.mkdir(exist_ok=True)
             
         for p, param in enumerate(params):
@@ -410,8 +410,8 @@ class dataset():
             g.tight_layout()
             g.fig.subplots_adjust(top=0.9)
             g.fig.suptitle('Parameter Sensitivity for Low Error Sample '+threshold+': Cluster '+self.clusters[def_clust])
-            g.savefig(Path.cwd().joinpath('images').joinpath('sa').joinpath('cluster').joinpath('Bar_Param-Sensitivity_Cluster-'+self.clusters[def_clust]+'.png'))
-            g.savefig(Path.cwd().joinpath('images').joinpath('sa').joinpath('cluster').joinpath('Bar_Param-Sensitivity_Cluster-'+self.clusters[def_clust]+'.svg'))
+            g.savefig(Path.cwd().joinpath('images').joinpath('sa').joinpath('bar-param-sensitivity').joinpath('cluster').joinpath('Bar_Param-Sensitivity_Cluster-'+self.clusters[def_clust]+'.png'))
+            g.savefig(Path.cwd().joinpath('images').joinpath('sa').joinpath('bar-param-sensitivity').joinpath('cluster').joinpath('Bar_Param-Sensitivity_Cluster-'+self.clusters[def_clust]+'.svg'))
             plt.close()
             
         elif constant == 'Alternative':
@@ -423,8 +423,8 @@ class dataset():
             g.tight_layout()
             g.fig.subplots_adjust(top=0.9)
             g.fig.suptitle('Parameter Sensitivity for Low Error Sample '+threshold+': '+self.altnameslong[def_alt]+' Alternative')
-            g.savefig(Path.cwd().joinpath('images').joinpath('sa').joinpath('alternative').joinpath('Bar_Param-Sensitivity_Alternative-'+self.altnames[def_alt]+'.png'))
-            g.savefig(Path.cwd().joinpath('images').joinpath('sa').joinpath('alternative').joinpath('Bar_Param-Sensitivity_Alternative-'+self.altnames[def_alt]+'.svg'))
+            g.savefig(Path.cwd().joinpath('images').joinpath('sa').joinpath('bar-param-sensitivity').joinpath('alternative').joinpath('Bar_Param-Sensitivity_Alternative-'+self.altnames[def_alt]+'.png'))
+            g.savefig(Path.cwd().joinpath('images').joinpath('sa').joinpath('bar-param-sensitivity').joinpath('alternative').joinpath('Bar_Param-Sensitivity_Alternative-'+self.altnames[def_alt]+'.svg'))
             plt.close()
         
         elif constant == 'Objective':
@@ -438,8 +438,8 @@ class dataset():
             g.tight_layout()
             g.fig.subplots_adjust(top=0.9)
             g.fig.suptitle('Parameter Sensitivity for Low Error Sample '+threshold+': '+objnames[def_obj]+' Objective')
-            g.savefig(Path.cwd().joinpath('images').joinpath('sa').joinpath('objective').joinpath('Bar_Param-Sensitivity_Objective-'+self.objsymbol[def_obj]+'.png'))
-            g.savefig(Path.cwd().joinpath('images').joinpath('sa').joinpath('objective').joinpath('Bar_Param-Sensitivity_Objective-'+self.objsymbol[def_obj]+'.svg'))
+            g.savefig(Path.cwd().joinpath('images').joinpath('sa').joinpath('bar-param-sensitivity').joinpath('objective').joinpath('Bar_Param-Sensitivity_Objective-'+self.objsymbol[def_obj]+'.png'))
+            g.savefig(Path.cwd().joinpath('images').joinpath('sa').joinpath('bar-param-sensitivity').joinpath('objective').joinpath('Bar_Param-Sensitivity_Objective-'+self.objsymbol[def_obj]+'.svg'))
             plt.close()
 
         elif constant == 'Historical':
@@ -471,8 +471,8 @@ class dataset():
                     ax.texts[0].remove()
             
             g.tight_layout()
-            g.savefig(Path.cwd().joinpath('images').joinpath('sa').joinpath('Bar_Param-Sensitivity_Historical-Error-Object.png'))
-            g.savefig(Path.cwd().joinpath('images').joinpath('sa').joinpath('Bar_Param-Sensitivity_Historical-Error-Object.svg'))
+            g.savefig(Path.cwd().joinpath('images').joinpath('sa').joinpath('bar-param-sensitivity').joinpath('Bar_Param-Sensitivity_Historical-Error-Object.png'))
+            g.savefig(Path.cwd().joinpath('images').joinpath('sa').joinpath('bar-param-sensitivity').joinpath('Bar_Param-Sensitivity_Historical-Error-Object.svg'))
             plt.close()
             
     def obj_spread(self, threshold=0.1, max_val=1, step_val=0.05, spread=True, ranking=False):
@@ -518,8 +518,8 @@ class dataset():
                     plt.figure(figsize=(8,5))
                     sns.histplot(data=o_dict[ob]['PerDiff-'+j], element="poly", palette="bright", bins=list(np.arange(0,max_val,step_val)), alpha=0.07)
                     plt.title(ob+' PerDiff-'+j)
-                    plt.savefig(Path.cwd().joinpath('images').joinpath('percent_diff').joinpath('max-'+str(max_val)+'_step-'+str(step_val)).joinpath(ob+'_PerDiff-'+j+'.png'))
-                    plt.savefig(Path.cwd().joinpath('images').joinpath('percent_diff').joinpath('max-'+str(max_val)+'_step-'+str(step_val)).joinpath(ob+'_PerDiff-'+j+'.svg'))
+                    plt.savefig(Path.cwd().joinpath('images').joinpath('percent_diff').joinpath('max-'+str(int(max_val*100))+'_step-'+str(int(step_val*100))).joinpath(ob+'_PerDiff-'+j+'.png'))
+                    plt.savefig(Path.cwd().joinpath('images').joinpath('percent_diff').joinpath('max-'+str(int(max_val*100))+'_step-'+str(int(step_val*100))).joinpath(ob+'_PerDiff-'+j+'.svg'))
                     plt.close()
         
         if ranking:
@@ -539,8 +539,8 @@ class dataset():
         # Heatmap - Params
         objnames = ['Pumping\nEnergy','Water\nQuality Risk','Urban\nFlooding']
         altnameslong = ['Historical','WW Reuse','Basins','Repair Leaks']
-        ob_loc = Path.cwd().joinpath('images').joinpath('Ranking_Heatmap-params_' + c)
-        ob_loc.mkdir(exist_ok=True)
+        cluster_loc = Path.cwd().joinpath('images').joinpath('heatmaps').joinpath('Ranking_Heatmap-params_' + c)
+        cluster_loc.mkdir(exist_ok=True)
         
         if not self.ran_cluster_kde:
             self.cluster_kde(params=params, threshold=threshold, n_samples=n_samples, plot=False)
@@ -623,8 +623,8 @@ class dataset():
             g.set_xticklabels(['min','','','','','','','','','max'], rotation=0, size='medium')
             g.tight_layout()
             
-            plt.savefig(Path.cwd().joinpath('images').joinpath('Ranking_Heatmap-params_'+c).joinpath(param+'_ranking-heatmap_'+c+'.png'), dpi=600)
-            plt.savefig(Path.cwd().joinpath('images').joinpath('Ranking_Heatmap-params_'+c).joinpath(param+'_ranking-heatmap_'+c+'.svg'))
+            plt.savefig(cluster_loc.joinpath(param+'_ranking-heatmap_'+c+'.png'), dpi=600)
+            plt.savefig(cluster_loc.joinpath(param+'_ranking-heatmap_'+c+'.svg'))
             plt.close()
 
 #            return ranked_df_melt, ranked_df_table, ranked_df_normalized
