@@ -53,6 +53,8 @@ model_files\output\sa\mun | three management objectives calculated for each rech
 
 These data can then be processed into plottable datasets using ```process_SA.py```, which includes sensitivity analysis of error and objective values using ```SALib```.
 
+```SA_main.py``` and ```process_SA.py``` have accompanying bash shell scripts with the same name to implement on a cluster environment.
+
 ## Plotting Tools
 ```plot_results.py```
 This script contains functions for plotting results from single simulation runs. The current default saves these figures to ```model_files\output\plots```.
