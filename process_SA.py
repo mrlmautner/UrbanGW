@@ -18,7 +18,7 @@ from SALib.analyze import delta
 import time
 
 folder = '20200921_100000'
-startpath = Path.cwd() #Path('D:\MMautner\Cluster') #
+startpath = Path.cwd()
 outputpath = startpath.joinpath('model_files').joinpath('output').joinpath('sa')
 hobspath = outputpath.joinpath('hob').joinpath(folder)
 objpath = outputpath.joinpath('obj').joinpath(folder)
@@ -33,11 +33,11 @@ samples_per_proc = int(n_samples / num_proc)
 
 kmeans_time = False # Include time as a variable for K-means clustering
 kmeans_norm = True # Normalize the distances in each variable by the full range of values within each variable used for K-means clustering
-make_cluster = False
-compute_cluster_err = True
-process_obj = True
+make_cluster = False # Boolean to create cluster if not already existing
+compute_cluster_err = True # Process the error data for all clusters and model runs
+process_obj = True # Process objective data for all clusters and model runs
 
-err_threshold = [0.05, 0.10, 0.20, 0.30, 1]
+err_threshold = [0.05, 0.10, 0.20, 0.30, 1] # Number of parameter sets for which to process error and objective data
 
 objnames = ['Energy','Water Quality','Flood']
 n_obj = len(objnames)
@@ -245,7 +245,7 @@ sa_data_array = comm.bcast(sa_data_array, root=0)
 
 ## Delta Sensitivity
 '''
-This section calculates the Delta sensitivity for each cluster soswr and each of the management objectives
+This section calculates the Delta (delta) and Sobol 1st order (S1) sensitivity for each cluster soswr and each of the management objectives
 '''
 # Define conductor/player routine to calculate delta sensitivity
 WORKTAG = 1

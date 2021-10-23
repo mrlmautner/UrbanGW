@@ -5,6 +5,8 @@ import numpy as np
 from mpi4py import MPI
 import time
 
+# This code runs simulations for parameter sets from one portion of the 100,000 sample. It breaks the parameter samples up into 20 sets of 5,000 parameter sets each
+
 tot_samples = 100000
 soswrlim = 2000000
 safolder = '20200921_100000'
@@ -19,7 +21,7 @@ comm = MPI.COMM_WORLD
 my_rank = comm.Get_rank()
 
 if my_rank == 0:
-    # Create or load params file
+    # Load existing params file
     paramspath = 'params_' + safolder + '.csv'
     try:
         with open(paramspath) as a:
@@ -29,6 +31,7 @@ if my_rank == 0:
                 templist.append([float(x) for x in line.split(',')])
         params = sa.gen_param_vals(tot_samples)
         params['values'] = np.array(templist)
+    # If there is no existing file, create params file
     except:
         params = sa.gen_param_vals(tot_samples)
         np.savetxt(paramspath, params['values'], delimiter=',')
