@@ -37,7 +37,8 @@ make_cluster = False # Boolean to create cluster if not already existing
 compute_cluster_err = True # Process the error data for all clusters and model runs
 process_obj = True # Process objective data for all clusters and model runs
 
-err_threshold = [0.05, 0.10, 0.20, 0.30, 1] # Number of parameter sets for which to process error and objective data
+#err_threshold = [0.05, 0.10, 0.20, 0.30, 1] # Number of parameter sets for which to process error and objective data
+err_threshold = [0.05]
 
 objnames = ['Energy','Water Quality','Flood']
 n_obj = len(objnames)
@@ -256,10 +257,14 @@ def conductor(comm):
     
     sarun = 0
     delta_data = {}
+    delta_CI_data = {}
     S1_data = {}
+    S1_CI_data = {}
     for i in err_threshold:
         delta_data[i] = np.zeros((n_combs, n_params, n_obj*n_alt))
+        delta_CI_data[i] = np.zeros((n_combs, n_params, n_obj*n_alt))
         S1_data[i] = np.zeros((n_combs, n_params, n_obj*n_alt))
+        S1_CI_data[i] = np.zeros((n_combs, n_params, n_obj*n_alt))
     
     # Seed the players, send one unit of work to each player (rank)
     for rank in range(1, int(min(num_proc, sa_data_index.shape[0]))):
@@ -273,9 +278,13 @@ def conductor(comm):
         player_data = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
         player_index = player_data[0]
         delta_vals = np.array(player_data[1]['delta'])
+        delta_CI_vals = np.array(player_data[1]['delta_conf'])
         S1_vals = np.array(player_data[1]['S1'])
+        S1_CI_vals = np.array(player_data[1]['S1_conf'])
         delta_data[player_index[0]][int(player_index[1]),:,int(player_index[2])] = delta_vals
+        delta_CI_data[player_index[0]][int(player_index[1]),:,int(player_index[2])] = delta_CI_vals
         S1_data[player_index[0]][int(player_index[1]),:,int(player_index[2])] = S1_vals
+        S1_CI_data[player_index[0]][int(player_index[1]),:,int(player_index[2])] = S1_CI_vals
         
         if sarun >= sa_data_index.shape[0]:
             break
@@ -290,9 +299,13 @@ def conductor(comm):
         player_data = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
         player_index = player_data[0]
         delta_vals = np.array(player_data[1]['delta'])
+        delta_CI_vals = np.array(player_data[1]['delta_conf'])
         S1_vals = np.array(player_data[1]['S1'])
+        S1_CI_vals = np.array(player_data[1]['S1_conf'])
         delta_data[player_index[0]][int(player_index[1]),:,int(player_index[2])] = delta_vals
+        delta_CI_data[player_index[0]][int(player_index[1]),:,int(player_index[2])] = delta_CI_vals
         S1_data[player_index[0]][int(player_index[1]),:,int(player_index[2])] = S1_vals
+        S1_CI_data[player_index[0]][int(player_index[1]),:,int(player_index[2])] = S1_CI_vals
 
     # Tell all the players to exit by sending an empty message with DIETAG
     print('Killing processers', flush=True)
@@ -306,11 +319,15 @@ def conductor(comm):
         for j in range(n_combs):
             try:
                 np.savetxt(str(sensitivity_loc.joinpath('delta-' + str(i) + '-' + '{:02d}'.format(j) + '.csv')), delta_data[i][j,:,:], delimiter=',')
+                np.savetxt(str(sensitivity_loc.joinpath('delta_CI-' + str(i) + '-' + '{:02d}'.format(j) + '.csv')), delta_CI_data[i][j,:,:], delimiter=',')
                 np.savetxt(str(sensitivity_loc.joinpath('S1-' + str(i) + '-' + '{:02d}'.format(j) + '.csv')), S1_data[i][j,:,:], delimiter=',')
+                np.savetxt(str(sensitivity_loc.joinpath('S1_CI-' + str(i) + '-' + '{:02d}'.format(j) + '.csv')), S1_CI_data[i][j,:,:], delimiter=',')
             except:
                 sensitivity_loc.mkdir(exist_ok=True)
                 np.savetxt(str(sensitivity_loc.joinpath('delta-' + str(i) + '-' + '{:02d}'.format(j) + '.csv')), delta_data[i][j,:,:], delimiter=',')
+                np.savetxt(str(sensitivity_loc.joinpath('delta_CI-' + str(i) + '-' + '{:02d}'.format(j) + '.csv')), delta_CI_data[i][j,:,:], delimiter=',')
                 np.savetxt(str(sensitivity_loc.joinpath('S1-' + str(i) + '-' + '{:02d}'.format(j) + '.csv')), S1_data[i][j,:,:], delimiter=',')
+                np.savetxt(str(sensitivity_loc.joinpath('S1_CI-' + str(i) + '-' + '{:02d}'.format(j) + '.csv')), S1_CI_data[i][j,:,:], delimiter=',')
 
 def player(comm):
     my_rank = comm.Get_rank()
