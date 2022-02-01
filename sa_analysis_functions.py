@@ -27,16 +27,20 @@ class dataset():
     # Initializer / Instance attributes
     def __init__(self, filename, n_samples=100000, clusters=[[1],[2],[3],[4],[5],[1,2,3,4,5]], altnames=['Hist','WWTP','Basin','Leak'], altnameslong=['Historical','Wastewater Reuse','Infiltration Basins','Repair Leaks'], objsymbol=['E','W','F'], objnames=['Pumping Energy','Water Quality','Urban Flooding'], parnames=['HK_1','HK_2','HK_3','HK_4','HK_5','SS_1','SS_2','SS_3','SS_4','SS_5','SY_1','SY_2','SY_3','SY_4','SY_5','VANI_1','VANI_2','VANI_3','VANI_4','VANI_5','Q_1','Q_2','Q_3','LK_1','LK_2','LK_3','TWU_1','TWU_2','TWU_3','RCH_1','RCH_2','RCH_3','IN_1'], parnameslong=['Lacustrine Hydraulic Conductivity','Alluvial Hydraulic Conductivity','Basaltic Hydraulic Conductivity','Volcaniclastic Hydraulic Conductivity','Andesitic Hydraulic Conductivity','Lacustrine Specific Storage','Alluvial Specific Storage','Basaltic Specific Storage','Volcaniclastic Specific Storage','Andesitic Specific Storage','Lacustrine Specific Yield','Alluvial Specific Yield','Basaltic Specific Yield','Volcaniclastic Specific Yield','Andesitic Specific Yield','Vertical Anisotropy of\nLacustrine Hydraulic Conductivity','Vertical Anisotropy of\nAlluvial Hydraulic Conductivity','Vertical Anisotropy of\nBasaltic Hydraulic Conductivity','Vertical Anisotropy of\nVolcaniclastic Hydraulic Conductivity','Vertical Anisotropy of\nAndesitic Hydraulic Conductivity','Urban to Periurban\nPumping Multiplier 1990','Urban to Periurban\nPumping Multiplier 2000','Urban to Periurban\nPumping Multiplier 2010','Leak Multiplier 1990','Leak Multiplier 2000','Leak Multiplier 2010','Total Water Use\nMultiplier 1990','Total Water Use\nMultiplier 2000','Total Water Use\nMultiplier 2010','Urban Land Use\nRecharge Multiplier','Natural Land Use\nRecharge Multiplier','Wetland Land Use\nRecharge Multiplier','Leak Infiltration Rate']):
         self.filename = filename # Assign name
-        self.n_samples = n_samples
-        self.objsymbol = objsymbol
-        self.objnames = objnames
-        self.altnames = altnames
-        self.altnameslong = altnameslong
+        self.n_samples = n_samples # Number of parameter sets sampled in the 33 parameter sample space
+        self.objsymbol = objsymbol # Characters for each management objective
+        self.objnames = objnames # Management objective names
+        self.altnames = altnames # Short names for management alternatives
+        self.altnameslong = altnameslong # Long names for management alternatives
+        
+        # Generate obj_alt label for each management alternative and objective combination
         self.obj_alt = []
         for o in objsymbol:
             for a in self.altnames:
                 self.obj_alt.extend([o+'-'+a])
-        self.n_obj_alt = len(self.obj_alt)
+        self.n_obj_alt = len(self.obj_alt) # Total number of management alternative and objective combinations
+        
+        # Generate labels for K-means clusters for groundwater well observations to be evaluated
         self.clusters = clusters
         for i in range(len(self.clusters)):
             temp = 'C-'
@@ -45,22 +49,26 @@ class dataset():
             for j in self.clusters[i]:
                 temp += str(j)
             self.clusters[i] = temp
-        self.n_clusters = len(self.clusters)
-        self.parnames = parnames
-        self.n_params = len(self.parnames)
-        self.parnameslong = parnameslong
-
+        self.n_clusters = len(self.clusters) # Number of K-means clusters for groundwater well observations to be evaluated
+        
+        self.parnames = parnames # Parameter labels
+        self.n_params = len(self.parnames) # Number of parameters
+        self.parnameslong = parnameslong # Parameter descriptions
+        
+        # Import data from parallel computing processing of simulations for parameter and management alternative combinations for analysis and plotting
         self.allnames = ['sample']
         for i in [self.parnames, self.obj_alt, self.clusters]:
             self.allnames.extend(i)
-        
         self.alldata = pd.read_csv(Path.cwd().joinpath('SA_data').joinpath(self.filename+'-samples_evald.csv'), names=self.allnames)
+                
+        # Initialize checks to determine if additional processing is needed for some plotting functions        
         self.ran_cluster_kde = False
         self.ran_norm_param = False
 
     def plt_cluster(self):
         # Visualize spatial clusters in 3 dimensions
         sns.set_style("whitegrid")
+        
         colors = ['xkcd:maroon','xkcd:orange','xkcd:lightblue','xkcd:olive','xkcd:violet']
         df = pd.read_csv(Path.cwd().joinpath('SA_data').joinpath(self.filename+'-cluster_detailed.csv'))
         fig = plt.figure(figsize=(16, 12))
@@ -386,23 +394,37 @@ class dataset():
             altnameslong = self.altnameslong
         
         sensitivity_df = pd.DataFrame()
+        sensitivity_CI_df = pd.DataFrame()
         for c, ci in enumerate(cluster_index):
             if constant=='Historical':
                 df = pd.read_csv(Path.cwd().joinpath('SA_data').joinpath('sens').joinpath(self.filename).joinpath(sens_type+'-'+threshold+'-'+'{:02d}'.format(ci)+'.csv'),names=names)
             else:
-                df = pd.read_csv(Path.cwd().joinpath('SA_data').joinpath('sens').joinpath(self.filename+'_original').joinpath(sens_type+'-'+threshold+'-'+'{:02d}'.format(ci)+'.csv'),names=names)
+                df = pd.read_csv(Path.cwd().joinpath('SA_data').joinpath('sens').joinpath(self.filename).joinpath(sens_type+'-'+threshold+'-'+'{:02d}'.format(ci)+'.csv'),names=names)
+                CI_df = pd.read_csv(Path.cwd().joinpath('SA_data').joinpath('sens').joinpath(self.filename).joinpath(sens_type+'_CI-'+threshold+'-'+'{:02d}'.format(ci)+'.csv'),names=names)
+            
             df['Param'] = self.parnames
+            CI_df['Param'] = self.parnames
+            
             x = df.rank()
             x = pd.melt(x, id_vars='Param', var_name='Obj-Alt', value_name='Rank')
+            
             df = pd.melt(df, id_vars='Param', var_name='Obj-Alt', value_name='Sensitivity')
+            CI_df = pd.melt(CI_df, id_vars='Param', var_name='Obj-Alt', value_name='CI')
+            
             df['Objective'] = df['Obj-Alt'].apply(lambda x: objnames[objsymbol.index(x[0])])
             df['Alternative'] = df['Obj-Alt'].apply(lambda x: altnameslong[altnames.index(x[2:])])
             df['Cluster'] = self.clusters[c]
+            CI_df['Objective'] = CI_df['Obj-Alt'].apply(lambda x: objnames[objsymbol.index(x[0])])
+            CI_df['Alternative'] = CI_df['Obj-Alt'].apply(lambda x: altnameslong[altnames.index(x[2:])])
+            CI_df['Cluster'] = self.clusters[c]
             
             sensitivity_df = pd.concat([sensitivity_df,df], axis=0)
-            
+            sensitivity_CI_df = pd.concat([sensitivity_CI_df,CI_df], axis=0)
+        
+        sensitivity_df['CI'] = sensitivity_CI_df['CI'].values
+        
         if constant == 'Cluster':
-            df = pd.DataFrame(sensitivity_df.loc[sensitivity_df['Cluster'].values==self.clusters[def_clust]].values, columns=['Param','Obj-Alt','Sensitivity','Objective','Alternative','Cluster'])
+            df = pd.DataFrame(sensitivity_df.loc[sensitivity_df['Cluster'].values==self.clusters[def_clust]].values, columns=['Param','Obj-Alt','Sensitivity','Objective','Alternative','Cluster','CI'])
             g = sns.catplot(kind='bar', x='Param', y='Sensitivity', data=df, hue='Alternative', row='Objective', height=3, aspect=5, sharex=True, sharey=True, margin_titles=True, legend_out=True)
             plt.xticks(rotation=70)
             g.set(ylim=(0,0.3))
@@ -415,7 +437,7 @@ class dataset():
             plt.close()
             
         elif constant == 'Alternative':
-            df = pd.DataFrame(sensitivity_df.loc[sensitivity_df['Alternative'].values==self.altnameslong[def_alt]].values, columns=['Param','Obj-Alt','Sensitivity','Objective','Alternative','Cluster'])
+            df = pd.DataFrame(sensitivity_df.loc[sensitivity_df['Alternative'].values==self.altnameslong[def_alt]].values, columns=['Param','Obj-Alt','Sensitivity','Objective','Alternative','Cluster','CI'])
             g = sns.catplot(kind='bar', x='Param', y='Sensitivity', data=df, hue='Cluster', row='Objective', height=3, aspect=5, sharex=True, sharey=True, margin_titles=True, legend_out=True)
             plt.xticks(rotation=70)
             g.set(ylim=(0,0.3))
@@ -428,16 +450,29 @@ class dataset():
             plt.close()
         
         elif constant == 'Objective':
-            df = pd.DataFrame(sensitivity_df.loc[sensitivity_df['Objective'].values==objnames[def_obj]].values, columns=['Param','Obj-Alt','Sensitivity','Objective','Alternative','Cluster'])
+            df = pd.DataFrame(sensitivity_df.loc[sensitivity_df['Objective'].values==objnames[def_obj]].values, columns=['Param','Obj-Alt','Sensitivity','Objective','Alternative','Cluster','CI'])
             df['Cluster'] = '\n' + df['Cluster']
             
-            g = sns.catplot(kind='bar', x='Param', y='Sensitivity', data=df, row='Cluster', hue='Alternative', height=3, aspect=5, sharex=True, sharey=True, margin_titles=True, legend_out=True, palette=sns.xkcd_palette(['white', 'light grey', 'medium grey', 'black']), edgecolor='k')
-            plt.xticks(rotation=70)
-            g.set(ylim=(0,0.3))
+            def func(x,y,h,e, **kwargs):
+                data = kwargs.pop('data')
+                p = data.pivot(index=x, columns=h, values=y)
+                err = data.pivot(index=x, columns=h, values=e)
+                p.plot(kind='bar',yerr=err,ax=plt.gca(), **kwargs)
             
-            g.tight_layout()
-            g.fig.subplots_adjust(top=0.9)
-            g.fig.suptitle('Parameter Sensitivity for Low Error Sample '+threshold+': '+objnames[def_obj]+' Objective')
+            fig, axes = plt.subplots(nrows=len(df.Cluster.unique()),figsize=(17,18))
+            for ax, (name, group) in zip(axes,df.groupby('Cluster')):
+                plt.sca(ax)
+                func('Param', 'Sensitivity', 'Alternative', 'CI', data=group, sharex=True, sharey=True, legend=False, width=0.8, color=['xkcd:white', 'xkcd:light grey', 'xkcd:medium grey', 'xkcd:black'],error_kw=dict(ecolor='red'))
+                plt.ylim(0,0.3)
+                plt.ylabel('Sensitivity')
+                plt.title(name, y=1.0, pad=-30)
+            
+            fig.legend(altnames,loc='upper center',ncol=4,bbox_to_anchor=[0.5, 0.95])
+            plt.xticks(rotation=70)
+            plt.tight_layout()
+            plt.subplots_adjust(top=0.9)
+            plt.suptitle('Parameter Sensitivity for Low Error Sample '+threshold+': '+objnames[def_obj]+' Objective')
+            
             g.savefig(Path.cwd().joinpath('images').joinpath('sa').joinpath('bar-param-sensitivity').joinpath('objective').joinpath('Bar_Param-Sensitivity_Objective-'+self.objsymbol[def_obj]+'.png'))
             g.savefig(Path.cwd().joinpath('images').joinpath('sa').joinpath('bar-param-sensitivity').joinpath('objective').joinpath('Bar_Param-Sensitivity_Objective-'+self.objsymbol[def_obj]+'.svg'))
             plt.close()
@@ -447,7 +482,7 @@ class dataset():
             for i in self.parnames:
                 if not (i in def_params):
                     sensitivity_df = sensitivity_df[sensitivity_df['Param'] != i]
-            df = pd.DataFrame(sensitivity_df.loc[sensitivity_df['Alternative'].values==altnameslong[def_alt]].values, columns=['Param','Obj-Alt','Sensitivity','Objective','Alternative','Cluster'])
+            df = pd.DataFrame(sensitivity_df.loc[sensitivity_df['Alternative'].values==altnameslong[def_alt]].values, columns=['Param','Obj-Alt','Sensitivity','Objective','Alternative','Cluster','CI'])
             g = sns.catplot(kind='bar', x='Cluster', y='Sensitivity', data=df, col='Param', row='Objective', height=3, aspect=0.8, sharex=True, sharey=True, margin_titles=True, legend=True, row_order=['\nError Metric','\nEnergy','\nWater Quality','\nUrban Flooding'])
             plt.xticks(rotation=70)
             g.set(ylim=(0,0.31))
